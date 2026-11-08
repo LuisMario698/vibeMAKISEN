@@ -162,6 +162,22 @@ pre { margin: 0; overflow-x: auto; background: var(--surface); border: 1px solid
 .phase .when { font-family: var(--f-mono); font-size: 12px; color: var(--muted); }
 .phase h3 { font-size: 17px; }
 
+/* Flujo */
+ol.flow { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--s-2); align-items: stretch; }
+ol.flow li { display: flex; align-items: center; gap: var(--s-2); }
+ol.flow li .node { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-1); padding: 10px 12px; font-size: 14px; line-height: 1.35; }
+ol.flow li .node b { display: block; font-size: 14px; }
+ol.flow li .node span { color: var(--muted); font-size: 12.5px; }
+ol.flow li:not(:last-child)::after { content: "→"; color: var(--accent); font-weight: 700; }
+.lane { display: grid; gap: var(--s-2); }
+.lane .lane-label { font-family: var(--f-mono); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.decision { display: grid; gap: var(--s-3); padding: var(--s-5); border-radius: var(--r-2); background: var(--accent-soft); border: 1px solid var(--accent); }
+.decision h3 { font-size: 22px; }
+.score { display: inline-block; font: 600 13px/1 var(--f-mono); padding: 5px 8px; border-radius: 4px; background: var(--surface); border: 1px solid var(--line); }
+.score.win { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.rule { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: var(--s-2); align-items: start; }
+.rule .ic { font-family: var(--f-mono); font-weight: 600; color: var(--no); }
+
 details { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-2); padding: var(--s-3) var(--s-4); }
 details summary { cursor: pointer; font-weight: 600; }
 details[open] summary { margin-bottom: var(--s-2); }
@@ -303,10 +319,10 @@ html { scroll-behavior: smooth; }
           <thead><tr><th>Criterio de éxito</th><th>Meta</th><th>Cómo se mide</th></tr></thead>
           <tbody>
             <tr><td class="k">Primera vista útil</td><td class="num">&lt; 2 s en 4G lenta</td><td>Lighthouse móvil (LCP) y Web Vitals reales</td></tr>
-            <tr><td class="k">Peso de la primera carga</td><td class="num">&lt; 300 KB sin contar fotos fuera de pantalla</td><td>Pestaña Network del navegador</td></tr>
+            <tr><td class="k">Peso de la primera carga</td><td class="num">&lt; 150 KB sin fotos (crítico &lt; 80 KB)</td><td>Lighthouse CI con presupuesto que bloquea el PR</td></tr>
             <tr><td class="k">Sin conexión</td><td>El menú abre después de la primera visita aunque no haya señal</td><td>Modo avión en el teléfono</td></tr>
             <tr><td class="k">Actualizar un precio</td><td class="num">&lt; 1 minuto desde el celular, sin programador</td><td>Prueba con el dueño</td></tr>
-            <tr><td class="k">Calidad</td><td class="num">Lighthouse ≥ 90 en rendimiento, accesibilidad, buenas prácticas y SEO</td><td>Lighthouse en cada despliegue</td></tr>
+            <tr><td class="k">Calidad</td><td class="num">Lighthouse ≥ 95 en rendimiento y accesibilidad, 100 en SEO</td><td>Lighthouse CI en cada PR</td></tr>
           </tbody>
         </table>
       </div>
@@ -436,15 +452,381 @@ html { scroll-behavior: smooth; }
       </div>
     </section>
 
-    <!--DEV-->
+    <!-- ============ DESARROLLO ============ -->
+    <section id="desarrollo">
+      <div class="eyebrow">04 · Desarrollo</div>
+      <h2>Bases de desarrollo</h2>
+      <p class="lede">Se compararon tres arquitecturas y dos jueces las calificaron por separado con los mismos pesos: edición por el dueño 25 %, rendimiento móvil 20 %, costo 15 %, tiempo a lanzamiento 15 %, offline 10 %, mantenimiento 10 % y preparación para pedidos 5 %. Los dos eligieron la misma.</p>
 
-    <!--DEPLOY-->
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Arquitectura</th><th>Cómo funciona</th><th>Juez negocio</th><th>Juez técnico</th></tr></thead>
+          <tbody>
+            <tr><td class="k">Ligera y offline-first</td><td>HTML estático en Cloudflare + datos vivos pequeños + Supabase y panel del dueño</td><td><span class="score win num">8.10</span></td><td><span class="score win num">8.15</span></td></tr>
+            <tr><td class="k">Hoja → HTML</td><td>El dueño edita una Google Sheet; cada cambio regenera el sitio en 3–5 min</td><td><span class="score num">7.75</span></td><td><span class="score num">7.70</span></td></tr>
+            <tr><td class="k">El dueño es el CMS</td><td>Supabase como centro, panel completo y modelo de pedidos desde el día 1</td><td><span class="score num">7.38</span></td><td><span class="score num">7.60</span></td></tr>
+          </tbody>
+        </table>
+      </div>
 
-    <!--ROADMAP-->
+      <div class="decision">
+        <div class="eyebrow">Decisión recomendada</div>
+        <h3>Astro estático en Cloudflare, con datos vivos y panel en una segunda etapa</h3>
+        <p>El cliente que escanea el QR recibe HTML ya armado desde el borde de Cloudflare: abre rápido con datos móviles y no depende de ningún servidor. Encima, una consulta de 1–2 KB actualiza agotados, precios y promos en 30–60 s. El dueño edita desde un panel en su teléfono. Si Supabase falla o se pausa, el menú público sigue en línea con la última versión publicada.</p>
+        <p class="small muted">Se lanza en dos etapas para salir antes: primero el menú estático con los datos en el repo (reemplaza la cartilla en 1.5–2 semanas) y después el panel. Plan B si el dueño prefiere costo cero absoluto y le basta que un cambio tarde 3–5 min: la opción Hoja → HTML, que comparte la misma interfaz.</p>
+      </div>
 
-    <!--PENDING-->
+      <h3>Cómo fluye la información</h3>
+      <div class="lane">
+        <span class="lane-label">Etapa 1 · menú estático</span>
+        <ol class="flow">
+          <li><div class="node"><b>menu.json</b><span>en el repo, sale de la cartilla</span></div></li>
+          <li><div class="node"><b>Build de Astro</b><span>valida con zod, genera ES/EN y AVIF/WebP</span></div></li>
+          <li><div class="node"><b>Cloudflare</b><span>sirve HTML y fotos</span></div></li>
+          <li><div class="node"><b>Teléfono</b><span>escanea el QR de la mesa</span></div></li>
+        </ol>
+      </div>
+      <div class="lane">
+        <span class="lane-label">Etapa 2 · cambios del dueño</span>
+        <ol class="flow">
+          <li><div class="node"><b>Panel /admin</b><span>precio, agotado, promo, foto</span></div></li>
+          <li><div class="node"><b>Supabase</b><span>base de datos con permisos</span></div></li>
+          <li><div class="node"><b>/api/live</b><span>Worker, caché de 30 s</span></div></li>
+          <li><div class="node"><b>Teléfono</b><span>ve el cambio en 30–60 s</span></div></li>
+        </ol>
+        <ol class="flow">
+          <li><div class="node"><b>Botón Publicar</b><span>o automático después</span></div></li>
+          <li><div class="node"><b>GitHub Actions</b><span>build con la instantánea de Supabase</span></div></li>
+          <li><div class="node"><b>Cloudflare</b><span>HTML nuevo para Google y WhatsApp</span></div></li>
+        </ol>
+      </div>
 
-    <!--SOURCES-->
+      <h3>Stack y versiones</h3>
+      <p class="small muted">Versiones estables consultadas en el registro de npm el 8 nov 2026. Se fijan con lockfile.</p>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Pieza</th><th>Herramienta</th><th>Versión</th><th>Para qué</th></tr></thead>
+          <tbody>
+            <tr><td class="k">Runtime</td><td>Node.js LTS</td><td class="num">24 (Astro pide ≥ 22.23.4)</td><td>Node 22 sale de soporte en abril de 2027</td></tr>
+            <tr><td class="k">Framework</td><td>Astro</td><td class="num">7.4.7</td><td>HTML estático por defecto, casi sin JavaScript en el cliente</td></tr>
+            <tr><td class="k">Estilos</td><td>Tailwind CSS + @tailwindcss/vite</td><td class="num">4.3.5</td><td>Tokens en CSS con <code>@theme</code>; la marca se cambia en un archivo</td></tr>
+            <tr><td class="k">Contrato de datos</td><td>zod</td><td class="num">4.6.7</td><td>Un solo esquema para el repo, Supabase y el build</td></tr>
+            <tr><td class="k">PWA</td><td>@vite-pwa/astro + Workbox</td><td class="num">2.0.1 · 7.4.1</td><td>Service worker, manifest y página sin conexión</td></tr>
+            <tr><td class="k">Hosting</td><td>@astrojs/cloudflare + wrangler</td><td class="num">14.4.6 · 4.158.0</td><td>Despliegue a Cloudflare Workers con Static Assets</td></tr>
+            <tr><td class="k">Datos (etapa 2)</td><td>Supabase + supabase-js</td><td class="num">2.119.0</td><td>Postgres, permisos (RLS), login y fotos</td></tr>
+            <tr><td class="k">Panel (etapa 2)</td><td>@astrojs/react + React</td><td class="num">7.1.4 · 19.3.1</td><td>Solo en /admin; el menú público no carga React</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Modelo de datos</h3>
+      <p class="small muted">El mismo esquema vive en <code>src/content/schema.ts</code> (etapa 1, archivo JSON) y en las migraciones de Supabase (etapa 2). Precios en centavos enteros de MXN.</p>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Tabla</th><th>Para qué</th><th>Campos clave</th></tr></thead>
+          <tbody>
+            <tr><td class="k">settings</td><td>Datos del negocio (una fila)</td><td>nombre oficial, teléfono, WhatsApp, dirección, enlaces (Maps, Uber Eats, redes), zona horaria <code>America/Hermosillo</code>, mostrar USD, tipo de cambio y su fecha</td></tr>
+            <tr><td class="k">opening_hours</td><td>Horario semanal</td><td>día, abre, cierra, cerrado (martes)</td></tr>
+            <tr><td class="k">special_hours</td><td>Días especiales</td><td>fecha, horario o cerrado, motivo</td></tr>
+            <tr><td class="k">categories</td><td>Secciones del menú</td><td>nombre_es, nombre_en, orden, visible</td></tr>
+            <tr><td class="k">dishes</td><td>Platillos</td><td>categoría, nombre y descripción ES/EN, picante 0–3, estilo (empanizado, natural, horneado), etiquetas, foto, orden, visible</td></tr>
+            <tr><td class="k">dish_variants</td><td>Tamaños y precios</td><td>platillo, nombre ES/EN (media orden, orden), precio; el precio debe ser mayor que cero</td></tr>
+            <tr><td class="k">availability</td><td>Agotados</td><td>platillo, agotado hasta: “hoy” vuelve solo en la siguiente apertura (respeta el martes cerrado) o “hasta que lo active”</td></tr>
+            <tr><td class="k">promos</td><td>Promociones</td><td>título ES/EN, tipo, días de la semana, inicio y fin, platillos</td></tr>
+            <tr><td class="k">admins</td><td>Quién edita</td><td>usuario, rol: dueño (todo) o personal (solo agotados)</td></tr>
+            <tr><td class="k">change_log</td><td>Historial</td><td>qué cambió, antes y después, quién y cuándo; permite “Revertir”</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="grid g2">
+        <div class="card">
+          <h3>El dueño cambia un precio (etapa 2)</h3>
+          <ol class="steps">
+            <li>Toca el ícono “MAKIZEN Admin” en su teléfono. La sesión ya está abierta.</li>
+            <li>Escribe “camarón” en el buscador o toca la categoría.</li>
+            <li>Toca el precio y escribe el nuevo con el teclado numérico. Si cambia más de 50 %, el panel le pide confirmar.</li>
+            <li>Guarda. En 30–60 s el menú ya muestra el precio nuevo. Puede deshacer durante 10 s.</li>
+          </ol>
+          <p class="small muted">En la etapa 1 los cambios los hace Luis en <code>menu.json</code> con ayuda de IA y se publican en minutos.</p>
+        </div>
+        <div class="card">
+          <h3>Reglas legales del menú</h3>
+          <div class="rule"><span class="ic">MX</span><p>Precios en pesos y textos en español siempre como principales. En 2025 Profeco sancionó en Tulum menús con precios solo en moneda extranjera o en otro idioma.</p></div>
+          <div class="rule"><span class="ic">IVA</span><p>El precio mostrado es el total con impuestos (LFPC, art. 7 Bis). No hay opción de mostrar “+ IVA”.</p></div>
+          <div class="rule"><span class="ic">USD</span><p>Solo como “≈ referencia”, con el tipo de cambio y su fecha. Se oculta solo si el tipo de cambio tiene más de 30 días.</p></div>
+        </div>
+      </div>
+
+      <h3>Sin conexión y caché</h3>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Recurso</th><th>Estrategia</th><th>Por qué</th></tr></thead>
+          <tbody>
+            <tr><td class="k">Página (/ y /en/)</td><td>Red primero; si no responde en 3 s, usa la copia guardada. Ignora <code>?src=</code></td><td>Precios al día con señal; sin señal, el último menú. El QR de cada mesa no crea copias distintas.</td></tr>
+            <tr><td class="k">Datos vivos</td><td>Red primero, 2 s; caché de 30 s en Cloudflare</td><td>Agotados y promos en segundos sin saturar Supabase</td></tr>
+            <tr><td class="k">Fotos</td><td>Caché primero, con caducidad</td><td>No se descargan otra vez</td></tr>
+            <tr><td class="k">CSS, JS, íconos, fuente</td><td>Se guardan al instalar el service worker</td><td>Desde la segunda visita abre al instante</td></tr>
+            <tr><td class="k">Sin señal ni copia</td><td>Página /offline</td><td>Muestra teléfono, WhatsApp y horario en vez de una pantalla en blanco</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="small muted">Es instalable, pero nunca pide instalarse: en iPhone no existe el aviso de instalación y casi todos llegan por un QR una sola vez. Nada depende de instalar la app ni de notificaciones.</p>
+
+      <div class="grid g2">
+        <div class="card">
+          <h3>Presupuesto de rendimiento</h3>
+          <div class="tbl-wrap">
+            <table>
+              <tbody>
+                <tr><td class="k">Carga crítica (gzip)</td><td class="num">≤ 80 KB</td></tr>
+                <tr><td class="k">Total sin fotos</td><td class="num">≤ 150 KB</td></tr>
+                <tr><td class="k">JavaScript del menú</td><td class="num">≤ 15 KB</td></tr>
+                <tr><td class="k">Foto en la lista</td><td class="num">≤ 60 KB · 400/800 px</td></tr>
+                <tr><td class="k">LCP en 4G lenta</td><td class="num">≤ 2 s</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="small muted">Las fotos se suben como JPEG de ~1600 px y el build genera AVIF y WebP. Así no importa si Safari en iPhone no codifica WebP.</p>
+        </div>
+        <div class="card">
+          <h3>SEO e integraciones</h3>
+          <ul class="clean">
+            <li>Datos estructurados schema.org: Restaurant → hasMenu → MenuSection → MenuItem, generados de los mismos datos.</li>
+            <li>“Puerto Peñasco · Rocky Point” en título, encabezado y datos estructurados, para no confundirse con homónimos.</li>
+            <li>Rutas <code>/</code> (español) y <code>/en/</code> con hreflang. Si el teléfono está en inglés, aparece “View in English?”; no hay redirección automática.</li>
+            <li>Imagen para compartir de 1200×630 px y menos de 300 KB (vista previa en WhatsApp).</li>
+            <li>Enlace del menú en Google Business Profile.</li>
+            <li>WhatsApp: <code>wa.me/526381560660?text=…</code> con mensaje en ES o EN y número de mesa tomado del QR.</li>
+            <li>“Abierto ahora” calculado con la hora de Sonora (sin horario de verano).</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="grid g2">
+        <div class="card">
+          <h3>Seguridad</h3>
+          <ul class="clean">
+            <li>El menú y el Worker leen con la clave pública (publishable) de Supabase y permisos RLS. La clave secreta nunca sale de Supabase.</li>
+            <li>El personal solo puede marcar agotados, mediante una función controlada; no puede cambiar precios.</li>
+            <li>Login con contraseña o código por correo. El correo integrado de Supabase solo llega a miembros del equipo, así que hace falta un SMTP propio (Resend o Brevo) o usar contraseña.</li>
+            <li>Pruebas automáticas de los permisos y revisión de los avisos de seguridad de Supabase antes de cada versión.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Calidad y convenciones</h3>
+          <ul class="clean">
+            <li>TypeScript estricto y esquema zod como contrato.</li>
+            <li>Pruebas (vitest) de “abierto ahora” con martes cerrado y días especiales, formato de precios y armado del enlace de WhatsApp.</li>
+            <li>Lighthouse CI con presupuestos que bloquean el PR.</li>
+            <li>Freno de seguridad: si desaparece más del 30 % de los platillos o el menú llega vacío, no se publica.</li>
+            <li>Renovate o Dependabot para actualizar dependencias por PR.</li>
+            <li><code>CLAUDE.md</code> con el esquema, los comandos y las reglas para los asistentes de IA.</li>
+          </ul>
+        </div>
+      </div>
+
+      <h3>Estructura del repositorio</h3>
+<pre>vibeMAKISEN/
+├─ src/
+│  ├─ pages/              index.astro (ES) · en/index.astro · offline.astro · admin/ (etapa 2)
+│  ├─ components/         Header · CategoryTabs · DishCard · DishSheet · Badge · OpenNow
+│  ├─ content/schema.ts   contrato de datos (zod)
+│  ├─ data/menu.json      fuente en la etapa 1 · instantánea y respaldo en la etapa 2
+│  ├─ i18n/ui.ts          textos de interfaz ES/EN
+│  ├─ lib/                horario (America/Hermosillo) · precios MXN/USD · enlace wa.me
+│  ├─ styles/tokens.css   tokens @theme (colores de marca pendientes)
+│  └─ assets/platillos/   fotos originales
+├─ worker/                /api/live y /api/publish (etapa 2)
+├─ supabase/migrations/   tablas, permisos y funciones (etapa 2)
+├─ tests/                 vitest y pruebas de permisos
+├─ .github/workflows/     ci.yml · deploy.yml
+├─ wrangler.jsonc
+├─ .nvmrc                 24
+├─ CLAUDE.md              reglas para asistentes de IA
+└─ docs/                  este documento</pre>
+    </section>
+
+    <!-- ============ DESPLIEGUE ============ -->
+    <section id="despliegue">
+      <div class="eyebrow">05 · Despliegue</div>
+      <h2>Bases de despliegue</h2>
+
+      <h3>Hosting</h3>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Opción</th><th>Costo</th><th>Lo importante</th><th>Uso</th></tr></thead>
+          <tbody>
+            <tr><td class="k">Cloudflare Workers + Static Assets</td><td class="num">$0</td><td>Archivos estáticos gratis y sin límite de peticiones. El Worker (datos vivos) da 100 mil peticiones al día. Que el plan gratis permita uso comercial lo dicen terceros: hay que leer los términos antes de lanzar.</td><td><span class="st ok">Elegido</span></td></tr>
+            <tr><td class="k">Vercel Pro</td><td class="num">~US$20/mes</td><td>El plan Hobby es solo para uso personal no comercial; un restaurante necesita Pro. El proyecto se puede mover aquí con @astrojs/vercel.</td><td><span class="st mid">Plan B</span></td></tr>
+            <tr><td class="k">Netlify Free</td><td class="num">$0</td><td>300 créditos al mes con tope: si se agotan, el sitio se pausa.</td><td><span class="st no">No</span></td></tr>
+            <tr><td class="k">GitHub Pages</td><td class="num">$0</td><td>Sus reglas no permiten usarlo como hosting gratuito de un negocio.</td><td><span class="st no">No</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Dominio</h3>
+      <p class="small muted">Disponibilidad y precio del registrador de Vercel, consultados el 8 nov 2026. Consultar no reserva el dominio. Antes de comprar, conviene buscar “MAKIZEN” en Marcanet (IMPI), clase 43.</p>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Dominio</th><th>Estado</th><th>Precio por año</th><th>Nota</th></tr></thead>
+          <tbody>
+            <tr><td class="k mono">makizen.com</td><td><span class="st no">Ocupado</span></td><td class="num">—</td><td>Ya tiene dueño</td></tr>
+            <tr><td class="k mono">makizen.mx</td><td><span class="st ok">Libre</span></td><td class="num">US$49.99</td><td>El más corto para imprimir bajo el QR</td></tr>
+            <tr><td class="k mono">makizen.com.mx</td><td><span class="st ok">Libre</span></td><td class="num">US$33.99</td><td>Puede salir más barato en otros registradores</td></tr>
+            <tr><td class="k mono">makizensushi.com</td><td><span class="st ok">Libre</span></td><td class="num">US$12.03</td><td>Opcional, para redirigir</td></tr>
+            <tr><td class="k mono">makizenpenasco.com</td><td><span class="st ok">Libre</span></td><td class="num">US$12.03</td><td>Opcional</td></tr>
+            <tr><td class="k mono">makizenrockypoint.com</td><td><span class="st ok">Libre</span></td><td class="num">US$12.03</td><td>Opcional, para el público de Arizona</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="grid g2">
+        <div class="card">
+          <h3>Ambientes</h3>
+          <ul class="clean">
+            <li><b>Local:</b> <code>npm run dev</code> con <code>menu.json</code>, sin depender de Supabase.</li>
+            <li><b>Vista previa:</b> cada PR genera una URL de prueba en <code>workers.dev</code>. Ahí el caché de 30 s de los datos vivos no funciona; se prueba con el dominio.</li>
+            <li><b>Producción:</b> el dominio propio, solo desde la rama <code>main</code>.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Publicación automática</h3>
+          <ol class="steps">
+            <li><b>En cada PR:</b> tipos, lint, pruebas, build, Lighthouse CI y vista previa.</li>
+            <li><b>Al unir a main:</b> build y despliegue a producción.</li>
+            <li><b>Botón Publicar (etapa 2):</b> el panel dispara el build con los datos de Supabase. Si Supabase no responde, usa la última instantánea; si los datos fallan la validación, no publica.</li>
+            <li><b>Cada noche:</b> un build de respaldo y un aviso a Supabase desde Cloudflare para que el plan gratis no se pause por inactividad.</li>
+          </ol>
+        </div>
+      </div>
+
+      <h3>Costos mensuales</h3>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Etapa</th><th>Concepto</th><th>Costo</th></tr></thead>
+          <tbody>
+            <tr><td class="k">Etapa 1</td><td>Dominio (.mx o .com.mx) + Cloudflare gratis + Cloudflare Web Analytics gratis</td><td class="num">≈ US$2.8–4.2</td></tr>
+            <tr><td class="k">Etapa 2</td><td>Lo anterior + Supabase Free + SMTP en plan gratuito (por verificar)</td><td class="num">≈ US$2.8–4.2</td></tr>
+            <tr><td class="k">Al crecer</td><td>Supabase Pro: nunca se pausa y tiene respaldos. Conviene antes de Semana Santa o antes de tomar pedidos.</td><td class="num">+ US$25</td></tr>
+            <tr><td class="k">Si se usa Vercel</td><td>Vercel Pro en lugar de Cloudflare</td><td class="num">+ ~US$20</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="grid g3">
+        <div class="card">
+          <h3>Respaldos</h3>
+          <p>Supabase Free no deja descargar respaldos. Cada publicación guarda <code>menu.json</code> en el repo si cambió, el esquema vive en migraciones y las fotos se copian una vez al mes.</p>
+        </div>
+        <div class="card">
+          <h3>Cuentas</h3>
+          <p>Dominio, Cloudflare, Supabase, GitHub y la cuenta de Google van a nombre del negocio, con Luis como colaborador. Así el menú no depende de una sola persona.</p>
+        </div>
+        <div class="card">
+          <h3>QR y lanzamiento</h3>
+          <p>Un QR por mesa apunta a <code>dominio/?src=qr-mesa-N</code>, con la leyenda “Escanea para ver el menú / Scan for menu” y la URL corta impresa. Se mantiene un menú en papel para quien lo pida.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ HOJA DE RUTA ============ -->
+    <section id="ruta">
+      <div class="eyebrow">06 · Plan</div>
+      <h2>Hoja de ruta</h2>
+      <p class="lede">Días de trabajo estimados. La etapa 1 por sí sola ya reemplaza la cartilla.</p>
+      <div class="timeline">
+        <div class="phase"><div><div class="when">Etapa 0 · ≈ 2 días</div></div><div class="prose"><h3>Insumos del negocio</h3><p>Cartilla actual, logo y colores, nombre oficial, dirección exacta, WhatsApp, IVA y USD, dominio, fotos de los platillos estrella y número de mesas. Bloquea el contenido de la etapa 1.</p></div></div>
+        <div class="phase"><div><div class="when">Etapa 1 · ≈ 1.5–2 semanas</div></div><div class="prose"><h3>Menú estático en producción</h3><ul class="clean"><li>Cimientos: Astro, Tailwind, tokens con la marca real, componentes (3 d).</li><li>Menú ES/EN desde <code>menu.json</code>, datos estructurados, WhatsApp, “abierto ahora” (3–4 d).</li><li>PWA, fotos optimizadas y presupuesto de rendimiento (2 d).</li><li>Dominio, despliegue, QR, Google Business Profile y prueba con datos móviles en Peñasco (2 d).</li></ul></div></div>
+        <div class="phase"><div><div class="when">Etapa 2 · ≈ 2 semanas</div></div><div class="prose"><h3>Panel del dueño y datos vivos</h3><ul class="clean"><li>Supabase: tablas, permisos y sus pruebas, carga del menú.</li><li>/api/live con caché de 30 s.</li><li>/admin: precio, “agotado hoy”, promo del día, foto, historial con revertir.</li><li>Botón Publicar, instantánea con freno del 30 %, login con contraseña o SMTP propio, aviso diario a Supabase.</li></ul></div></div>
+        <div class="phase"><div><div class="when">Etapa 3 · con datos de uso</div></div><div class="prose"><h3>Mejoras</h3><ul class="clean"><li>“Mi lista” para mandar el pedido por WhatsApp.</li><li>Filtros “solo cocidos” y “sin picante”, alérgenos.</li><li>Conteo de clics en WhatsApp, Uber Eats e idioma.</li><li>Decidir Supabase Pro antes de Semana Santa 2027.</li></ul></div></div>
+      </div>
+    </section>
+
+    <!-- ============ PENDIENTES ============ -->
+    <section id="pendientes">
+      <div class="eyebrow">07 · Pendientes</div>
+      <h2>Lo que necesitamos del negocio</h2>
+      <div class="grid g2">
+        <div class="card">
+          <h3>Para empezar la etapa 1</h3>
+          <ol class="steps">
+            <li>La cartilla actual (enlace o archivo): platillos, tamaños y precios.</li>
+            <li>Logo en vector (SVG, AI o PDF), colores y tipografía, si existen.</li>
+            <li>Nombre oficial: “MAKIZEN Sushi &amp; Mariscos”, “Makizen Sushi y Marisco” o “Makizen Sushi Y Mariscos”.</li>
+            <li>Dirección exacta. Uber Eats dice Blvd. Freemont y Josefa Ortiz de Domínguez #330; un listado menciona Dr. Francisco Javier Carrillo Ruiz, Loc 9.</li>
+            <li>¿El (638) 156-0660 tiene WhatsApp? ¿Lo atiende alguien durante el servicio?</li>
+            <li>¿Los precios ya incluyen IVA? ¿Aceptan dólares y a qué tipo de cambio?</li>
+            <li>Dominio preferido y a nombre de quién se registra. ¿Ya buscaron la marca en el IMPI?</li>
+            <li>Fotos de los platillos estrella o fecha para una sesión.</li>
+            <li>Número de mesas, para los QR.</li>
+          </ol>
+        </div>
+        <div class="card">
+          <h3>Para la etapa 2</h3>
+          <ol class="steps">
+            <li>¿Quién edita el menú en el día a día? ¿Los meseros marcan agotados?</li>
+            <li>¿Basta que un agotado se vea en 30–60 s, o con 3–5 min es suficiente?</li>
+            <li>Correo del negocio para entrar al panel.</li>
+            <li>Presupuesto mensual: solo dominio, o también Supabase Pro (US$25) en temporada alta.</li>
+            <li>Ingredientes y alérgenos; qué platillos son crudos o curtidos en limón.</li>
+            <li>¿Los precios de Uber Eats son distintos a los del local?</li>
+            <li>Acceso de administrador a su perfil de Google Business.</li>
+            <li>¿El repositorio será público o privado?</li>
+          </ol>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ FUENTES ============ -->
+    <section id="fuentes">
+      <div class="eyebrow">08 · Fuentes</div>
+      <h2>Fuentes</h2>
+      <p class="small muted">Varias páginas no se pudieron abrir desde la sesión; esos datos salen de resúmenes de búsqueda y se marcaron como “una fuente” o “por verificar”. Versiones: registro de npm. Dominios: API del registrador de Vercel. Supabase: su documentación oficial.</p>
+      <details>
+        <summary>Marca y negocio</summary>
+        <ol class="src">
+          <li><a href="https://www.instagram.com/makizen.puertopenasco/">Instagram @makizen.puertopenasco</a> (visto el 8 nov 2026)</li>
+          <li><a href="https://www.ubereats.com/mx/neighborhood/josefa-ortiz-de-dom%C3%ADnguez-puerto-pe%C3%B1asco-so">Uber Eats · colonia Josefa Ortiz de Domínguez</a></li>
+          <li><a href="https://www.ubereats.com/mx-en/pickup/puerto-pe%C3%B1asco-so">Uber Eats · Puerto Peñasco pickup</a></li>
+          <li><a href="https://www.tiktok.com/tag/tikum">TikTok · publicación de apertura</a></li>
+          <li><a href="https://www.facebook.com/MakiZen/">Facebook · Maki-Zen (Puebla, otro negocio)</a></li>
+        </ol>
+      </details>
+      <details>
+        <summary>Experiencia de usuario, PWA, SEO y marco legal</summary>
+        <ol class="src">
+          <li><a href="https://www.jivochat.com/blog/tools/qr-code-menus-what-restaurants-get-wrong-and-how-to-fix.html">QR code menus: what restaurants get wrong</a></li>
+          <li><a href="https://www.smashingmagazine.com/2023/05/sticky-menus-ux-guidelines/">Smashing Magazine · Sticky menus UX guidelines</a></li>
+          <li><a href="https://tabnav.com/academy/wcag/success-criterion-2.5.8">WCAG 2.2 · 2.5.8 Target size</a></li>
+          <li><a href="https://web.dev/runtime-caching-with-workbox">web.dev · Runtime caching with Workbox</a></li>
+          <li><a href="https://developer.chrome.com/docs/workbox/modules/workbox-strategies">Workbox strategies</a></li>
+          <li><a href="https://webkit.org/?p=14403">WebKit · storage policy updates</a></li>
+          <li><a href="https://developers.google.com/search/docs/appearance/structured-data/local-business?hl=es">Google · datos estructurados de negocio local</a></li>
+          <li><a href="https://schema.org/MenuItem">schema.org · MenuItem</a></li>
+          <li><a href="https://support.google.com/business/answer/9455840?hl=en">Google Business Profile · menu link</a></li>
+          <li><a href="https://www.elimparcial.com/mexico/2025/11/22/profeco-detecta-aumentos-excesivos-de-precios-en-tulum-y-suspende-hoteles-por-irregularidades/">El Imparcial · operativo de Profeco en Tulum (2025)</a></li>
+          <li><a href="https://mley.mx/LFPC/articulo/7-bis/">LFPC · artículo 7 Bis</a></li>
+          <li><a href="https://bugs.webkit.org/show_bug.cgi?id=226950">WebKit bug 226950 · canvas WebP</a></li>
+        </ol>
+      </details>
+      <details>
+        <summary>Herramientas, hosting y costos</summary>
+        <ol class="src">
+          <li><a href="https://registry.npmjs.org/astro">Registro de npm</a> (astro, tailwindcss, @vite-pwa/astro, workbox-build, @astrojs/cloudflare, wrangler, @supabase/supabase-js, zod, react), consultado el 8 nov 2026</li>
+          <li><a href="https://supabase.com/docs/guides/platform/free-project-pausing">Supabase · pausa de proyectos gratuitos</a></li>
+          <li><a href="https://supabase.com/docs/guides/platform/billing-on-supabase">Supabase · planes y facturación</a></li>
+          <li><a href="https://supabase.com/docs/guides/auth/auth-smtp">Supabase · SMTP propio para Auth</a></li>
+          <li><a href="https://vercel.com/docs/plans/hobby">Vercel · plan Hobby</a></li>
+          <li><a href="https://developers.cloudflare.com/workers/platform/pricing/">Cloudflare Workers · precios</a></li>
+          <li><a href="https://developers.cloudflare.com/workers/static-assets/billing-and-limitations">Cloudflare Static Assets · límites</a></li>
+          <li><a href="https://developers.cloudflare.com/workers/static-assets/headers/">Cloudflare Static Assets · headers</a></li>
+          <li><a href="https://developers.cloudflare.com/workers/runtime-apis/cache/">Cloudflare Workers · Cache API</a></li>
+          <li><a href="https://docs.github.com/billing/managing-billing-for-your-products/managing-billing-for-github-actions">GitHub Actions · facturación</a></li>
+          <li><a href="https://www.cloudflare.com/tld-policies">Cloudflare Registrar · TLD soportados</a></li>
+        </ol>
+      </details>
+    </section>
   </main>
 </div>
 </div>
