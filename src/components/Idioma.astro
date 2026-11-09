@@ -1,0 +1,10 @@
+---
+// Selector ES | EN con pastilla dorada que se desliza.
+interface Props { class?: string }
+const { class: clase = '' } = Astro.props;
+---
+<div class:list={['idioma relative grid grid-cols-2 rounded-full border border-white/20 bg-noche/60 p-0.5 text-[14px] font-semibold', clase]} role="group" aria-label="Idioma / Language">
+  <span class="pointer-events-none absolute inset-y-0.5 left-0.5 w-[calc(50%-2px)] rounded-full bg-oro transition-transform duration-500 ease-resorte [html[lang=en]_&]:translate-x-full" aria-hidden="true"></span>
+  <button type="button" data-lang="es" class="presionable tap relative z-10 rounded-full px-3 text-niebla [html[lang^=es]_&]:text-noche" aria-pressed="true">ES</button>
+  <button type="button" data-lang="en" class="presionable tap relative z-10 rounded-full px-3 text-niebla [html[lang=en]_&]:text-noche" aria-pressed="false">EN</button>
+</div>

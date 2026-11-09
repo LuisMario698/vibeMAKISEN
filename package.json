@@ -1,0 +1,31 @@
+{
+  "name": "makizen-menu",
+  "type": "module",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Demo del menú digital de MAKIZEN Sushi & Mariscos (Puerto Peñasco, Sonora)",
+  "engines": {
+    "node": ">=22.23.4"
+  },
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "check": "astro check",
+    "assets": "node scripts/prepare-assets.mjs"
+  },
+  "dependencies": {
+    "@fontsource/montserrat": "^5.3.0",
+    "@fontsource/poppins": "^5.3.0",
+    "@vite-pwa/astro": "^2.0.1",
+    "astro": "^7.4.7",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.12",
+    "@tailwindcss/vite": "^4.3.5",
+    "sharp": "^0.35.5",
+    "tailwindcss": "^4.3.5",
+    "typescript": "^6.0.3"
+  }
+}

@@ -1,0 +1,60 @@
+---
+import '../styles/global.css';
+import Hero from '../components/Hero.astro';
+import Barra from '../components/Barra.astro';
+import Seccion from '../components/Seccion.astro';
+import Hoja from '../components/Hoja.astro';
+import Pie from '../components/Pie.astro';
+import { menu } from '../data/schema';
+import fotos from '../data/fotos.json';
+
+// Datos mínimos para la hoja de detalle (se arma en el navegador).
+const datos = {
+  tc: menu.tipoCambioReferencia,
+  horario: menu.negocio.horario,
+  fotos,
+  platillos: menu.categorias.flatMap((c) => c.platillos.map((p) => ({ ...p, cat: c.nombre }))),
+};
+const total = menu.categorias.length;
+---
+<!doctype html>
+<html lang="es-MX">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>MAKIZEN Sushi & Mariscos · Menú · Puerto Peñasco</title>
+    <meta name="description" content="Menú de MAKIZEN Sushi & Mariscos, estilo Sinaloa, en Puerto Peñasco (Rocky Point), Sonora. Precios en MXN, en español e inglés." />
+    <meta name="theme-color" content="#000000" />
+    <link rel="icon" href="/brand/icon-192.png" type="image/png" />
+    <link rel="apple-touch-icon" href="/brand/icon-192.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="preload" href="/brand/logo-vertical.webp" as="image" fetchpriority="high" />
+    <script is:inline>
+      // Idioma antes de pintar: elección guardada o idioma del teléfono.
+      (function () {
+        var l = null;
+        try { l = localStorage.getItem('makizen-idioma'); } catch (e) {}
+        if (!l) l = (navigator.language || 'es').toLowerCase().indexOf('en') === 0 ? 'en' : 'es-MX';
+        document.documentElement.lang = l === 'en' ? 'en' : 'es-MX';
+      })();
+    </script>
+  </head>
+  <body>
+    <a href="#menu" class="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:rounded-full focus:bg-oro focus:px-4 focus:py-2 focus:text-noche">
+      <span lang="es">Ir al menú</span><span lang="en">Skip to menu</span>
+    </a>
+    <Hero />
+    <Barra />
+    <main id="menu" class="pb-8">
+      {menu.categorias.map((cat, i) => <Seccion cat={cat} n={i + 1} total={total} />)}
+      <p id="sin-resultados" hidden class="mx-auto max-w-5xl px-4 py-16 text-center text-[17px] text-niebla">
+        <span lang="es">No encontramos ese platillo. Prueba con otra palabra.</span>
+        <span lang="en">No dishes match. Try another word.</span>
+      </p>
+    </main>
+    <Pie />
+    <Hoja />
+    <script type="application/json" id="datos-menu" set:html={JSON.stringify(datos)} />
+    <script src="../scripts/app.ts"></script>
+  </body>
+</html>

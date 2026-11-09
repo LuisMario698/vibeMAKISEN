@@ -1,0 +1,60 @@
+---
+import Idioma from './Idioma.astro';
+import { menu } from '../data/schema';
+const n = menu.negocio;
+---
+<header id="inicio" class="relative isolate flex min-h-[100svh] flex-col overflow-hidden">
+  <!-- Mármol negro de la portada de la cartilla, con deriva lenta -->
+  <div class="absolute inset-0 -z-10 overflow-hidden" aria-hidden="true">
+    <img src="/brand/marmol-negro.jpg" alt="" width="1200" height="800" class="marmol absolute inset-0 h-full w-full object-cover opacity-70" decoding="async" />
+    <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_28%,transparent_0%,rgb(0_0_0/0.55)_45%,#000_80%)]"></div>
+  </div>
+
+  <div class="flex items-center justify-between gap-3 px-4 pt-[max(0.75rem,env(safe-area-inset-top))]">
+    <p class="entra font-alt text-[12px] whitespace-nowrap uppercase tracking-[0.22em] text-oro" style="--d:1200">Puerto Peñasco · Sonora</p>
+    <Idioma class="entra" />
+  </div>
+
+  <div class="hero-desvanece relative mt-4 flex flex-col items-center px-4 text-center">
+    <h1 class="sr-only">MAKIZEN Sushi &amp; Mariscos</h1>
+    <img src="/brand/logo-vertical.webp" width="520" height="597" alt="" class="logo-pintado h-auto w-[min(58vw,240px)]" fetchpriority="high" />
+    <!-- 一期一会: la frase de la portada de la cartilla -->
+    <p class="entra absolute top-2 right-5 text-[15px] tracking-[0.4em] text-oro/80 [writing-mode:vertical-rl]" style="--d:1500" lang="ja">
+      一期一会
+    </p>
+    <p class="entra mt-5 font-alt text-[13px] uppercase tracking-[0.28em] text-niebla" style="--d:1000">
+      <span lang="es">{n.lema.es}</span><span lang="en">{n.lema.en}</span>
+    </p>
+
+    <p id="estado" class="entra mt-4 inline-flex min-h-11 items-center gap-2.5 rounded-full border border-white/15 bg-noche/60 px-4 text-[15px] backdrop-blur" style="--d:1250" aria-live="polite">
+      <span class="punto pulso relative size-2.5 rounded-full text-abierto" style="background:currentColor"></span>
+      <span class="texto"><span lang="es">Lun, Mié, Jue 1–9 pm · Vie a Dom 1–10 pm</span><span lang="en">Mon, Wed, Thu 1–9 pm · Fri–Sun 1–10 pm</span></span>
+    </p>
+
+    <nav class="entra mt-5 grid w-full max-w-sm grid-cols-3 gap-2" style="--d:1400" aria-label="Contacto">
+      <a href={`tel:${n.telefono}`} class="presionable tap flex flex-col items-center justify-center gap-1 rounded-2xl border border-oro/40 bg-noche/50 py-2.5 text-[13px] text-hueso hover:border-oro hover:bg-oro/10">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="var(--color-oro-claro)" stroke-width="1.7" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg>
+        <span lang="es">Llamar</span><span lang="en">Call</span>
+      </a>
+      <a href={n.mapa} target="_blank" rel="noopener" class="presionable tap flex flex-col items-center justify-center gap-1 rounded-2xl border border-oro/40 bg-noche/50 py-2.5 text-[13px] text-hueso hover:border-oro hover:bg-oro/10">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="var(--color-oro-claro)" stroke-width="1.7" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>
+        <span lang="es">Cómo llegar</span><span lang="en">Directions</span>
+      </a>
+      <a href={n.instagram} target="_blank" rel="noopener" class="presionable tap flex flex-col items-center justify-center gap-1 rounded-2xl border border-oro/40 bg-noche/50 py-2.5 text-[13px] text-hueso hover:border-oro hover:bg-oro/10">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="var(--color-oro-claro)" stroke-width="1.7" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.3" cy="6.7" r=".8" fill="var(--color-oro-claro)"/></svg>
+        Instagram
+      </a>
+    </nav>
+  </div>
+
+  <!-- La "mesa" completa de la cartilla: sube al cargar y hace parallax -->
+  <div class="pointer-events-none relative -mb-6 mt-auto px-2 pt-6" aria-hidden="true">
+    <div class="mesa-parallax">
+      <img src="/menu/mesa.webp" width="1280" height="788" alt="" class="mesa mx-auto h-auto w-[min(118vw,720px)] max-w-none -translate-x-[4%] [mask-image:linear-gradient(to_bottom,#000_55%,transparent_98%)]" decoding="async" />
+    </div>
+  </div>
+
+  <a href="#menu" class="indicio absolute bottom-3 left-1/2 z-10 -translate-x-1/2 tap grid place-items-center text-oro-claro" aria-label="Ver el menú / See the menu">
+    <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+  </a>
+</header>

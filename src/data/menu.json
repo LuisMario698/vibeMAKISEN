@@ -1,0 +1,1261 @@
+{
+  "$comentario": "Fuente: cartilla oficial 'MENÚ-Makizen Sushi & Mariscos.pdf' (Canva, 10 págs.) enlazada en la historia destacada 'Menú' de @makizen.puertopenasco, revisada el 2026-11-08. Precios MXN con IVA. Las traducciones al inglés, las etiquetas de picante/crudo y 'favorito' son de la propuesta (ver docs/marca-actual.md §8).",
+  "actualizado": "2026-11-08",
+  "tipoCambioReferencia": 18.5,
+  "negocio": {
+    "nombre": "MAKIZEN",
+    "subtitulo": "Sushi & Mariscos",
+    "lema": {
+      "es": "Sushi & mariscos estilo Sinaloa",
+      "en": "Sinaloa-style sushi & seafood"
+    },
+    "ciudad": "Puerto Peñasco, Sonora",
+    "direccion": "Blvd. Freemont y Blvd. Josefa Ortiz, plaza de la gasolinera Las Conchas",
+    "telefono": "+526381560660",
+    "telefonoTexto": "(638) 156-0660",
+    "telefonoFijo": "+526383882836",
+    "telefonoFijoTexto": "(638) 388-2836",
+    "instagram": "https://www.instagram.com/makizen.puertopenasco/",
+    "facebook": "https://www.facebook.com/profile.php?id=61595144090878",
+    "mapa": "https://www.google.com/maps/search/?api=1&query=Makizen+Sushi+%26+Mariscos+Puerto+Pe%C3%B1asco",
+    "pago": {
+      "es": "Aceptamos efectivo y tarjetas",
+      "en": "Cash and cards accepted"
+    },
+    "horario": [
+      {
+        "dia": 0,
+        "abre": "13:00",
+        "cierra": "22:00"
+      },
+      {
+        "dia": 1,
+        "abre": "13:00",
+        "cierra": "21:00"
+      },
+      {
+        "dia": 3,
+        "abre": "13:00",
+        "cierra": "21:00"
+      },
+      {
+        "dia": 4,
+        "abre": "13:00",
+        "cierra": "21:00"
+      },
+      {
+        "dia": 5,
+        "abre": "13:00",
+        "cierra": "22:00"
+      },
+      {
+        "dia": 6,
+        "abre": "13:00",
+        "cierra": "22:00"
+      }
+    ]
+  },
+  "categorias": [
+    {
+      "id": "entradas",
+      "grupo": "comida",
+      "nombre": {
+        "es": "Entradas",
+        "en": "Starters"
+      },
+      "platillos": [
+        {
+          "id": "triangulos-marlin",
+          "nombre": {
+            "es": "Triángulos de Marlín",
+            "en": "Marlin Triangles"
+          },
+          "descripcion": {
+            "es": "Tetela de marlín preparado con queso gouda y queso crema; acompañado de zanahoria, salsa de anguila y salsa agridulce.",
+            "en": "Marlin tetela with gouda and cream cheese, served with carrot, eel sauce and sweet-and-sour sauce."
+          },
+          "precio": 90,
+          "foto": "triangulos-marlin",
+          "preparacion": "empanizado"
+        },
+        {
+          "id": "rollos-primavera",
+          "nombre": {
+            "es": "Rollos Primavera de Camarón",
+            "en": "Shrimp Spring Rolls"
+          },
+          "descripcion": {
+            "es": "Rollo de wonton relleno de queso crema y camarón, acompañado de salsa agridulce.",
+            "en": "Wonton roll filled with cream cheese and shrimp, with sweet-and-sour sauce."
+          },
+          "precio": 80,
+          "preparacion": "empanizado"
+        },
+        {
+          "id": "chile-caribe",
+          "nombre": {
+            "es": "Chile Caribe Especial",
+            "en": "Special Stuffed Caribe Pepper"
+          },
+          "descripcion": {
+            "es": "Chile relleno de tampico, queso, con trozos de camarón, res y pollo, empanizados, montados sobre zanahoria rallada, terminados con cebollín.",
+            "en": "Pepper stuffed with tampico, cheese, shrimp, beef and chicken, breaded, on shredded carrot with green onion."
+          },
+          "precio": 105,
+          "picante": 1,
+          "preparacion": "empanizado"
+        },
+        {
+          "id": "sashimi-mixto",
+          "nombre": {
+            "es": "Sashimi Mixto",
+            "en": "Mixed Sashimi"
+          },
+          "descripcion": {
+            "es": "Láminas de atún y salmón frescos, con salsa de soya especial, cebollín, rodajas de chile serrano y fritura de wonton.",
+            "en": "Fresh tuna and salmon slices with special soy sauce, green onion, serrano slices and crispy wonton."
+          },
+          "precio": 140,
+          "foto": "sashimi-mixto",
+          "picante": 1,
+          "crudo": true,
+          "preparacion": "natural"
+        },
+        {
+          "id": "camaron-roca",
+          "nombre": {
+            "es": "Camarón Roca",
+            "en": "Rock Shrimp"
+          },
+          "descripcion": {
+            "es": "Camarón capeado crujiente, bañado con una salsa roca especial de la casa, terminado con cebollín y ajonjolí.",
+            "en": "Crispy battered shrimp tossed in our house rock sauce, finished with green onion and sesame."
+          },
+          "precio": 210,
+          "picante": 1,
+          "preparacion": "capeado",
+          "etiquetas": [
+            "favorito"
+          ]
+        },
+        {
+          "id": "sopa-vietnamita",
+          "nombre": {
+            "es": "Sopa Vietnamita de Pollo o Camarón",
+            "en": "Vietnamese Soup, Chicken or Shrimp"
+          },
+          "descripcion": {
+            "es": "Sopa de fideo de arroz con pollo, brócoli, coliflor, zanahoria y cebolla, acompañada de arroz blanco.",
+            "en": "Rice noodle soup with chicken, broccoli, cauliflower, carrot and onion, served with white rice."
+          },
+          "precio": 160
+        },
+        {
+          "id": "curricanes",
+          "nombre": {
+            "es": "Curricanes",
+            "en": "Curricanes (Tuna Rolls)"
+          },
+          "descripcion": {
+            "es": "Láminas de atún con kanikama, pepino, zanahoria, bañado con aderezo spicy y salsa de soya, terminado con togarashi.",
+            "en": "Tuna slices wrapped around kanikama, cucumber and carrot, with spicy dressing, soy sauce and togarashi."
+          },
+          "precio": 180,
+          "picante": 1,
+          "crudo": true,
+          "preparacion": "natural"
+        }
+      ]
+    },
+    {
+      "id": "tostadas-aguachiles",
+      "grupo": "comida",
+      "nombre": {
+        "es": "Tostadas, aguachiles y cócteles",
+        "en": "Tostadas, aguachiles & cocktails"
+      },
+      "platillos": [
+        {
+          "id": "tostada-ceviche",
+          "nombre": {
+            "es": "Tostada de Ceviche",
+            "en": "Ceviche Tostada"
+          },
+          "descripcion": {
+            "es": "Ceviche clásico de camarón curtido en limón, tomate, cebolla morada, con un toque de la casa.",
+            "en": "Classic lime-cured shrimp ceviche with tomato and red onion, with a house touch."
+          },
+          "precio": 110,
+          "gramos": 70,
+          "crudo": true
+        },
+        {
+          "id": "tostada-atun",
+          "nombre": {
+            "es": "Tostada de Atún",
+            "en": "Tuna Tostada"
+          },
+          "descripcion": {
+            "es": "Atún natural en cubos y aguacate, cebollita frita, con salsa negra y salsa de anguila, montado en wonton.",
+            "en": "Raw tuna cubes and avocado, crispy onion, black sauce and eel sauce on a wonton crisp."
+          },
+          "precio": 120,
+          "gramos": 100,
+          "foto": "tostada-atun",
+          "crudo": true,
+          "etiquetas": [
+            "favorito"
+          ]
+        },
+        {
+          "id": "tostada-especial",
+          "nombre": {
+            "es": "Tostada Especial",
+            "en": "Special Tostada"
+          },
+          "descripcion": {
+            "es": "Tostada mixta de camarón cocido, camarón curtido, pulpo y salsas negras, con un toque de aderezo spicy y un abanico de aguacate.",
+            "en": "Cooked shrimp, lime-cured shrimp and octopus with black sauces, a touch of spicy dressing and avocado fan."
+          },
+          "precio": 150,
+          "gramos": 90,
+          "picante": 1,
+          "crudo": true
+        },
+        {
+          "id": "aguachile-mixto",
+          "nombre": {
+            "es": "Aguachile Mixto",
+            "en": "Mixed Aguachile"
+          },
+          "descripcion": {
+            "es": "Camarón curtido en limón y cocido, con pepino y cebolla, en salsa especial de la casa, con un abanico de aguacate.",
+            "en": "Lime-cured and cooked shrimp with cucumber and onion in our special house sauce, with avocado fan."
+          },
+          "precio": 280,
+          "foto": "aguachile-mixto",
+          "picante": 2,
+          "crudo": true,
+          "etiquetas": [
+            "favorito"
+          ]
+        },
+        {
+          "id": "coctel-camaron",
+          "nombre": {
+            "es": "Coctel de Camarón",
+            "en": "Shrimp Cocktail"
+          },
+          "descripcion": {
+            "es": "Coctel de camarón cocido clásico, pepino, cebolla, tomate, con caldo de camarón y jugo de limón.",
+            "en": "Classic cooked shrimp cocktail with cucumber, onion, tomato, shrimp broth and lime juice."
+          },
+          "precio": 220
+        },
+        {
+          "id": "camaron-pulpo",
+          "nombre": {
+            "es": "Camarón con Pulpo",
+            "en": "Shrimp & Octopus Cocktail"
+          },
+          "descripcion": {
+            "es": "Coctel clásico, mixto, con pulpo, cebolla, tomate, caldo de camarón y jugo de limón.",
+            "en": "Classic mixed cocktail with octopus, onion, tomato, shrimp broth and lime juice."
+          },
+          "precio": 260
+        }
+      ]
+    },
+    {
+      "id": "arroces",
+      "grupo": "comida",
+      "nombre": {
+        "es": "Arroces",
+        "en": "Rice"
+      },
+      "platillos": [
+        {
+          "id": "bomba-especial",
+          "nombre": {
+            "es": "Bomba Especial",
+            "en": "Special Rice Bomb"
+          },
+          "descripcion": {
+            "es": "Tampico con queso crema y gouda, mezclado con res y camarón, empanizado.",
+            "en": "Tampico with cream cheese and gouda, mixed with beef and shrimp, breaded."
+          },
+          "precio": 180,
+          "foto": "bomba-especial",
+          "preparacion": "empanizado"
+        },
+        {
+          "id": "yakimeshi-especial",
+          "nombre": {
+            "es": "Yakimeshi Especial",
+            "en": "Special Yakimeshi"
+          },
+          "descripcion": {
+            "es": "Arroz frito con frijolillo, tampico, camarón crispy, res, pollo, aguacate, cebollín y salsa de anguila.",
+            "en": "Fried rice with bean sprouts, tampico, crispy shrimp, beef, chicken, avocado, green onion and eel sauce."
+          },
+          "precio": 190
+        },
+        {
+          "id": "gohan-especial",
+          "nombre": {
+            "es": "Gohan Especial",
+            "en": "Special Gohan"
+          },
+          "descripcion": {
+            "es": "Arroz blanco coronado con tampico, camarón crispy, res, pollo, aguacate, cebollín y salsa de anguila.",
+            "en": "White rice topped with tampico, crispy shrimp, beef, chicken, avocado, green onion and eel sauce."
+          },
+          "precio": 170
+        }
+      ]
+    },
+    {
+      "id": "rollos-naturales",
+      "grupo": "comida",
+      "nombre": {
+        "es": "Rollos naturales",
+        "en": "Fresh rolls"
+      },
+      "platillos": [
+        {
+          "id": "tuna-roca-roll",
+          "nombre": {
+            "es": "Tuna Roca Roll",
+            "en": "Tuna Roca Roll"
+          },
+          "descripcion": {
+            "es": "Relleno con atún, queso crema, pepino y aguacate, por fuera tampico natural y trozos de camarón roca bañado con salsa roca.",
+            "en": "Tuna, cream cheese, cucumber and avocado inside; topped with tampico and rock shrimp in rock sauce."
+          },
+          "precio": 220,
+          "foto": "tuna-roca-roll",
+          "picante": 1,
+          "crudo": true,
+          "preparacion": "natural"
+        },
+        {
+          "id": "avocado-roll",
+          "nombre": {
+            "es": "Avocado Roll",
+            "en": "Avocado Roll"
+          },
+          "descripcion": {
+            "es": "Relleno de res, tocino, queso crema, pepino y aguacate, terminado con tampico en guacamole, togarashi, cebollín y salsa de ostión.",
+            "en": "Beef, bacon, cream cheese, cucumber and avocado; topped with tampico in guacamole, togarashi, green onion and oyster sauce."
+          },
+          "precio": 210,
+          "picante": 1,
+          "preparacion": "natural"
+        },
+        {
+          "id": "fresh-roll",
+          "nombre": {
+            "es": "Fresh Roll",
+            "en": "Fresh Roll"
+          },
+          "descripcion": {
+            "es": "Pepino en lámina, relleno de queso crema, camarón, surimi, chile jalapeño fresco y aguacate, terminado con atún spicy y salsa de anguila.",
+            "en": "Rice-free cucumber wrap with cream cheese, shrimp, surimi, fresh jalapeño and avocado, topped with spicy tuna and eel sauce."
+          },
+          "precio": 230,
+          "picante": 2,
+          "crudo": true,
+          "preparacion": "natural"
+        }
+      ]
+    },
+    {
+      "id": "rollos-clasicos",
+      "grupo": "comida",
+      "nombre": {
+        "es": "Rollos clásicos",
+        "en": "Classic rolls"
+      },
+      "platillos": [
+        {
+          "id": "mar-y-tierra",
+          "nombre": {
+            "es": "Mar y Tierra",
+            "en": "Surf & Turf"
+          },
+          "descripcion": {
+            "es": "Res y camarón, empanizado.",
+            "en": "Beef and shrimp, breaded."
+          },
+          "precio": 180,
+          "preparacion": "empanizado"
+        },
+        {
+          "id": "chicken-roll",
+          "nombre": {
+            "es": "Chicken",
+            "en": "Chicken"
+          },
+          "descripcion": {
+            "es": "Pollo, empanizado.",
+            "en": "Chicken, breaded."
+          },
+          "precio": 170,
+          "preparacion": "empanizado"
+        },
+        {
+          "id": "tres-quesos",
+          "nombre": {
+            "es": "Tres Quesos",
+            "en": "Three Cheese"
+          },
+          "descripcion": {
+            "es": "Res, empanizado.",
+            "en": "Beef, breaded."
+          },
+          "precio": 180,
+          "preparacion": "empanizado"
+        },
+        {
+          "id": "guamuchilito",
+          "nombre": {
+            "es": "Guamuchilito",
+            "en": "Guamuchilito"
+          },
+          "descripcion": {
+            "es": "Camarón y surimi, con tampico, aguacate y salsa de anguila.",
+            "en": "Shrimp and surimi with tampico, avocado and eel sauce."
+          },
+          "precio": 190,
+          "foto": "guamuchilito"
+        }
+      ]
+    },
+    {
+      "id": "rollos-horneados",
+      "grupo": "comida",
+      "nombre": {
+        "es": "Rollos horneados",
+        "en": "Baked rolls"
+      },
+      "platillos": [
+        {
+          "id": "especial-roll",
+          "nombre": {
+            "es": "Especial Roll",
+            "en": "Special Roll"
+          },
+          "descripcion": {
+            "es": "Rollo relleno de surimi, aguacate, pepino y queso crema, con un topping de camarón cocido, pulpo, queso y salsa spicy.",
+            "en": "Surimi, avocado, cucumber and cream cheese, topped with cooked shrimp, octopus, cheese and spicy sauce."
+          },
+          "precio": 240,
+          "picante": 1,
+          "preparacion": "horneado"
+        },
+        {
+          "id": "culichi-roll",
+          "nombre": {
+            "es": "Culichi Roll",
+            "en": "Culichi Roll"
+          },
+          "descripcion": {
+            "es": "Relleno de camarón cocido, res, queso crema, pepino y aguacate, sobre una cama de salsa de chile poblano y grano de elote, coronado con camarón crunchy picado, con líneas de salsa spicy y cebollín.",
+            "en": "Cooked shrimp, beef, cream cheese, cucumber and avocado on poblano and corn sauce, crowned with crunchy shrimp, spicy sauce and green onion."
+          },
+          "precio": 180,
+          "foto": "culichi-roll",
+          "picante": 1,
+          "preparacion": "horneado"
+        },
+        {
+          "id": "zarandeado-roll",
+          "nombre": {
+            "es": "Zarandeado Roll",
+            "en": "Zarandeado Roll"
+          },
+          "descripcion": {
+            "es": "Relleno de camarón empanizado, queso crema, pepino y aguacate, forrado de camarón con salsa de zarandeado, terminado con anguila y togarashi.",
+            "en": "Breaded shrimp, cream cheese, cucumber and avocado, wrapped in shrimp with zarandeado sauce, eel sauce and togarashi."
+          },
+          "precio": 240,
+          "picante": 1,
+          "preparacion": "horneado"
+        }
+      ]
+    },
+    {
+      "id": "rollos-empanizados",
+      "grupo": "comida",
+      "nombre": {
+        "es": "Rollos empanizados",
+        "en": "Breaded rolls"
+      },
+      "platillos": [
+        {
+          "id": "mazatleco-roll",
+          "nombre": {
+            "es": "Mazatleco Roll",
+            "en": "Mazatleco Roll"
+          },
+          "descripcion": {
+            "es": "Relleno de marlín, queso crema, pepino y aguacate, con surimi spicy y trozos de camarón empanizado, terminado con salsa de cilantro en medio.",
+            "en": "Marlin, cream cheese, cucumber and avocado with spicy surimi and breaded shrimp, finished with cilantro sauce."
+          },
+          "precio": 200,
+          "picante": 1,
+          "preparacion": "empanizado"
+        },
+        {
+          "id": "serrano-roll",
+          "nombre": {
+            "es": "Serrano Roll",
+            "en": "Serrano Roll"
+          },
+          "descripcion": {
+            "es": "Relleno de camarón, tocino, queso crema, pepino y aguacate; terminado con queso derretido mezclado con serrano y cebolla picados.",
+            "en": "Shrimp, bacon, cream cheese, cucumber and avocado; topped with melted cheese with chopped serrano and onion."
+          },
+          "precio": 170,
+          "foto": "serrano-roll",
+          "picante": 2,
+          "preparacion": "empanizado"
+        }
+      ]
+    },
+    {
+      "id": "rollos-especiales",
+      "grupo": "comida",
+      "nombre": {
+        "es": "Rollos especiales",
+        "en": "Signature rolls"
+      },
+      "platillos": [
+        {
+          "id": "sinaloa-roll",
+          "nombre": {
+            "es": "Sinaloa Roll Natural",
+            "en": "Sinaloa Roll (fresh)"
+          },
+          "descripcion": {
+            "es": "Rollo natural relleno de surimi, queso crema, aguacate y pepino, con una cobertura de ajonjolí, montado con una tostada de aguachile verde en el centro.",
+            "en": "Fresh roll with surimi, cream cheese, avocado and cucumber in sesame, served around a green aguachile tostada."
+          },
+          "precio": 230,
+          "picante": 2,
+          "crudo": true,
+          "preparacion": "natural",
+          "etiquetas": [
+            "favorito"
+          ]
+        },
+        {
+          "id": "futomaki-roll",
+          "nombre": {
+            "es": "Futomaki Roll Capeado",
+            "en": "Battered Futomaki Roll"
+          },
+          "descripcion": {
+            "es": "Rollo con alga por fuera capeado, relleno de tampico y queso crema, montado con un aderezo de cilantro y salsa de anguila.",
+            "en": "Seaweed-out battered roll filled with tampico and cream cheese, with cilantro dressing and eel sauce."
+          },
+          "precio": 210,
+          "foto": "futomaki-roll",
+          "preparacion": "capeado"
+        },
+        {
+          "id": "tataki-roll",
+          "nombre": {
+            "es": "Tataki Roll",
+            "en": "Tataki Roll"
+          },
+          "descripcion": {
+            "es": "Rollo relleno de atún empanizado, montado con kanikama frito y terminado con aderezo spicy y ajonjolí.",
+            "en": "Breaded tuna roll topped with fried kanikama, spicy dressing and sesame."
+          },
+          "precio": 230,
+          "picante": 1,
+          "preparacion": "empanizado"
+        },
+        {
+          "id": "makizen-roll",
+          "nombre": {
+            "es": "Makizen Roll Empanizado",
+            "en": "Makizen Roll (breaded)"
+          },
+          "descripcion": {
+            "es": "Rollo relleno de surimi empanizado, queso crema, tiras de chile jalapeño asado, pepino y aguacate, montado con una mezcla de queso, camarón, pollo, tampico especial, terminado con salsa de ostión de la casa.",
+            "en": "Breaded surimi, cream cheese, roasted jalapeño, cucumber and avocado, topped with cheese, shrimp, chicken and special tampico, with house oyster sauce."
+          },
+          "precio": 240,
+          "foto": "makizen-roll",
+          "picante": 1,
+          "preparacion": "empanizado"
+        },
+        {
+          "id": "penasco-roll",
+          "nombre": {
+            "es": "Peñasco Roll",
+            "en": "Peñasco Roll"
+          },
+          "descripcion": {
+            "es": "Rollo relleno de camarón empanizado, pulpo, queso crema, pepino y aguacate, terminado con tiras de surimi spicy con cebollín y salsa teriyaki.",
+            "en": "Breaded shrimp, octopus, cream cheese, cucumber and avocado, topped with spicy surimi, green onion and teriyaki."
+          },
+          "precio": 230,
+          "picante": 1,
+          "preparacion": "empanizado"
+        }
+      ]
+    },
+    {
+      "id": "guisos",
+      "grupo": "comida",
+      "nombre": {
+        "es": "Guisos",
+        "en": "Hot plates"
+      },
+      "platillos": [
+        {
+          "id": "teriyaki-crispy",
+          "nombre": {
+            "es": "Teriyaki Crispy",
+            "en": "Crispy Teriyaki"
+          },
+          "descripcion": {
+            "es": "Cama de arroz blanco, con un guiso de cebollín, pimiento morrón, zanahoria juliana, cebolla blanca, cacahuate, chile de árbol, pollo empanizado y salsa teriyaki, terminado con furikake.",
+            "en": "White rice with green onion, bell pepper, carrot, onion, peanuts, árbol chili, breaded chicken and teriyaki, finished with furikake."
+          },
+          "precio": 170,
+          "foto": "teriyaki-crispy",
+          "picante": 1,
+          "preparacion": "empanizado"
+        },
+        {
+          "id": "teppanyaki-mixto",
+          "nombre": {
+            "es": "Teppanyaki Mixto (camarón, pollo)",
+            "en": "Mixed Teppanyaki (shrimp, chicken)"
+          },
+          "descripcion": {
+            "es": "Pollo y camarón salteados con cebolla, zanahoria, calabaza y pimiento morrón, bañados con salsa de la casa, sobre una cama de arroz.",
+            "en": "Chicken and shrimp sautéed with onion, carrot, squash and bell pepper in house sauce, over rice."
+          },
+          "precio": 190
+        },
+        {
+          "id": "res-udon",
+          "nombre": {
+            "es": "Res en Pasta Udon",
+            "en": "Beef Udon"
+          },
+          "descripcion": {
+            "es": "Cebolla, zanahoria, brócoli y coliflor, salteados con res en salsa de ostión y fideos udon.",
+            "en": "Onion, carrot, broccoli and cauliflower stir-fried with beef in oyster sauce and udon noodles."
+          },
+          "precio": 170
+        }
+      ]
+    },
+    {
+      "id": "charolas",
+      "grupo": "comida",
+      "nombre": {
+        "es": "Charolas",
+        "en": "Platters"
+      },
+      "nota": {
+        "es": "Para compartir.",
+        "en": "For sharing."
+      },
+      "platillos": [
+        {
+          "id": "charola-sencilla",
+          "nombre": {
+            "es": "Charola Sencilla",
+            "en": "Small Platter"
+          },
+          "descripcion": {
+            "es": "Chile especial, Chicken y Guamuchilito roll.",
+            "en": "Special pepper, Chicken and Guamuchilito roll."
+          },
+          "precio": 445,
+          "incluye": [
+            "Chile especial",
+            "Chicken",
+            "Guamuchilito roll"
+          ]
+        },
+        {
+          "id": "charola-mediana",
+          "nombre": {
+            "es": "Charola Mediana",
+            "en": "Medium Platter"
+          },
+          "descripcion": {
+            "es": "Bomba especial, Tuna roca roll, Mazatleco roll y Peñasco roll.",
+            "en": "Special rice bomb, Tuna roca, Mazatleco and Peñasco rolls."
+          },
+          "precio": 900,
+          "incluye": [
+            "Bomba especial",
+            "Tuna roca roll",
+            "Mazatleco roll",
+            "Peñasco roll"
+          ]
+        },
+        {
+          "id": "charola-premium",
+          "nombre": {
+            "es": "Charola Premium",
+            "en": "Premium Platter"
+          },
+          "descripcion": {
+            "es": "Teriyaki crispy, Especial roll, Avocado roll, Serrano roll y Makizen roll.",
+            "en": "Crispy teriyaki, Special, Avocado, Serrano and Makizen rolls."
+          },
+          "precio": 1100,
+          "foto": "charola-premium",
+          "incluye": [
+            "Teriyaki crispy",
+            "Especial roll",
+            "Avocado roll",
+            "Serrano roll",
+            "Makizen roll"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "kids",
+      "grupo": "comida",
+      "nombre": {
+        "es": "Menú kids",
+        "en": "Kids menu"
+      },
+      "platillos": [
+        {
+          "id": "tender-papas",
+          "nombre": {
+            "es": "Tender con Papas",
+            "en": "Chicken Tenders & Fries"
+          },
+          "descripcion": {
+            "es": "Orden de nuggets de pollo suave, acompañado con papas.",
+            "en": "Tender chicken nuggets with fries."
+          },
+          "precio": 130,
+          "preparacion": "empanizado"
+        },
+        {
+          "id": "dedos-queso",
+          "nombre": {
+            "es": "Dedos de Queso",
+            "en": "Cheese Sticks"
+          },
+          "descripcion": {
+            "es": "Tiras de queso suave por dentro y crujiente por fuera, acompañado de papas.",
+            "en": "Cheese sticks, soft inside and crispy outside, with fries."
+          },
+          "precio": 120,
+          "foto": "dedos-queso",
+          "preparacion": "empanizado"
+        },
+        {
+          "id": "rollo-kids",
+          "nombre": {
+            "es": "Rollo Kids",
+            "en": "Kids Roll"
+          },
+          "descripcion": {
+            "es": "Rollo relleno de queso crema y pollo, acompañado de zanahoria y pepino.",
+            "en": "Roll with cream cheese and chicken, served with carrot and cucumber."
+          },
+          "precio": 130
+        }
+      ]
+    },
+    {
+      "id": "postres",
+      "grupo": "comida",
+      "nombre": {
+        "es": "Postres",
+        "en": "Desserts"
+      },
+      "platillos": [
+        {
+          "id": "helado-tempura",
+          "nombre": {
+            "es": "Helado en Tempura de la Casa",
+            "en": "House Tempura Ice Cream"
+          },
+          "descripcion": {
+            "es": "Bola de helado de la casa, empanizado, bañado con dulce de leche y nuez.",
+            "en": "House ice cream scoop, battered and fried, with dulce de leche and pecans."
+          },
+          "precio": 110,
+          "foto": "helado-tempura",
+          "preparacion": "empanizado"
+        }
+      ]
+    },
+    {
+      "id": "mixologia",
+      "grupo": "bebidas",
+      "nombre": {
+        "es": "Mixología de la casa",
+        "en": "House mixology"
+      },
+      "platillos": [
+        {
+          "id": "mojito-cubano",
+          "nombre": {
+            "es": "Mojito Cubano",
+            "en": "Cuban Mojito"
+          },
+          "precio": 120
+        },
+        {
+          "id": "mojito-mango",
+          "nombre": {
+            "es": "Mojito de Mango",
+            "en": "Mango Mojito"
+          },
+          "precio": 130
+        },
+        {
+          "id": "mojito-frutos",
+          "nombre": {
+            "es": "Mojito de Frutos",
+            "en": "Berry Mojito"
+          },
+          "precio": 130,
+          "foto": "mixologia-1"
+        },
+        {
+          "id": "mezcalita-fresa",
+          "nombre": {
+            "es": "Mezcalita de Fresa",
+            "en": "Strawberry Mezcalita"
+          },
+          "precio": 125
+        },
+        {
+          "id": "mezcalita-mango",
+          "nombre": {
+            "es": "Mezcalita de Mango",
+            "en": "Mango Mezcalita"
+          },
+          "precio": 135,
+          "foto": "mixologia-1"
+        },
+        {
+          "id": "clericot",
+          "nombre": {
+            "es": "Clericot",
+            "en": "Clericot (wine punch)"
+          },
+          "precio": 125,
+          "foto": "mixologia-2"
+        },
+        {
+          "id": "carajillo",
+          "nombre": {
+            "es": "Carajillo con Licor 43",
+            "en": "Carajillo with Licor 43"
+          },
+          "precio": 120,
+          "foto": "mixologia-1"
+        },
+        {
+          "id": "gin-frutos-rojos",
+          "nombre": {
+            "es": "Gin de Frutos Rojos",
+            "en": "Red Berry Gin"
+          },
+          "precio": 120,
+          "foto": "mixologia-2"
+        },
+        {
+          "id": "gin-pepino",
+          "nombre": {
+            "es": "Gin de Pepino",
+            "en": "Cucumber Gin"
+          },
+          "precio": 120,
+          "foto": "mixologia-2"
+        }
+      ]
+    },
+    {
+      "id": "cervezas",
+      "grupo": "bebidas",
+      "nombre": {
+        "es": "Cervezas",
+        "en": "Beer"
+      },
+      "nota": {
+        "es": "Nacionales e importadas.",
+        "en": "Mexican and imported."
+      },
+      "platillos": [
+        {
+          "id": "pacifico-clara",
+          "nombre": {
+            "es": "Pacífico Clara",
+            "en": "Pacífico"
+          },
+          "precio": 40
+        },
+        {
+          "id": "pacifico-suave",
+          "nombre": {
+            "es": "Pacífico Suave",
+            "en": "Pacífico Suave"
+          },
+          "precio": 40
+        },
+        {
+          "id": "michelob-ultra",
+          "nombre": {
+            "es": "Michelob Ultra",
+            "en": "Michelob Ultra"
+          },
+          "precio": 45
+        },
+        {
+          "id": "modelo-especial",
+          "nombre": {
+            "es": "Modelo Especial",
+            "en": "Modelo Especial"
+          },
+          "precio": 45
+        },
+        {
+          "id": "modelo-negra",
+          "nombre": {
+            "es": "Modelo Negra",
+            "en": "Negra Modelo"
+          },
+          "precio": 45
+        },
+        {
+          "id": "corona",
+          "nombre": {
+            "es": "Corona",
+            "en": "Corona"
+          },
+          "precio": 45
+        },
+        {
+          "id": "tecate-light",
+          "nombre": {
+            "es": "Tecate Light",
+            "en": "Tecate Light"
+          },
+          "precio": 40
+        },
+        {
+          "id": "tecate-roja",
+          "nombre": {
+            "es": "Tecate Roja",
+            "en": "Tecate"
+          },
+          "precio": 40
+        },
+        {
+          "id": "bohemia-clara",
+          "nombre": {
+            "es": "Bohemia Clara",
+            "en": "Bohemia"
+          },
+          "precio": 45
+        },
+        {
+          "id": "bohemia-negra",
+          "nombre": {
+            "es": "Bohemia Negra",
+            "en": "Bohemia Oscura"
+          },
+          "precio": 45
+        }
+      ]
+    },
+    {
+      "id": "vasos-preparados",
+      "grupo": "bebidas",
+      "nombre": {
+        "es": "Vasos preparados",
+        "en": "Prepared glasses"
+      },
+      "nota": {
+        "es": "No incluyen cerveza.",
+        "en": "Beer not included."
+      },
+      "platillos": [
+        {
+          "id": "vaso-michelado",
+          "nombre": {
+            "es": "Vaso Michelado",
+            "en": "Michelada Glass"
+          },
+          "descripcion": {
+            "es": "El clásico de la casa, escarchado con sal y limón fresco.",
+            "en": "House classic, salt-rimmed with fresh lime."
+          },
+          "precio": 20
+        },
+        {
+          "id": "vaso-clamato",
+          "nombre": {
+            "es": "Vaso con Clamato Preparado",
+            "en": "Clamato Glass"
+          },
+          "descripcion": {
+            "es": "Mezcla perfecta de clamato y nuestra selección de jugos negros, listo para tu cerveza.",
+            "en": "Clamato with our blend of dark sauces, ready for your beer."
+          },
+          "precio": 40,
+          "picante": 1
+        },
+        {
+          "id": "vaso-cubano",
+          "nombre": {
+            "es": "Vaso Cubano",
+            "en": "Cubano Glass"
+          },
+          "descripcion": {
+            "es": "Cítrico, sazonado con limón y el toque exacto de jugos negros.",
+            "en": "Citrusy, seasoned with lime and a touch of dark sauces."
+          },
+          "precio": 35
+        }
+      ]
+    },
+    {
+      "id": "bebidas-asiaticas",
+      "grupo": "bebidas",
+      "nombre": {
+        "es": "Bebidas asiáticas",
+        "en": "Asian drinks"
+      },
+      "platillos": [
+        {
+          "id": "sayuri",
+          "nombre": {
+            "es": "Sake Sayuri Junmai",
+            "en": "Sayuri Junmai Sake"
+          },
+          "precio": 450,
+          "foto": "sayuri"
+        },
+        {
+          "id": "hanagoi",
+          "nombre": {
+            "es": "Hanagoi Sparkling",
+            "en": "Hanagoi Sparkling Sake"
+          },
+          "precio": 600,
+          "foto": "hanagoi",
+          "agotado": true,
+          "demo": true
+        },
+        {
+          "id": "jun-ho",
+          "nombre": {
+            "es": "Soju Jun Ho",
+            "en": "Jun Ho Soju"
+          },
+          "descripcion": {
+            "es": "Sabor piña, durazno, zarzamora o ciruela china.",
+            "en": "Pineapple, peach, blackberry or plum."
+          },
+          "precio": 300,
+          "foto": "jun-ho"
+        },
+        {
+          "id": "ramune",
+          "nombre": {
+            "es": "Ramune Shirakiku",
+            "en": "Shirakiku Ramune"
+          },
+          "descripcion": {
+            "es": "Sabor fresa o melón.",
+            "en": "Strawberry or melon."
+          },
+          "precio": 95,
+          "foto": "ramune"
+        },
+        {
+          "id": "sapporo",
+          "nombre": {
+            "es": "Cerveza Sapporo 355 ml",
+            "en": "Sapporo Beer 355 ml"
+          },
+          "precio": 80,
+          "foto": "sapporo"
+        }
+      ]
+    },
+    {
+      "id": "sin-alcohol",
+      "grupo": "bebidas",
+      "nombre": {
+        "es": "Sin alcohol",
+        "en": "Non-alcoholic"
+      },
+      "platillos": [
+        {
+          "id": "te-helado",
+          "nombre": {
+            "es": "Vaso con Té Helado (refill)",
+            "en": "Iced Tea (refill)"
+          },
+          "precio": 60
+        },
+        {
+          "id": "limonada-natural",
+          "nombre": {
+            "es": "Limonada Natural",
+            "en": "Lemonade"
+          },
+          "precio": 40
+        },
+        {
+          "id": "limonada-mineral",
+          "nombre": {
+            "es": "Limonada Mineral",
+            "en": "Sparkling Lemonade"
+          },
+          "precio": 45
+        },
+        {
+          "id": "limonada-fresa",
+          "nombre": {
+            "es": "Limonada Fresa Limón",
+            "en": "Strawberry Lemonade"
+          },
+          "precio": 45
+        },
+        {
+          "id": "agua-epura",
+          "nombre": {
+            "es": "Agua Embotellada e-pura",
+            "en": "Bottled Water"
+          },
+          "precio": 35
+        },
+        {
+          "id": "coca-cola",
+          "nombre": {
+            "es": "Coca-Cola",
+            "en": "Coca-Cola"
+          },
+          "precio": 50,
+          "foto": "refrescos"
+        },
+        {
+          "id": "coca-light",
+          "nombre": {
+            "es": "Coca-Cola Light",
+            "en": "Diet Coke"
+          },
+          "precio": 50,
+          "foto": "refrescos"
+        },
+        {
+          "id": "sprite",
+          "nombre": {
+            "es": "Sprite",
+            "en": "Sprite"
+          },
+          "precio": 50,
+          "foto": "refrescos"
+        },
+        {
+          "id": "fanta",
+          "nombre": {
+            "es": "Fanta de Naranja",
+            "en": "Orange Fanta"
+          },
+          "precio": 50,
+          "foto": "refrescos"
+        },
+        {
+          "id": "manzana-mundet",
+          "nombre": {
+            "es": "Manzana Mundet",
+            "en": "Mundet Apple Soda"
+          },
+          "precio": 50,
+          "foto": "refrescos"
+        },
+        {
+          "id": "fresca",
+          "nombre": {
+            "es": "Fresca",
+            "en": "Fresca"
+          },
+          "precio": 50,
+          "foto": "refrescos"
+        }
+      ]
+    },
+    {
+      "id": "shots",
+      "grupo": "bebidas",
+      "nombre": {
+        "es": "Shots",
+        "en": "Shots"
+      },
+      "platillos": [
+        {
+          "id": "shot-tequila",
+          "nombre": {
+            "es": "Tequila",
+            "en": "Tequila"
+          },
+          "precio": 95
+        },
+        {
+          "id": "shot-mezcal",
+          "nombre": {
+            "es": "Mezcal",
+            "en": "Mezcal"
+          },
+          "precio": 100
+        },
+        {
+          "id": "shot-whisky",
+          "nombre": {
+            "es": "Whisky Etiqueta Negra",
+            "en": "Black Label Whisky"
+          },
+          "precio": 110
+        }
+      ]
+    },
+    {
+      "id": "granizado",
+      "grupo": "bebidas",
+      "nombre": {
+        "es": "Makizen",
+        "en": "Makizen"
+      },
+      "platillos": [
+        {
+          "id": "granizado",
+          "nombre": {
+            "es": "Granizado del día",
+            "en": "Slush of the day"
+          },
+          "descripcion": {
+            "es": "¡Pregunta por el granizado del día!",
+            "en": "Ask for today's slush!"
+          },
+          "precio": 110
+        }
+      ]
+    }
+  ]
+}

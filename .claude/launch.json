@@ -1,0 +1,6 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    { "name": "makizen-dev", "runtimeExecutable": "npm", "runtimeArgs": ["run", "dev", "--", "--host", "127.0.0.1", "--port", "4321"], "port": 4321 }
+  ]
+}

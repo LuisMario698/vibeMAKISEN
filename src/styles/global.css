@@ -1,0 +1,186 @@
+@import "tailwindcss";
+@import "@fontsource/poppins/latin-300.css";
+@import "@fontsource/poppins/latin-400.css";
+@import "@fontsource/poppins/latin-600.css";
+@import "@fontsource/poppins/latin-700.css";
+@import "@fontsource/montserrat/latin-500.css";
+
+/* Tokens de la marca real (docs/marca-actual.md §2 y §3). */
+@theme {
+  --color-noche: #000000;
+  --color-carbon: #0a0a0a;
+  --color-pizarra: #141414;
+  --color-hueso: #ffffff;
+  --color-niebla: #bdbdbd;
+  --color-humo: #8a8a8a;
+  --color-oro: #ae8b3d;
+  --color-oro-claro: #d2b26a;
+  --color-oro-sombra: #786028;
+  /* Funcionales (no son de marca): estado del local y picante. */
+  --color-abierto: #4fbf86;
+  --color-cerrado: #e0795e;
+  --color-chile: #e2563b;
+
+  --font-sans: "Poppins", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-alt: "Montserrat", "Poppins", system-ui, sans-serif;
+
+  --ease-salida: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-resorte: cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+
+@layer base {
+  html {
+    background: var(--color-noche);
+    color: var(--color-hueso);
+    font-family: var(--font-sans);
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+    color-scheme: dark;
+    scroll-padding-top: 8.5rem;
+  }
+  body {
+    min-height: 100svh;
+    font-size: 1rem;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: clip;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-oro-claro);
+    outline-offset: 3px;
+    border-radius: 6px;
+  }
+  ::selection { background: var(--color-oro); color: #000; }
+}
+
+/* Bilingüe: los dos idiomas están en el HTML y se muestra uno. */
+html[lang^="es"] [lang="en"]:not(html),
+html[lang="en"] [lang="es"]:not(html) { display: none !important; }
+
+@layer components {
+  .filete { height: 5px; border-top: 1px solid var(--color-oro); border-bottom: 1px solid color-mix(in srgb, var(--color-oro) 45%, transparent); }
+  .rotulo { font-weight: 700; text-transform: uppercase; letter-spacing: 0.14em; }
+  .tap { min-height: 44px; min-width: 44px; }
+  .presionable { transition: transform 160ms var(--ease-salida), background-color 200ms, color 200ms, border-color 200ms; }
+  .presionable:active { transform: scale(0.96); }
+}
+
+/* ─────────────────────────────  ANIMACIÓN  ───────────────────────────── */
+
+@property --barrido { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+
+/* 1. Entrada de la página: el logo se "pinta" como el trazo de la luna (ensō). */
+.logo-pintado {
+  mask-image: conic-gradient(from 205deg at 50% 36%, #000 var(--barrido), transparent calc(var(--barrido) + 25deg));
+  animation: pintar 1500ms 150ms var(--ease-salida) forwards;
+}
+@keyframes pintar { to { --barrido: 380deg; } }
+
+.entra { opacity: 0; animation: entra 900ms var(--ease-salida) forwards; animation-delay: calc(var(--d, 0) * 1ms); }
+@keyframes entra {
+  from { opacity: 0; transform: translateY(18px); filter: blur(6px); }
+  to { opacity: 1; transform: none; filter: none; }
+}
+
+
+/* Mármol vivo: deriva muy lenta del fondo. */
+.marmol { animation: deriva 60s linear infinite alternate; }
+@keyframes deriva { to { transform: scale(1.15) translate3d(-3%, -2%, 0) rotate(1.5deg); } }
+
+/* Mesa de platillos: sube al cargar y hace parallax con el scroll. */
+.mesa { opacity: 0; animation: mesa 1200ms 650ms var(--ease-salida) forwards; }
+@keyframes mesa { from { opacity: 0; transform: translateY(80px) scale(0.92) rotate(-2deg); } to { opacity: 1; transform: none; } }
+@supports (animation-timeline: scroll()) {
+  .mesa-parallax { animation: mesa-parallax linear both; animation-timeline: scroll(root); animation-range: 0 100svh; }
+  @keyframes mesa-parallax { to { transform: translateY(-14%) scale(1.08) rotate(3deg); } }
+  .hero-desvanece { animation: hero-desvanece linear both; animation-timeline: scroll(root); animation-range: 0 70svh; }
+  @keyframes hero-desvanece { to { opacity: 0.15; transform: translateY(-8%) scale(0.96); } }
+}
+
+.indicio { animation: indicio 1.8s 2.2s var(--ease-salida) infinite; }
+@keyframes indicio { 0%, 100% { transform: translateY(0); opacity: 0.5; } 50% { transform: translateY(6px); opacity: 1; } }
+
+.pulso::after {
+  content: ""; position: absolute; inset: 0; border-radius: 999px; background: currentColor;
+  animation: pulso 2s ease-out infinite;
+}
+@keyframes pulso { from { transform: scale(1); opacity: 0.6; } to { transform: scale(3); opacity: 0; } }
+
+/* 2. Barra de categorías: logo mini aparece al pasar el hero; indicador que se desliza. */
+.barra-logo { transition: opacity 400ms var(--ease-salida), transform 400ms var(--ease-salida), width 400ms var(--ease-salida); }
+.barra:not(.fija) .barra-logo { opacity: 0; transform: translateX(-12px) scale(0.8); width: 0; }
+.barra.fija { box-shadow: 0 12px 30px -12px rgb(0 0 0 / 0.9); }
+.indicador { transition: transform 450ms var(--ease-resorte), width 450ms var(--ease-resorte); }
+
+/* 3. Tarjetas al hacer scroll (IntersectionObserver añade .visto). */
+.revela { opacity: 0; transform: translateY(28px) scale(0.98); }
+.revela.visto {
+  opacity: 1; transform: none;
+  transition: opacity 700ms var(--ease-salida), transform 800ms var(--ease-salida);
+  transition-delay: calc(min(var(--i, 0), 6) * 70ms);
+}
+.filete-sec { transform: scaleX(0); transform-origin: left; }
+.visto .filete-sec { transform: scaleX(1); transition: transform 1100ms 150ms var(--ease-salida); }
+
+/* Al saltar a una categoría desde la barra: destello dorado en el título. */
+.llega .titulo-sec {
+  background: linear-gradient(100deg, #fff 35%, var(--color-oro-claro) 50%, #fff 65%) 0 0 / 300% 100% no-repeat;
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  animation: destello 1100ms var(--ease-salida);
+}
+@keyframes destello { from { background-position: 100% 0; } to { background-position: 0 0; } }
+
+/* Foto del platillo: flota y gira levemente con el scroll de la tarjeta. */
+@supports (animation-timeline: view()) {
+  .flota { animation: flota linear both; animation-timeline: view(); animation-range: entry 0% exit 100%; }
+  @keyframes flota { from { transform: translateY(14px) rotate(-4deg) scale(0.94); } to { transform: translateY(-14px) rotate(4deg) scale(1.04); } }
+}
+.tarjeta:hover .foto-platillo, .tarjeta:focus-visible .foto-platillo { transform: scale(1.06) rotate(-2deg); }
+.foto-platillo { transition: transform 600ms var(--ease-resorte); }
+
+/* Búsqueda: los que no coinciden se van. */
+.oculto-busqueda { display: none !important; }
+
+/* 4. Detalle del platillo: hoja inferior con morph de la foto (View Transitions). */
+dialog.hoja { inset: auto 0 0 0; margin: 0 auto; max-height: 92svh; max-width: none; width: min(100%, 40rem); padding: 0; border: 0; background: transparent; color: inherit; overflow: visible; }
+dialog.hoja::backdrop { background: rgb(0 0 0 / 0.72); backdrop-filter: blur(6px); }
+dialog.hoja[open] .hoja-panel { animation: hoja-sube 520ms var(--ease-salida); }
+dialog.hoja[open]::backdrop { animation: velo 400ms ease-out; }
+dialog.hoja.cerrando .hoja-panel { animation: hoja-baja 280ms ease-in forwards; }
+dialog.hoja.cerrando::backdrop { animation: velo 280ms ease-in reverse forwards; }
+@keyframes hoja-sube { from { transform: translateY(100%); } to { transform: none; } }
+@keyframes hoja-baja { to { transform: translateY(105%); } }
+@keyframes velo { from { opacity: 0; } }
+.hoja-escalonada > * { opacity: 0; animation: entra 650ms var(--ease-salida) forwards; animation-delay: calc(200ms + var(--d, 0) * 60ms); }
+
+/* Con View Transitions la hoja entra como capa propia (la foto viaja aparte). */
+.hoja-panel { view-transition-name: hoja; }
+dialog.hoja.vt .hoja-panel, dialog.hoja.vt::backdrop { animation: none !important; }
+::view-transition-new(hoja) { animation: hoja-sube 520ms var(--ease-salida); }
+::view-transition-old(hoja) { animation: hoja-baja 300ms ease-in forwards; }
+::view-transition-group(hoja) { animation: none; }
+
+::view-transition-group(foto-platillo) { animation-duration: 520ms; animation-timing-function: var(--ease-salida); }
+::view-transition-old(foto-platillo), ::view-transition-new(foto-platillo) { height: 100%; object-fit: contain; }
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: 280ms; }
+
+/* Cambio de idioma: fundido corto. */
+html.cambia-idioma::view-transition-old(root) { animation: 220ms ease-in both salida-idioma; }
+html.cambia-idioma::view-transition-new(root) { animation: 320ms var(--ease-salida) both entrada-idioma; }
+@keyframes salida-idioma { to { opacity: 0; filter: blur(4px); } }
+@keyframes entrada-idioma { from { opacity: 0; filter: blur(4px); } }
+
+/* Micro-interacción: los chiles se encienden uno tras otro. */
+.chile { transition: transform 300ms var(--ease-resorte); }
+.visto .chile.on { animation: chile 600ms var(--ease-resorte) both; animation-delay: calc(400ms + var(--c) * 110ms); }
+@keyframes chile { from { transform: scale(0) rotate(-40deg); } }
+
+/* Respeta "reducir movimiento": sin desplazamientos, sin parallax, sin barridos. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 1ms !important; animation-iteration-count: 1 !important; transition-duration: 1ms !important; animation-delay: 0ms !important; transition-delay: 0ms !important; scroll-behavior: auto !important; }
+  .logo-pintado { mask-image: none; }
+  .revela { opacity: 1; transform: none; }
+  .filete-sec { transform: none; }
+  .flota, .mesa-parallax, .hero-desvanece, .marmol { animation: none !important; }
+  ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
+}
