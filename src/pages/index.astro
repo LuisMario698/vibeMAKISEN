@@ -34,10 +34,14 @@ const total = menu.categorias.reduce((n, c) => n + c.platillos.length, 0);
     <title>MAKIZEN Sushi & Mariscos · Menú · Puerto Peñasco</title>
     <meta name="description" content="Menú de MAKIZEN Sushi & Mariscos, estilo Sinaloa, en Puerto Peñasco (Rocky Point), Sonora. Precios en MXN, en español e inglés." />
     <meta name="theme-color" content="#050505" />
+    <!-- Demo / propuesta: no indexar para no competir en buscadores con el negocio real. -->
+    <meta name="robots" content="noindex, nofollow" />
     <link rel="icon" href="/brand/isotipo.svg" type="image/svg+xml" />
     <link rel="icon" href="/brand/icon-192.png" type="image/png" sizes="192x192" />
     <link rel="apple-touch-icon" href="/brand/apple-touch-icon.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
+    <!-- PWA: registra el service worker generado por @vite-pwa/astro (menú disponible sin conexión). -->
+    <script is:inline src="/registerSW.js" defer></script>
     <link rel="preload" as="image" href="/fotos/fachada-dia-1080.webp" imagesrcset="/fotos/fachada-dia-640.webp 640w, /fotos/fachada-dia-1080.webp 1080w, /fotos/fachada-dia-1600.webp 1600w" imagesizes="100vw" fetchpriority="high" />
     <script is:inline>
       // Idioma antes de pintar: el elegido o el del teléfono.

@@ -17,6 +17,16 @@ npm run build    # sitio estático en dist/ con service worker
 npm run check    # tipos y validación de Astro
 ```
 
+### Despliegue
+
+Publicada en **https://makizen-menu.vercel.app** (proyecto `makizen-menu` en Vercel). La página lleva `noindex` por ser una demo.
+
+```bash
+npx vercel deploy --prod   # usa vercel.json: npm run build → dist/
+```
+
+`npm run build` corre `astro build` y luego `scripts/precache-html.mjs`, que agrega `index.html` al precache del service worker para que el menú abra sin conexión.
+
 Recursos (se generan una vez y se versionan):
 
 - `node scripts/vectorizar-logo.mjs <img-cartilla>`: logo en SVG transparente (vertical, horizontal e isotipo) e íconos de la app.

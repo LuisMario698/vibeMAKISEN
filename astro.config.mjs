@@ -9,6 +9,8 @@ export default defineConfig({
   integrations: [
     AstroPWAIntegration({
       injectRegister: 'script-defer',
+      // Los íconos ya entran por globPatterns; incluirlos de nuevo los duplica en el precache.
+      includeManifestIcons: false,
       registerType: 'autoUpdate',
       manifest: {
         name: 'MAKIZEN Sushi & Mariscos · Menú',
@@ -26,7 +28,9 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{html,css,js,woff2,webp,png,jpg,svg}'],
-        navigateFallback: '/',
+        // index.html se agrega al precache después del build (scripts/precache-html.mjs),
+        // porque Astro escribe el HTML después de que se genera el service worker.
+        navigateFallback: null,
       },
     }),
   ],
