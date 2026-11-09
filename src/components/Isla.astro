@@ -1,0 +1,91 @@
+---
+// Isla dinámica: navegación de categorías como "oro líquido".
+// Capa 1 (.isla-liquido): manchas sólidas con filtro SVG "goo" → se funden como líquido.
+// Capa 2: botones y panel reales, encima y sin filtro (texto nítido y accesible).
+import Idioma from './Idioma.astro';
+import { menu } from '../data/schema';
+
+const grupos = [
+  { id: 'comida', es: 'Comida', en: 'Food' },
+  { id: 'bebidas', es: 'Bebidas', en: 'Drinks' },
+] as const;
+const miniatura = (c: (typeof menu.categorias)[number]) => c.platillos.find((p) => p.foto)?.foto;
+---
+<div id="isla-velo" class="isla-velo" aria-hidden="true"></div>
+<div id="isla" class="isla" data-estado="oculta">
+  <svg class="absolute size-0" aria-hidden="true" focusable="false">
+    <defs>
+      <filter id="goo" x="-30%" y="-30%" width="160%" height="160%" color-interpolation-filters="sRGB">
+        <feGaussianBlur in="SourceGraphic" stdDeviation="10" result="desenfoque" />
+        <feColorMatrix in="desenfoque" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 24 -11" result="goo" />
+        <feComposite in="SourceGraphic" in2="goo" operator="atop" />
+      </filter>
+    </defs>
+  </svg>
+
+  <div class="isla-liquido" aria-hidden="true">
+    <i class="mancha cuerpo"></i>
+    <i class="mancha boton"></i>
+    <i class="mancha gota g1"></i>
+    <i class="mancha gota g2"></i>
+    <i class="mancha gota g3"></i>
+  </div>
+
+  <button type="button" class="isla-pildora presionable" aria-expanded="false" aria-controls="isla-panel">
+    <span class="anillo" aria-hidden="true">
+      <svg viewBox="0 0 36 36" width="36" height="36"><circle cx="18" cy="18" r="15.5" fill="none" stroke="rgb(0 0 0 / 0.18)" stroke-width="3" /><circle class="avance" cx="18" cy="18" r="15.5" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" pathLength="100" stroke-dasharray="100" stroke-dashoffset="100" transform="rotate(-90 18 18)" /></svg>
+      <span class="num">01</span>
+    </span>
+    <span class="isla-texto"><span class="sr-only"><span lang="es">Categoría actual:</span><span lang="en">Current category:</span> </span><span class="actual"></span></span>
+    <svg class="flecha" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="m6 15 6-6 6 6" /></svg>
+  </button>
+
+  <button type="button" class="isla-lupa presionable" aria-label="Buscar en el menú / Search the menu">
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5" /><path d="m16 16 4 4" /></svg>
+  </button>
+
+  <div id="isla-panel" class="isla-panel" role="dialog" aria-label="Menú" inert>
+    <div class="flex items-center gap-2 px-4 pt-4">
+      <p class="rotulo flex-1 text-[15px]"><span lang="es">Menú</span><span lang="en">Menu</span></p>
+      <Idioma sobreOro />
+      <button type="button" data-isla-cerrar class="presionable tap grid place-items-center rounded-full" aria-label="Cerrar / Close">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
+      </button>
+    </div>
+    <form role="search" class="relative mx-4 mt-3" onsubmit="return false">
+      <svg class="pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><circle cx="11" cy="11" r="6.5" /><path d="m16 16 4 4" /></svg>
+      <input id="buscar" type="search" inputmode="search" autocomplete="off" enterkeyhint="search" aria-label="Buscar en el menú" placeholder="Buscar…"
+        class="h-12 w-full rounded-full border-0 bg-noche/12 pr-4 pl-10 text-[16px] font-medium text-noche placeholder:text-noche/55 focus:bg-noche/18 focus:outline-2 focus:outline-noche" />
+    </form>
+
+    <div class="isla-scroll">
+      <div class="isla-cats">
+        {grupos.map((g) => (
+          <section>
+            <h3 class="isla-grupo"><span lang="es">{g.es}</span><span lang="en">{g.en}</span></h3>
+            <ul class="grid grid-cols-2 gap-2">
+              {menu.categorias.filter((c) => c.grupo === g.id).map((c) => {
+                const m = miniatura(c);
+                return (
+                  <li class="isla-item">
+                    <button type="button" data-ir={c.id} class="isla-cat presionable">
+                      <span class="miniatura">
+                        {m ? <img src={`/menu/${m}.webp`} alt="" loading="lazy" decoding="async" /> : <img src="/brand/logo-isotipo.png" alt="" loading="lazy" class="isotipo" />}
+                      </span>
+                      <span class="min-w-0 text-left">
+                        <span class="line-clamp-2 block text-[13.5px] leading-[1.2] font-semibold"><span lang="es">{c.nombre.es}</span><span lang="en">{c.nombre.en}</span></span>
+                        <span class="block text-[12px] text-noche/65">{c.platillos.length}</span>
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        ))}
+      </div>
+      <ul class="isla-resultados" hidden></ul>
+      <p class="isla-vacio" hidden><span lang="es">Sin resultados. Prueba otra palabra.</span><span lang="en">No matches. Try another word.</span></p>
+    </div>
+  </div>
+</div>

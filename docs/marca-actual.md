@@ -147,6 +147,30 @@ Erratas de la cartilla que corregimos en el menú digital: "Michaelob" → Miche
 
 Fotos: la cartilla trae **22 fotos de producto recortadas** (sin fondo). Se usaron en la demo (`public/menu/`). Platillos **sin foto** (entre ellos el **Camarón Roca**, el más mencionado en reseñas): Rollos Primavera, Chile Caribe, Camarón Roca, Sopa, Curricanes, Tostada de Ceviche, Tostada Especial, cócteles, Yakimeshi, Gohan, Avocado, Fresh, clásicos (salvo Guamuchilito), Especial, Zarandeado, Mazatleco, Sinaloa, Tataki, Peñasco, Teppanyaki, Udon, Charolas Sencilla/Mediana, Tender, Rollo Kids, vasos y cervezas nacionales. En la demo se muestran con el isotipo como marcador.
 
+## 7 bis. Fotografía real tomada de sus redes (8 nov 2026)
+
+Capturas de las publicaciones y reels **del propio negocio** en Instagram, en alta resolución. A las plantillas de Canva se les recortaron los textos y a los reels, los subtítulos. Se evitaron cuadros con caras de clientes o de influencers. Están en `public/fotos/`; el origen de cada una está en `src/data/fotos-redes.json`.
+
+| Archivo | De dónde sale | Uso en la demo |
+|---|---|---|
+| `mesa-cenital` | Carrusel "El antojo tiene otra forma" (29 oct), foto de estudio cenital | Portada (historia 1) |
+| `rollos-corona` | Mismo carrusel, rollo en corona sobre mármol | Portada, rollos naturales |
+| `serrano-real`, `serrano-palillos` | Mismo carrusel ("Un bocado y cambia todo") | Rollos empanizados, carrusel, detalle del Serrano Roll |
+| `mas-sabores` | Mismo carrusel ("Más sabores, más razones para volver") | Rollos especiales |
+| `bocado-detalle` | Mismo carrusel ("El placer está en los pequeños detalles") | Reserva |
+| `sashimi-real`, `gin-pepino-real` | Recortes de la foto cenital | Entradas, detalle del Sashimi y del Gin de Pepino |
+| `muro-logo` | Reel: coctel frente al muro con el logo retroiluminado | Portada, mixología, Visítanos |
+| `aguachile-real` | Reel: aguachile visto de cerca | Tostadas y aguachiles, carrusel, detalle |
+| `makizen-roll-real` | Reel: Makizen Roll con palillos | Carrusel, detalle |
+| `udon-real` | Reel de apertura (8 oct): res en pasta udon | Guisos, carrusel, detalle |
+| `fachada-atardecer` | Reel de apertura: fachada con letrero encendido al atardecer | Portada, Visítanos |
+| `fachada-dia` | Reel: letras corpóreas sobre madera | Visítanos |
+| `fachada-noche` | Publicación de Halloween (31 oct), render nocturno de la fachada | Visítanos |
+
+Confirmado en las fotos: **interior con muros azules**, mesas de madera, sillas de madera curva, **muro negro con el isotipo y "MAKIZEN" retroiluminados** y barra de cocteles. La fachada combina paneles negros con listones de madera y el logo en un disco iluminado.
+
+Pendiente: para producción conviene pedir al negocio los archivos originales (los reels son de 1080 × 1920 y las fotos de Canva, de 1080 × 1350) y el permiso de uso por escrito.
+
 ## 8. Lo que NO existe o no encontramos
 
 - **Etiquetas de picante, crudo, alérgenos**: la cartilla no las trae. En `menu.json` están **inferidas de la descripción** (p. ej. "chile serrano", "jalapeño", "chile de árbol", "spicy" → picante; "curtido en limón", "atún natural" → crudo/curtido) y marcadas con `"etiquetasInferidas": true`. **Hay que validarlas con la cocina.**

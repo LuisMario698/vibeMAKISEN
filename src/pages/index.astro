@@ -1,18 +1,25 @@
 ---
 import '../styles/global.css';
+import Telon from '../components/Telon.astro';
 import Hero from '../components/Hero.astro';
-import Barra from '../components/Barra.astro';
+import Marquesina from '../components/Marquesina.astro';
+import Destacados from '../components/Destacados.astro';
 import Seccion from '../components/Seccion.astro';
-import Hoja from '../components/Hoja.astro';
+import Visita from '../components/Visita.astro';
 import Pie from '../components/Pie.astro';
+import Hoja from '../components/Hoja.astro';
+import Isla from '../components/Isla.astro';
 import { menu } from '../data/schema';
 import fotos from '../data/fotos.json';
+import { foto, realDe } from '../data/fotos-reales';
 
-// Datos mínimos para la hoja de detalle (se arma en el navegador).
+// Datos mínimos para la hoja de detalle y la búsqueda de la isla (se arman en el navegador).
 const datos = {
   tc: menu.tipoCambioReferencia,
   horario: menu.negocio.horario,
   fotos,
+  reales: Object.fromEntries(Object.entries(realDe).map(([id, f]) => [id, foto(f)])),
+  cats: menu.categorias.map((c) => ({ id: c.id, nombre: c.nombre })),
   platillos: menu.categorias.flatMap((c) => c.platillos.map((p) => ({ ...p, cat: c.nombre }))),
 };
 const total = menu.categorias.length;
@@ -28,14 +35,16 @@ const total = menu.categorias.length;
     <link rel="icon" href="/brand/icon-192.png" type="image/png" />
     <link rel="apple-touch-icon" href="/brand/icon-192.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <link rel="preload" href="/brand/logo-vertical.webp" as="image" fetchpriority="high" />
+    <link rel="preload" href="/fotos/mesa-cenital.webp" as="image" fetchpriority="high" />
     <script is:inline>
-      // Idioma antes de pintar: elección guardada o idioma del teléfono.
+      // Antes de pintar: idioma (elegido o del teléfono) y si toca telón de entrada.
       (function () {
-        var l = null;
-        try { l = localStorage.getItem('makizen-idioma'); } catch (e) {}
+        var d = document.documentElement, l = null, visto = false;
+        try { l = localStorage.getItem('makizen-idioma'); visto = sessionStorage.getItem('makizen-telon') === '1'; } catch (e) {}
         if (!l) l = (navigator.language || 'es').toLowerCase().indexOf('en') === 0 ? 'en' : 'es-MX';
-        document.documentElement.lang = l === 'en' ? 'en' : 'es-MX';
+        d.lang = l === 'en' ? 'en' : 'es-MX';
+        var reducir = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+        d.classList.add(visto || reducir ? 'sin-telon' : 'con-telon');
       })();
     </script>
   </head>
@@ -43,16 +52,17 @@ const total = menu.categorias.length;
     <a href="#menu" class="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:rounded-full focus:bg-oro focus:px-4 focus:py-2 focus:text-noche">
       <span lang="es">Ir al menú</span><span lang="en">Skip to menu</span>
     </a>
+    <Telon />
     <Hero />
-    <Barra />
+    <div id="centinela" class="h-px" aria-hidden="true"></div>
+    <Marquesina />
+    <Destacados />
     <main id="menu" class="pb-8">
       {menu.categorias.map((cat, i) => <Seccion cat={cat} n={i + 1} total={total} />)}
-      <p id="sin-resultados" hidden class="mx-auto max-w-5xl px-4 py-16 text-center text-[17px] text-niebla">
-        <span lang="es">No encontramos ese platillo. Prueba con otra palabra.</span>
-        <span lang="en">No dishes match. Try another word.</span>
-      </p>
     </main>
+    <Visita />
     <Pie />
+    <Isla />
     <Hoja />
     <script type="application/json" id="datos-menu" set:html={JSON.stringify(datos)} />
     <script src="../scripts/app.ts"></script>

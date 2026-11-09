@@ -1,45 +1,21 @@
 ---
 import { menu } from '../data/schema';
 const n = menu.negocio;
-const dias = [
-  { es: 'Domingo', en: 'Sunday' }, { es: 'Lunes', en: 'Monday' }, { es: 'Martes', en: 'Tuesday' },
-  { es: 'Miércoles', en: 'Wednesday' }, { es: 'Jueves', en: 'Thursday' }, { es: 'Viernes', en: 'Friday' }, { es: 'Sábado', en: 'Saturday' },
-];
-const h12 = (t: string) => { const [h = 0, m = 0] = t.split(':').map(Number); return `${((h + 11) % 12) + 1}:${String(m).padStart(2, '0')} ${h < 12 ? 'am' : 'pm'}`; };
-// Lunes primero
-const orden = [1, 2, 3, 4, 5, 6, 0];
 ---
-<footer class="relative mt-20 overflow-hidden border-t border-oro/30 bg-carbon">
-  <div class="mx-auto grid max-w-5xl gap-10 px-4 py-12 md:grid-cols-2">
-    <div class="revela">
-      <img src="/brand/logo-horizontal.webp" width="640" height="246" alt="MAKIZEN Sushi & Mariscos" loading="lazy" class="h-auto w-56" />
-      <p class="mt-5 text-[15px] text-niebla">{n.direccion}<br />{n.ciudad}</p>
-      <ul class="mt-5 grid gap-2 text-[16px]">
-        <li><a class="presionable tap inline-flex items-center gap-2 text-hueso underline decoration-oro/50 underline-offset-4 hover:decoration-oro" href={`tel:${n.telefono}`}><span lang="es">Celular</span><span lang="en">Mobile</span> {n.telefonoTexto}</a></li>
-        <li><a class="presionable tap inline-flex items-center gap-2 text-hueso underline decoration-oro/50 underline-offset-4 hover:decoration-oro" href={`tel:${n.telefonoFijo}`}><span lang="es">Domicilio</span><span lang="en">Delivery</span> {n.telefonoFijoTexto}</a></li>
-        <li><a class="presionable tap inline-flex items-center gap-2 text-hueso underline decoration-oro/50 underline-offset-4 hover:decoration-oro" href={n.mapa} target="_blank" rel="noopener"><span lang="es">Abrir en Google Maps</span><span lang="en">Open in Google Maps</span></a></li>
-      </ul>
-      <p class="mt-5 text-[15px] text-niebla"><span lang="es">{n.pago.es}</span><span lang="en">{n.pago.en}</span></p>
-    </div>
-    <div class="revela" style="--i:1">
-      <h2 class="rotulo text-[15px] text-oro"><span lang="es">Horario</span><span lang="en">Hours</span></h2>
-      <div class="filete mt-2"></div>
-      <ul id="horario" class="mt-3 grid text-[16px]">
-        {orden.map((d) => {
-          const h = n.horario.find((x) => x.dia === d);
-          return (
-            <li data-dia={d} class="flex justify-between border-b border-white/10 py-2.5 transition-colors [&.hoy]:font-semibold [&.hoy]:text-oro-claro">
-              <span><span lang="es">{dias[d]!.es}</span><span lang="en">{dias[d]!.en}</span></span>
-              <span class="tabular-nums">{h ? `${h12(h.abre)} – ${h12(h.cierra)}` : <><span lang="es">Cerrado</span><span lang="en">Closed</span></>}</span>
-            </li>
-          );
-        })}
-      </ul>
-    </div>
+<footer class="relative mt-20 border-t border-oro/30 bg-carbon pb-28">
+  <div class="revela mx-auto flex max-w-5xl flex-col items-center gap-5 px-4 pt-12 text-center">
+    <img src="/brand/logo-horizontal.webp" width="640" height="246" alt="MAKIZEN Sushi & Mariscos" loading="lazy" class="h-auto w-60" />
+    <ul class="flex flex-wrap justify-center gap-2 text-[15px]">
+      <li><a class="presionable tap inline-flex items-center rounded-full border border-white/15 px-4 hover:border-oro" href={`tel:${n.telefono}`}>{n.telefonoTexto}</a></li>
+      <li><a class="presionable tap inline-flex items-center rounded-full border border-white/15 px-4 hover:border-oro" href={`tel:${n.telefonoFijo}`}><span lang="es">Domicilio</span><span lang="en">Delivery</span>&nbsp;{n.telefonoFijoTexto}</a></li>
+      <li><a class="presionable tap inline-flex items-center rounded-full border border-white/15 px-4 hover:border-oro" href={n.instagram} target="_blank" rel="noopener">Instagram</a></li>
+      <li><a class="presionable tap inline-flex items-center rounded-full border border-white/15 px-4 hover:border-oro" href={n.facebook} target="_blank" rel="noopener">Facebook</a></li>
+    </ul>
+    <p class="text-[15px] text-niebla"><span lang="es">{n.pago.es}</span><span lang="en">{n.pago.en}</span></p>
   </div>
-  <div class="border-t border-white/10 px-4 py-6 text-center text-[13px] leading-relaxed text-humo">
-    <p lang="es">Precios en pesos mexicanos (MXN) con IVA incluido. Etiquetas de picante y crudo: por confirmar con cocina.</p>
-    <p lang="en">Prices in Mexican pesos (MXN), tax included. USD amounts are an approximate reference only; you pay in MXN.</p>
+  <div class="mx-auto mt-10 max-w-2xl px-4 text-center text-[13px] leading-relaxed text-humo">
+    <p lang="es">Precios en pesos mexicanos (MXN) con IVA incluido. Etiquetas de picante y crudo: por confirmar con cocina. Fotos: @makizen.puertopenasco.</p>
+    <p lang="en">Prices in Mexican pesos (MXN), tax included. USD amounts are an approximate reference only; you pay in MXN. Photos: @makizen.puertopenasco.</p>
     <p class="mt-2 text-oro/80">一期一会 · <span lang="es">Buena comida · Buenos momentos · Siempre aquí</span><span lang="en">Good food · Good times · Always here</span></p>
     <p class="mt-2"><span lang="es">Propuesta de menú digital · demo</span><span lang="en">Digital menu proposal · demo</span></p>
   </div>
