@@ -36,18 +36,7 @@ for (const [file, name] of Object.entries(platillos)) {
   await sharp(join(src, file)).trim({ threshold: 1 }).resize({ width: 560, height: 560, fit: 'inside', withoutEnlargement: true })
     .webp({ quality: 78, alphaQuality: 85, effort: 6 }).toFile(`public/menu/${name}.webp`);
 }
-// Portada: la "mesa" completa de platillos y el mármol negro.
-await sharp(join(src, 'img611_1280x788.png')).webp({ quality: 76, alphaQuality: 85, effort: 6 }).toFile('public/menu/mesa.webp');
-await sharp(join(src, 'img515_2189x1460.jpg')).resize({ width: 1200 }).modulate({ brightness: 1 }).jpeg({ quality: 70, mozjpeg: true }).toFile('public/brand/marmol-negro.jpg');
-// Logos tal cual (PNG con transparencia) + WebP para la web.
-await sharp(join(src, 'img604_286x286.png')).png().toFile('public/brand/logo-isotipo.png');
-await sharp(join(src, 'img752_1000x1000.png')).png().toFile('public/brand/logo-vertical.png');
-await sharp(join(src, 'img521_800x800.png')).png().toFile('public/brand/logo-horizontal.png');
-await sharp(join(src, 'img752_1000x1000.png')).trim({ threshold: 1 }).resize({ width: 520 }).webp({ quality: 90 }).toFile('public/brand/logo-vertical.webp');
-await sharp(join(src, 'img521_800x800.png')).trim({ threshold: 1 }).resize({ width: 640 }).webp({ quality: 90 }).toFile('public/brand/logo-horizontal.webp');
-// Isotipo sin el círculo negro, recortado del lockup vertical para iconos.
-await sharp(join(src, 'img604_286x286.png')).resize(192).png().toFile('public/brand/icon-192.png');
-await sharp(join(src, 'img604_286x286.png')).resize(512, 512, { kernel: 'lanczos3' }).png().toFile('public/brand/icon-512.png');
+// Logos e íconos: ver scripts/vectorizar-logo.mjs (SVG vectorial a partir de la cartilla).
 console.log('Listo');
 
 // Tamaños intrínsecos para width/height (evita saltos de layout).

@@ -2,21 +2,20 @@
 import { menu } from '../data/schema';
 const n = menu.negocio;
 ---
-<footer class="relative mt-20 border-t border-oro/30 bg-carbon pb-28">
-  <div class="revela mx-auto flex max-w-5xl flex-col items-center gap-5 px-4 pt-12 text-center">
-    <img src="/brand/logo-horizontal.webp" width="640" height="246" alt="MAKIZEN Sushi & Mariscos" loading="lazy" class="h-auto w-60" />
-    <ul class="flex flex-wrap justify-center gap-2 text-[15px]">
-      <li><a class="presionable tap inline-flex items-center rounded-full border border-white/15 px-4 hover:border-oro" href={`tel:${n.telefono}`}>{n.telefonoTexto}</a></li>
-      <li><a class="presionable tap inline-flex items-center rounded-full border border-white/15 px-4 hover:border-oro" href={`tel:${n.telefonoFijo}`}><span lang="es">Domicilio</span><span lang="en">Delivery</span>&nbsp;{n.telefonoFijoTexto}</a></li>
-      <li><a class="presionable tap inline-flex items-center rounded-full border border-white/15 px-4 hover:border-oro" href={n.instagram} target="_blank" rel="noopener">Instagram</a></li>
-      <li><a class="presionable tap inline-flex items-center rounded-full border border-white/15 px-4 hover:border-oro" href={n.facebook} target="_blank" rel="noopener">Facebook</a></li>
+<footer class="mt-28 border-t border-hueso/[0.07] pb-32">
+  <div class="contenedor revela flex flex-col items-center gap-6 pt-14 text-center">
+    <img src="/brand/logo-vertical.svg" width="702" height="803" alt="MAKIZEN Sushi & Mariscos" loading="lazy" class="h-auto w-36" />
+    <p class="max-w-sm text-[15px] text-niebla">一期一会 · <span lang="es">Buena comida, buenos momentos, siempre aquí.</span><span lang="en">Good food, good times, always here.</span></p>
+    <ul class="flex flex-wrap justify-center gap-2 text-[14px]">
+      <li><a class="boton-linea presionable min-h-11" href={`tel:${n.telefono}`}>{n.telefonoTexto}</a></li>
+      <li><a class="boton-linea presionable min-h-11" href={n.instagram} target="_blank" rel="noopener">Instagram</a></li>
+      <li><a class="boton-linea presionable min-h-11" href={n.facebook} target="_blank" rel="noopener">Facebook</a></li>
     </ul>
-    <p class="text-[15px] text-niebla"><span lang="es">{n.pago.es}</span><span lang="en">{n.pago.en}</span></p>
+    <p class="text-[14px] text-niebla"><span lang="es">{n.pago.es}</span><span lang="en">{n.pago.en}</span></p>
   </div>
-  <div class="mx-auto mt-10 max-w-2xl px-4 text-center text-[13px] leading-relaxed text-humo">
+  <div class="contenedor mt-10 max-w-2xl text-center text-[12.5px] leading-relaxed text-humo">
     <p lang="es">Precios en pesos mexicanos (MXN) con IVA incluido. Etiquetas de picante y crudo: por confirmar con cocina. Fotos: @makizen.puertopenasco.</p>
     <p lang="en">Prices in Mexican pesos (MXN), tax included. USD amounts are an approximate reference only; you pay in MXN. Photos: @makizen.puertopenasco.</p>
-    <p class="mt-2 text-oro/80">一期一会 · <span lang="es">Buena comida · Buenos momentos · Siempre aquí</span><span lang="en">Good food · Good times · Always here</span></p>
     <p class="mt-2"><span lang="es">Propuesta de menú digital · demo</span><span lang="en">Digital menu proposal · demo</span></p>
   </div>
 </footer>

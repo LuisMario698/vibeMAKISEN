@@ -205,7 +205,7 @@ export function crearIsla(o: {
     resultados.innerHTML = hits
       .map(
         (p, k) => `<li style="--k:${k}"><button type="button" data-platillo="${p.id}" class="isla-res presionable">
-          <span class="miniatura">${p.foto ? `<img src="/menu/${p.foto}.webp" alt="" loading="lazy">` : '<img src="/brand/logo-isotipo.png" alt="" class="isotipo">'}</span>
+          <span class="miniatura">${p.foto ? `<img src="/menu/${p.foto}.webp" alt="" loading="lazy">` : '<img src="/brand/isotipo.svg" alt="" class="isotipo">'}</span>
           <span class="min-w-0 flex-1 text-left"><span class="block truncate text-[15px] font-semibold"><span lang="es">${p.nombre.es}</span><span lang="en">${p.nombre.en}</span></span>
           <span class="block truncate text-[12px] text-noche/65"><span lang="es">${p.cat.es}</span><span lang="en">${p.cat.en}</span></span></span>
           <span class="text-[15px] font-bold tabular-nums">${p.precio}</span></button></li>`,

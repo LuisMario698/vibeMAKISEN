@@ -1,77 +1,151 @@
 {
   "mesa-cenital": {
-    "w": 980,
-    "h": 930,
+    "w": 1080,
+    "h": 1030,
+    "anchos": [
+      640,
+      1080
+    ],
     "origen": "IG · carrusel \"El antojo tiene otra forma\" (29 oct)"
   },
-  "sashimi-real": {
-    "w": 510,
-    "h": 490,
+  "sashimi": {
+    "w": 560,
+    "h": 560,
+    "anchos": [
+      560
+    ],
     "origen": "IG · carrusel (29 oct)"
   },
-  "gin-pepino-real": {
-    "w": 310,
-    "h": 310,
+  "gin-pepino": {
+    "w": 345,
+    "h": 345,
+    "anchos": [
+      345
+    ],
     "origen": "IG · carrusel (29 oct)"
   },
-  "rollos-corona": {
-    "w": 980,
-    "h": 880,
+  "rollo-corona": {
+    "w": 1080,
+    "h": 980,
+    "anchos": [
+      640,
+      1080
+    ],
+    "origen": "IG · carrusel (29 oct)"
+  },
+  "bocado": {
+    "w": 560,
+    "h": 600,
+    "anchos": [
+      560
+    ],
+    "origen": "IG · carrusel (29 oct)"
+  },
+  "serrano": {
+    "w": 1080,
+    "h": 610,
+    "anchos": [
+      640,
+      1080
+    ],
     "origen": "IG · carrusel (29 oct)"
   },
   "serrano-palillos": {
-    "w": 440,
-    "h": 1224,
-    "origen": "IG · carrusel (29 oct)"
-  },
-  "serrano-real": {
-    "w": 980,
-    "h": 560,
-    "origen": "IG · carrusel (29 oct)"
-  },
-  "bocado-detalle": {
-    "w": 510,
-    "h": 520,
+    "w": 470,
+    "h": 1130,
+    "anchos": [
+      470
+    ],
     "origen": "IG · carrusel (29 oct)"
   },
   "mas-sabores": {
-    "w": 980,
-    "h": 954,
+    "w": 1080,
+    "h": 1050,
+    "anchos": [
+      640,
+      1080
+    ],
     "origen": "IG · carrusel (29 oct)"
   },
   "fachada-noche": {
-    "w": 980,
-    "h": 430,
-    "origen": "IG · publicación Halloween (31 oct)"
+    "w": 1350,
+    "h": 600,
+    "anchos": [
+      640,
+      1080
+    ],
+    "origen": "IG · Halloween (31 oct)"
   },
-  "fachada-atardecer": {
-    "w": 819,
-    "h": 980,
-    "origen": "IG · reel (8 oct)"
+  "fachada-frente": {
+    "w": 1080,
+    "h": 1180,
+    "anchos": [
+      640,
+      1080
+    ],
+    "origen": "IG · reel de apertura (8 oct)"
   },
-  "fachada-dia": {
-    "w": 819,
-    "h": 1196,
-    "origen": "IG · reel (17 oct)"
+  "fachada-lado": {
+    "w": 1080,
+    "h": 1300,
+    "anchos": [
+      640,
+      1080
+    ],
+    "origen": "IG · reel de apertura (8 oct)"
+  },
+  "muro-coctel": {
+    "w": 1080,
+    "h": 1920,
+    "anchos": [
+      640,
+      1080
+    ],
+    "origen": "IG · reel"
   },
   "muro-logo": {
-    "w": 819,
-    "h": 1456,
+    "w": 1080,
+    "h": 1680,
+    "anchos": [
+      640,
+      1080
+    ],
     "origen": "IG · reel"
   },
-  "aguachile-real": {
-    "w": 819,
-    "h": 1150,
+  "aguachile": {
+    "w": 1080,
+    "h": 1500,
+    "anchos": [
+      640,
+      1080
+    ],
     "origen": "IG · reel"
   },
-  "makizen-roll-real": {
-    "w": 819,
-    "h": 1200,
+  "makizen-roll": {
+    "w": 1080,
+    "h": 1560,
+    "anchos": [
+      640,
+      1080
+    ],
     "origen": "IG · reel"
   },
-  "udon-real": {
-    "w": 529,
-    "h": 560,
-    "origen": "IG · reel (8 oct)"
+  "rollos-plato": {
+    "w": 1080,
+    "h": 1500,
+    "anchos": [
+      640,
+      1080
+    ],
+    "origen": "IG · reel"
+  },
+  "udon": {
+    "w": 680,
+    "h": 790,
+    "anchos": [
+      640,
+      680
+    ],
+    "origen": "IG · reel de apertura (8 oct)"
   }
 }

@@ -1,45 +1,44 @@
-// Fotografía real tomada de las publicaciones y reels de @makizen.puertopenasco
+// Fotografía real de @makizen.puertopenasco en resolución original
 // (ver scripts/prepare-fotos-redes.mjs). Solo se asocia a un platillo cuando la
 // foto corresponde claramente a la descripción de la cartilla.
 import tam from './fotos-redes.json';
 
-export type FotoReal = { src: string; w: number; h: number };
-const T = tam as Record<string, { w: number; h: number; origen: string }>;
-export const foto = (id: string): FotoReal => {
+type Info = { w: number; h: number; anchos: number[]; origen: string };
+const T = tam as Record<string, Info>;
+export type Foto = { src: string; srcset: string; w: number; h: number };
+
+export const foto = (id: string): Foto => {
   const t = T[id];
   if (!t) throw new Error(`Falta la foto ${id}`);
-  return { src: `/fotos/${id}.webp`, w: t.w, h: t.h };
+  const max = t.anchos[t.anchos.length - 1];
+  return { src: `/fotos/${id}-${max}.webp`, srcset: t.anchos.map((a) => `/fotos/${id}-${a}.webp ${a}w`).join(', '), w: t.w, h: t.h };
 };
 
-/** Portada (banner) de algunas categorías. */
-export const portadas: Record<string, { foto: string; lema: { es: string; en: string } }> = {
-  entradas: { foto: 'sashimi-real', lema: { es: 'Para abrir boca', en: 'To get started' } },
-  'tostadas-aguachiles': { foto: 'aguachile-real', lema: { es: 'Curtido en limón, al estilo Sinaloa', en: 'Lime-cured, Sinaloa style' } },
-  'rollos-naturales': { foto: 'rollos-corona', lema: { es: 'El antojo tiene otra forma', en: 'Cravings take a new shape' } },
-  'rollos-empanizados': { foto: 'serrano-real', lema: { es: 'Un bocado y cambia todo', en: 'One bite changes everything' } },
-  'rollos-especiales': { foto: 'mas-sabores', lema: { es: 'Más sabores, más razones para volver', en: 'More flavors, more reasons to come back' } },
-  guisos: { foto: 'udon-real', lema: { es: 'Del wok a tu mesa', en: 'From the wok to your table' } },
-  mixologia: { foto: 'muro-logo', lema: { es: 'Para brindar', en: 'Time for a toast' } },
+/** Foto de cabecera de algunas categorías. */
+export const portadas: Record<string, string> = {
+  entradas: 'mesa-cenital',
+  'tostadas-aguachiles': 'aguachile',
+  'rollos-naturales': 'rollo-corona',
+  'rollos-empanizados': 'serrano',
+  'rollos-especiales': 'mas-sabores',
+  guisos: 'udon',
+  mixologia: 'muro-coctel',
 };
 
 /** Foto real del platillo servido (se muestra en el detalle). */
 export const realDe: Record<string, string> = {
-  'aguachile-mixto': 'aguachile-real',
-  'makizen-roll': 'makizen-roll-real',
-  'res-udon': 'udon-real',
-  'serrano-roll': 'serrano-real',
-  'sashimi-mixto': 'sashimi-real',
-  'gin-pepino': 'gin-pepino-real',
+  'aguachile-mixto': 'aguachile',
+  'makizen-roll': 'makizen-roll',
+  'res-udon': 'udon',
+  'serrano-roll': 'serrano',
+  'sashimi-mixto': 'sashimi',
+  'gin-pepino': 'gin-pepino',
 };
 
-/** Carrusel "Lo más pedido": lo que más mencionan las reseñas y tiene foto real. */
-export const destacados: { id: string; foto: string }[] = [
-  { id: 'aguachile-mixto', foto: 'aguachile-real' },
-  { id: 'makizen-roll', foto: 'makizen-roll-real' },
-  { id: 'serrano-roll', foto: 'serrano-palillos' },
-  { id: 'sashimi-mixto', foto: 'sashimi-real' },
-  { id: 'res-udon', foto: 'udon-real' },
+/** Mosaico "Lo más pedido": lo que más mencionan las reseñas y tiene foto real. */
+export const favoritos: { id: string; foto: string; forma: 'alta' | 'normal' | 'ancha' }[] = [
+  { id: 'aguachile-mixto', foto: 'aguachile', forma: 'alta' },
+  { id: 'makizen-roll', foto: 'makizen-roll', forma: 'normal' },
+  { id: 'sashimi-mixto', foto: 'sashimi', forma: 'normal' },
+  { id: 'serrano-roll', foto: 'serrano', forma: 'ancha' },
 ];
-
-/** Portada de la página: se alternan como historias. */
-export const portadaHero = ['mesa-cenital', 'fachada-atardecer', 'muro-logo', 'rollos-corona'];

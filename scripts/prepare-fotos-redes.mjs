@@ -1,40 +1,48 @@
-// Recorta y optimiza las capturas tomadas de las publicaciones y reels de
-// @makizen.puertopenasco (Instagram). Quita los textos de las plantillas de Canva
-// y los subtítulos de los reels para usar solo la fotografía.
-// Uso: node scripts/prepare-fotos-redes.mjs <carpeta-con-capturas>
+// Fotos reales de @makizen.puertopenasco en su resolución original de Instagram
+// (fotos 1080 × 1350 y cuadros de reel 1080 × 1920). Se recortan los textos de las
+// plantillas de Canva y los subtítulos de los reels; se generan WebP en 2 anchos.
+// Uso: node scripts/prepare-fotos-redes.mjs <carpeta-con-originales>
 import sharp from 'sharp';
 import { join } from 'node:path';
-import { writeFileSync, mkdirSync } from 'node:fs';
+import { writeFileSync, mkdirSync, rmSync } from 'node:fs';
 
 const src = process.argv[2];
-if (!src) throw new Error('Falta la carpeta con las capturas');
+if (!src) throw new Error('Falta la carpeta con los originales');
+rmSync('public/fotos', { recursive: true, force: true });
 mkdirSync('public/fotos', { recursive: true });
 
-/** [archivo, salida, recorte {left, top, width, height} | null, ancho final, origen] */
+const ANCHOS = [640, 1080];
+/** [salida, archivo, recorte (px del original) | null, origen] */
 const fotos = [
-  ['mesa-cenital.png', 'mesa-cenital', { left: 0, top: 0, width: 980, height: 930 }, 1100, 'IG · carrusel "El antojo tiene otra forma" (29 oct)'],
-  ['mesa-cenital.png', 'sashimi-real', { left: 430, top: 70, width: 510, height: 490 }, 640, 'IG · carrusel (29 oct)'],
-  ['mesa-cenital.png', 'gin-pepino-real', { left: 80, top: 260, width: 310, height: 310 }, 420, 'IG · carrusel (29 oct)'],
-  ['el-antojo.png', 'rollos-corona', { left: 0, top: 160, width: 980, height: 880 }, 1000, 'IG · carrusel (29 oct)'],
-  ['un-bocado.png', 'serrano-palillos', { left: 0, top: 0, width: 440, height: 1224 }, 520, 'IG · carrusel (29 oct)'],
-  ['un-bocado.png', 'serrano-real', { left: 0, top: 500, width: 980, height: 560 }, 1000, 'IG · carrusel (29 oct)'],
-  ['el-placer.png', 'bocado-detalle', { left: 470, top: 640, width: 510, height: 520 }, 800, 'IG · carrusel (29 oct)'],
-  ['mas-sabores.png', 'mas-sabores', { left: 0, top: 270, width: 980, height: 954 }, 1000, 'IG · carrusel (29 oct)'],
-  ['fachada-noche-halloween.png', 'fachada-noche', { left: 0, top: 195, width: 980, height: 430 }, 1100, 'IG · publicación Halloween (31 oct)'],
-  ['fachada-atardecer.png', 'fachada-atardecer', { left: 0, top: 120, width: 819, height: 980 }, 900, 'IG · reel (8 oct)'],
-  ['fachada-letras-dia.png', 'fachada-dia', { left: 0, top: 260, width: 819, height: 1196 }, 820, 'IG · reel (17 oct)'],
-  ['muro-logo-coctel.png', 'muro-logo', null, 820, 'IG · reel'],
-  ['aguachile-cerca.png', 'aguachile-real', { left: 0, top: 150, width: 819, height: 1150 }, 820, 'IG · reel'],
-  ['makizen-roll-palillos.png', 'makizen-roll-real', { left: 0, top: 150, width: 819, height: 1200 }, 820, 'IG · reel'],
-  ['udon-reel.png', 'udon-real', { left: 290, top: 520, width: 529, height: 560 }, 560, 'IG · reel (8 oct)'],
+  ['mesa-cenital', 'mkz-mesa-cenital.png', { left: 0, top: 0, width: 1080, height: 1030 }, 'IG · carrusel "El antojo tiene otra forma" (29 oct)'],
+  ['sashimi', 'mkz-mesa-cenital.png', { left: 470, top: 70, width: 560, height: 560 }, 'IG · carrusel (29 oct)'],
+  ['gin-pepino', 'mkz-mesa-cenital.png', { left: 85, top: 285, width: 345, height: 345 }, 'IG · carrusel (29 oct)'],
+  ['rollo-corona', 'mkz-el-antojo.jpg', { left: 0, top: 175, width: 1080, height: 980 }, 'IG · carrusel (29 oct)'],
+  ['bocado', 'mkz-el-placer.png', { left: 520, top: 700, width: 560, height: 600 }, 'IG · carrusel (29 oct)'],
+  ['serrano', 'mkz-un-bocado.png', { left: 0, top: 520, width: 1080, height: 610 }, 'IG · carrusel (29 oct)'],
+  ['serrano-palillos', 'mkz-un-bocado.png', { left: 0, top: 0, width: 470, height: 1130 }, 'IG · carrusel (29 oct)'],
+  ['mas-sabores', 'mkz-mas-sabores.png', { left: 0, top: 300, width: 1080, height: 1050 }, 'IG · carrusel (29 oct)'],
+  ['fachada-noche', 'mkz-fachada-noche.png', { left: 0, top: 270, width: 1350, height: 600 }, 'IG · Halloween (31 oct)'],
+  ['fachada-frente', 'mkz-fachada-atardecer-2.png', { left: 0, top: 300, width: 1080, height: 1180 }, 'IG · reel de apertura (8 oct)'],
+  ['fachada-lado', 'mkz-fachada-atardecer.png', { left: 0, top: 150, width: 1080, height: 1300 }, 'IG · reel de apertura (8 oct)'],
+  ['muro-coctel', 'mkz-muro-logo.png', null, 'IG · reel'],
+  ['muro-logo', 'mkz-muro-logo-2.png', { left: 0, top: 0, width: 1080, height: 1680 }, 'IG · reel'],
+  ['aguachile', 'mkz-aguachile.png', { left: 0, top: 160, width: 1080, height: 1500 }, 'IG · reel'],
+  ['makizen-roll', 'mkz-makizen-roll.png', { left: 0, top: 180, width: 1080, height: 1560 }, 'IG · reel'],
+  ['rollos-plato', 'mkz-sinaloa-roll.png', { left: 0, top: 120, width: 1080, height: 1500 }, 'IG · reel'],
+  ['udon', 'mkz-udon.png', { left: 400, top: 680, width: 680, height: 790 }, 'IG · reel de apertura (8 oct)'],
 ];
 
 const tam = {};
-for (const [archivo, salida, recorte, ancho, origen] of fotos) {
-  let img = sharp(join(src, archivo));
-  if (recorte) img = img.extract(recorte);
-  const out = await img.resize({ width: ancho, withoutEnlargement: true }).webp({ quality: 74, effort: 6 }).toFile(`public/fotos/${salida}.webp`);
-  tam[salida] = { w: out.width, h: out.height, origen };
+for (const [salida, archivo, recorte, origen] of fotos) {
+  const base = sharp(join(src, archivo));
+  const meta = await (recorte ? base.clone().extract(recorte) : base.clone()).toBuffer({ resolveWithObject: true });
+  const w0 = meta.info.width, h0 = meta.info.height;
+  const anchos = ANCHOS.filter((a) => a < w0).concat(Math.min(w0, 1080)).filter((v, i, a) => a.indexOf(v) === i);
+  for (const a of anchos) {
+    await sharp(meta.data).resize({ width: a }).sharpen({ sigma: 0.5 }).webp({ quality: 82, effort: 6, smartSubsample: true }).toFile(`public/fotos/${salida}-${a}.webp`);
+  }
+  tam[salida] = { w: w0, h: h0, anchos, origen };
 }
 writeFileSync('src/data/fotos-redes.json', JSON.stringify(tam, null, 2) + '\n');
-console.log(Object.entries(tam).map(([k, v]) => `${k} ${v.w}x${v.h}`).join('\n'));
+console.log(Object.entries(tam).map(([k, v]) => `${k} ${v.w}x${v.h} [${v.anchos}]`).join('\n'));

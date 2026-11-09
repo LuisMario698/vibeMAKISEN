@@ -4,14 +4,15 @@
 @import "@fontsource/poppins/latin-700.css";
 @import "@fontsource/montserrat/latin-500.css";
 
-/* Tokens de la marca real (docs/marca-actual.md §2 y §3). */
+/* Tokens de la marca real (docs/marca-actual.md §2 y §3), con neutros cálidos. */
 @theme {
-  --color-noche: #000000;
-  --color-carbon: #0a0a0a;
-  --color-pizarra: #141414;
-  --color-hueso: #ffffff;
-  --color-niebla: #bdbdbd;
-  --color-humo: #8a8a8a;
+  --color-noche: #050505;
+  --color-carbon: #0c0c0b;
+  --color-pizarra: #141413;
+  --color-grafito: #1b1b19;
+  --color-hueso: #f4f1ea;
+  --color-niebla: #aaa69d;
+  --color-humo: #77746d;
   --color-oro: #ae8b3d;
   --color-oro-claro: #d2b26a;
   --color-oro-sombra: #786028;
@@ -36,22 +37,13 @@
     -webkit-text-size-adjust: 100%;
     -webkit-tap-highlight-color: transparent;
     color-scheme: dark;
-    scroll-padding-top: 1.5rem;
+    scroll-padding-top: 5rem;
   }
-  html.isla-abierta { overflow: hidden; }
-  body {
-    min-height: 100svh;
-    font-size: 1rem;
-    line-height: 1.55;
-    -webkit-font-smoothing: antialiased;
-    overflow-x: clip;
-  }
-  :focus-visible {
-    outline: 2px solid var(--color-oro-claro);
-    outline-offset: 3px;
-    border-radius: 6px;
-  }
+  html.bloqueo { overflow: hidden; }
+  body { min-height: 100svh; font-size: 1rem; line-height: 1.55; -webkit-font-smoothing: antialiased; overflow-x: clip; }
+  :focus-visible { outline: 2px solid var(--color-oro-claro); outline-offset: 3px; border-radius: 8px; }
   ::selection { background: var(--color-oro); color: #000; }
+  img { -webkit-user-drag: none; }
 }
 
 /* Bilingüe: los dos idiomas están en el HTML y se muestra uno. */
@@ -59,142 +51,99 @@ html[lang^="es"] [lang="en"]:not(html),
 html[lang="en"] [lang="es"]:not(html) { display: none !important; }
 
 @layer components {
-  .filete { height: 5px; border-top: 1px solid var(--color-oro); border-bottom: 1px solid color-mix(in srgb, var(--color-oro) 45%, transparent); }
-  .rotulo { font-weight: 700; text-transform: uppercase; letter-spacing: 0.14em; }
-  .ceja { font-family: var(--font-alt); font-size: 12px; text-transform: uppercase; letter-spacing: 0.3em; color: var(--color-oro); }
+  .contenedor { width: 100%; max-width: 72rem; margin-inline: auto; padding-inline: max(1rem, env(safe-area-inset-left)); }
+  .ceja { font-family: var(--font-alt); font-size: 12px; font-weight: 500; letter-spacing: 0.24em; text-transform: uppercase; color: var(--color-oro-claro); }
   .tap { min-height: 44px; min-width: 44px; }
-  .presionable { transition: transform 160ms var(--ease-salida), background-color 200ms, color 200ms, border-color 200ms; }
-  .presionable:active { transform: scale(0.96); }
+  .presionable { transition: transform 180ms var(--ease-salida), background-color 200ms, color 200ms, border-color 200ms, opacity 200ms; }
+  .presionable:active { transform: scale(0.97); }
+  .boton-oro { display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; min-height: 48px; padding-inline: 1.4rem; border-radius: 999px; background: var(--color-oro); color: #0a0a0a; font-weight: 600; }
+  .boton-oro:hover { background: var(--color-oro-claro); }
+  .boton-linea { display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; min-height: 48px; padding-inline: 1.3rem; border-radius: 999px; border: 1px solid rgb(244 241 234 / 0.18); color: var(--color-hueso); font-weight: 600; }
+  .boton-linea:hover { border-color: var(--color-oro); }
 }
 
 /* ═══════════════════════════════  ANIMACIÓN  ═══════════════════════════════ */
 
-@property --barrido { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+/* ── Barra superior: transparente sobre la portada, sólida al bajar ─────── */
+.nav { transition: background-color 400ms ease, border-color 400ms ease, backdrop-filter 400ms ease; border-bottom: 1px solid transparent; }
+.nav.solida { background: rgb(5 5 5 / 0.8); backdrop-filter: blur(16px) saturate(140%); -webkit-backdrop-filter: blur(16px) saturate(140%); border-color: rgb(244 241 234 / 0.06); }
 
-/* ── 0. Telón de entrada (solo la primera visita de la sesión) ───────────── */
-.telon {
-  position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; background: #000;
-  clip-path: ellipse(160% 120% at 50% 0%);
-  transition: clip-path 1000ms cubic-bezier(0.76, 0, 0.24, 1);
-}
-.telon.fuera { clip-path: ellipse(160% 0% at 50% 0%); pointer-events: none; }
-html.sin-telon .telon { display: none; }
-.telon-iso { width: 112px; height: 112px; mask-image: conic-gradient(from 205deg, #000 var(--barrido), transparent calc(var(--barrido) + 25deg)); animation: pintar 1100ms 100ms var(--ease-salida) forwards; }
-.telon-frase { animation: entra 700ms 600ms var(--ease-salida) both; }
-/* Con telón, la portada espera a que se levante. */
-html.con-telon .entra { animation-delay: calc(var(--d, 0) * 1ms + 1250ms); }
-html.con-telon .logo-pintado { animation-delay: 1350ms; }
-
-/* ── 1. Portada tipo historias con fotos reales ──────────────────────────── */
-.historia { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 1400ms ease; will-change: transform, opacity; }
-.historia.activa { opacity: 1; animation: kenburns 7.5s linear both; }
-.historia:nth-child(even).activa { animation-name: kenburns-b; }
-@keyframes kenburns { from { transform: scale(1.18) translate3d(2%, 1%, 0); } to { transform: scale(1.02) translate3d(-1%, -1%, 0); } }
-@keyframes kenburns-b { from { transform: scale(1.04) translate3d(-2%, 0, 0); } to { transform: scale(1.2) translate3d(1%, -2%, 0); } }
-.barra-h { position: relative; flex: 1; height: 3px; border-radius: 3px; background: rgb(255 255 255 / 0.28); overflow: hidden; }
-.barra-h > i { position: absolute; inset: 0; background: #fff; transform-origin: left; transform: scaleX(0); }
-.barra-h.vista > i { transform: scaleX(1); }
-.barra-h.activa > i { animation: llenar var(--dur, 6s) linear forwards; }
-.hero.pausada .barra-h.activa > i { animation-play-state: paused; }
-@keyframes llenar { to { transform: scaleX(1); } }
-
-.logo-pintado {
-  mask-image: conic-gradient(from 205deg at 50% 36%, #000 var(--barrido), transparent calc(var(--barrido) + 25deg));
-  animation: pintar 1500ms 150ms var(--ease-salida) forwards;
-}
-@keyframes pintar { to { --barrido: 380deg; } }
-
-.entra { opacity: 0; animation: entra 900ms var(--ease-salida) forwards; animation-delay: calc(var(--d, 0) * 1ms); }
-@keyframes entra { from { opacity: 0; transform: translateY(18px); filter: blur(6px); } to { opacity: 1; transform: none; filter: none; } }
-
-/* Letras del lema: caen una por una. */
-.letra { display: inline-block; opacity: 0; animation: letra 700ms var(--ease-salida) forwards; animation-delay: calc(var(--d, 0) * 1ms + var(--l) * 28ms); }
-html.con-telon .letra { animation-delay: calc(var(--d, 0) * 1ms + var(--l) * 28ms + 1250ms); }
-@keyframes letra { from { opacity: 0; transform: translateY(0.6em) rotate(8deg); filter: blur(4px); } to { opacity: 1; transform: none; filter: none; } }
-
-@supports (animation-timeline: scroll()) {
-  .hero-desvanece { animation: hero-desvanece linear both; animation-timeline: scroll(root); animation-range: 0 80svh; }
-  @keyframes hero-desvanece { to { opacity: 0; transform: translateY(-12%) scale(0.94); filter: blur(6px); } }
-  .hero-fondo { animation: hero-fondo linear both; animation-timeline: scroll(root); animation-range: 0 100svh; }
-  @keyframes hero-fondo { to { transform: translateY(18%) scale(1.06); filter: brightness(0.5); } }
-}
-
-.indicio { animation: indicio 1.8s 2.4s var(--ease-salida) infinite; }
-@keyframes indicio { 0%, 100% { transform: translate(-50%, 0); opacity: 0.5; } 50% { transform: translate(-50%, 7px); opacity: 1; } }
-
-.pulso::after { content: ""; position: absolute; inset: 0; border-radius: 999px; background: currentColor; animation: pulso 2s ease-out infinite; }
-@keyframes pulso { from { transform: scale(1); opacity: 0.6; } to { transform: scale(3); opacity: 0; } }
-
-/* ── 2. Marquesina dorada ────────────────────────────────────────────────── */
-.cinta { display: flex; width: max-content; animation: cinta 36s linear infinite; }
-.cinta.inversa { animation-direction: reverse; animation-duration: 44s; }
-@keyframes cinta { to { transform: translateX(-50%); } }
-
-/* ── 3. Carrusel "lo más pedido" ─────────────────────────────────────────── */
-.carril { scrollbar-width: none; scroll-padding-inline: 12vw; }
-.carril::-webkit-scrollbar { display: none; }
-@supports (animation-timeline: view(inline)) {
-  .carta { animation: carta linear both; animation-timeline: view(inline); }
-  @keyframes carta {
-    0% { transform: scale(0.84) rotate(-3deg); opacity: 0.5; filter: saturate(0.6); }
-    50% { transform: none; opacity: 1; filter: none; }
-    100% { transform: scale(0.84) rotate(3deg); opacity: 0.5; filter: saturate(0.6); }
-  }
-}
-.carta-img { transition: transform 900ms var(--ease-salida); }
-.carta:hover .carta-img { transform: scale(1.06); }
-
-/* ── 4. Revelado al hacer scroll ─────────────────────────────────────────── */
-.revela { opacity: 0; transform: translateY(28px) scale(0.98); }
-.revela.visto { opacity: 1; transform: none; transition: opacity 700ms var(--ease-salida), transform 800ms var(--ease-salida); transition-delay: calc(min(var(--i, 0), 6) * 70ms); }
-.filete-sec { transform: scaleX(0); transform-origin: left; }
-.visto .filete-sec { transform: scaleX(1); transition: transform 1100ms 150ms var(--ease-salida); }
-
-/* Títulos: cada palabra sube desde una máscara. */
-.pal { display: inline-block; overflow: hidden; vertical-align: top; padding-bottom: 0.1em; margin-bottom: -0.1em; }
-.pal > span { display: inline-block; transform: translateY(110%); transition: transform 900ms var(--ease-salida); transition-delay: calc(var(--w) * 70ms + 120ms); }
-.visto .pal > span { transform: none; }
-
-/* Portadas de categoría: se abren como cortina y la foto hace parallax. */
-.portada { clip-path: inset(14% 10% 14% 10% round 28px); transition: clip-path 1200ms var(--ease-salida); }
-.portada.visto { clip-path: inset(0 round 28px); opacity: 1; transform: none; }
-.portada-img { transform: scale(1.3); transition: transform 1600ms var(--ease-salida); }
-.portada.visto .portada-img { transform: scale(1.08); }
+/* ── Portada: renglones que suben, foto que entra y se abre al hacer scroll ── */
+.linea { display: block; overflow: hidden; padding-bottom: 0.08em; margin-bottom: -0.08em; }
+.linea > span { display: inline-block; transform: translateY(108%); animation: subir 1100ms var(--ease-salida) forwards; animation-delay: calc(var(--d, 0) * 1ms); }
+@keyframes subir { to { transform: none; } }
+.aparece { opacity: 0; animation: aparece 900ms var(--ease-salida) forwards; animation-delay: calc(var(--d, 0) * 1ms); }
+@keyframes aparece { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+.hero-media { opacity: 0; animation: media-entra 1400ms 350ms var(--ease-salida) forwards; }
+@keyframes media-entra { from { opacity: 0; transform: translateY(48px) scale(0.94); } to { opacity: 1; transform: none; } }
+.hero-marco { clip-path: inset(0 16px round 28px); }
 @supports (animation-timeline: view()) {
-  .portada-mov { animation: portada-mov linear both; animation-timeline: view(); }
-  @keyframes portada-mov { from { transform: translateY(-9%); } to { transform: translateY(9%); } }
+  .hero-marco { animation: abrir-marco linear both; animation-timeline: view(); animation-range: entry 80% cover 52%; }
+  @keyframes abrir-marco { from { clip-path: inset(0 16px round 28px); } to { clip-path: inset(0 0 round 0px); } }
+  .hero-foto { animation: acercar linear both; animation-timeline: view(); animation-range: entry 70% exit 100%; }
+  @keyframes acercar { from { transform: scale(1.16); } to { transform: scale(1) translateY(8%); } }
+}
+.punto-vivo { position: relative; }
+.punto-vivo::after { content: ""; position: absolute; inset: 0; border-radius: 999px; background: currentColor; animation: pulso 2.2s ease-out infinite; }
+@keyframes pulso { from { transform: scale(1); opacity: 0.55; } to { transform: scale(3); opacity: 0; } }
+
+/* ── Revelado al hacer scroll ──────────────────────────────────────────── */
+.revela { opacity: 0; transform: translateY(22px); }
+.revela.visto { opacity: 1; transform: none; transition: opacity 800ms var(--ease-salida), transform 900ms var(--ease-salida); transition-delay: calc(min(var(--i, 0), 8) * 60ms); }
+.trazo { transform: scaleX(0); transform-origin: left; }
+.visto .trazo, .visto.trazo { transform: scaleX(1); transition: transform 1200ms 150ms var(--ease-salida); }
+
+/* Mosaico y cabeceras con foto: se abren desde abajo como cortina. */
+/* El recorte va en el primer hijo: así el contenedor sigue siendo visible para IntersectionObserver. */
+.cortina > :first-child { clip-path: inset(100% 0 0 0 round 24px); transition: clip-path 1200ms var(--ease-salida); transition-delay: calc(min(var(--i, 0), 6) * 90ms); }
+.cortina.visto > :first-child { clip-path: inset(0 0 0 0 round 24px); }
+.cortina .cortina-img { transform: scale(1.18); transition: transform 1800ms var(--ease-salida); transition-delay: inherit; }
+.cortina.visto .cortina-img { transform: scale(1.02); }
+@supports (animation-timeline: view()) {
+  .paralaje { animation: paralaje linear both; animation-timeline: view(); }
+  @keyframes paralaje { from { transform: translateY(-7%); } to { transform: translateY(7%); } }
 }
 
-/* Al saltar a una categoría desde la isla: destello dorado en su título. */
+/* Al saltar a una categoría: el título se ilumina un instante. */
 .llega .titulo-sec { animation: destello 1200ms var(--ease-salida); }
-@keyframes destello { 0% { color: var(--color-oro-claro); text-shadow: 0 0 24px rgb(210 178 106 / 0.8); } 100% { color: inherit; text-shadow: none; } }
+@keyframes destello { 0%, 30% { color: var(--color-oro-claro); } 100% { color: inherit; } }
 
-/* Foto del platillo: flota y gira levemente con el scroll de la tarjeta. */
-@supports (animation-timeline: view()) {
-  .flota { animation: flota linear both; animation-timeline: view(); animation-range: entry 0% exit 100%; }
-  @keyframes flota { from { transform: translateY(14px) rotate(-4deg) scale(0.94); } to { transform: translateY(-14px) rotate(4deg) scale(1.04); } }
-}
-.foto-platillo { transition: transform 600ms var(--ease-resorte); }
-.tarjeta:hover .foto-platillo { transform: scale(1.07) rotate(-2deg); }
+/* Producto: la foto respira al pasar el cursor. */
+.producto-img { transition: transform 700ms var(--ease-resorte); }
+@media (hover: hover) { .producto:hover .producto-img { transform: translateY(-6px) scale(1.05) rotate(-1.5deg); } }
 
-/* Tarjetas con inclinación 3D y brillo que sigue al dedo/cursor. */
-.inclinable { transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)); transition: transform 500ms var(--ease-salida), border-color 300ms; transform-style: preserve-3d; }
-.inclinable::after {
-  content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; opacity: var(--brillo, 0);
-  background: radial-gradient(260px circle at var(--mx, 50%) var(--my, 50%), rgb(210 178 106 / 0.18), transparent 60%);
-  transition: opacity 400ms;
-}
-/* Barrido de luz cuando la tarjeta aparece. */
-.tarjeta::before { content: ""; position: absolute; inset: 0; z-index: 2; pointer-events: none; background: linear-gradient(105deg, transparent 35%, rgb(255 255 255 / 0.12) 50%, transparent 65%) -150% 0 / 250% 100% no-repeat; }
-.visto .tarjeta::before { animation: barrido 1400ms 350ms var(--ease-salida) both; }
-@keyframes barrido { to { background-position: 150% 0; } }
-
-/* Micro-interacción: los chiles se encienden uno tras otro. */
 .chile { transition: transform 300ms var(--ease-resorte); }
-.visto .chile.on { animation: chile 600ms var(--ease-resorte) both; animation-delay: calc(400ms + var(--c) * 110ms); }
+.visto .chile.on { animation: chile 600ms var(--ease-resorte) both; animation-delay: calc(500ms + var(--c) * 110ms); }
 @keyframes chile { from { transform: scale(0) rotate(-40deg); } }
 
-/* ── 5. Isla dinámica de oro líquido ─────────────────────────────────────── */
+/* ── Selección de producto: la tarjeta se des-funde en líquido hacia la hoja ── */
+.liquido { position: fixed; inset: 0; z-index: 70; pointer-events: none; filter: url(#goo-hoja); }
+.liquido > i { position: absolute; display: block; background: var(--color-grafito); will-change: left, top, width, height; }
+.vuelo { position: fixed; z-index: 71; pointer-events: none; object-fit: contain; will-change: transform; }
+.velo-hoja { position: fixed; inset: 0; z-index: 68; background: rgb(0 0 0 / 0.68); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); opacity: 0; pointer-events: none; transition: opacity 420ms ease; }
+.velo-hoja.on { opacity: 1; }
+
+/* ── Hoja de detalle ───────────────────────────────────────────────────── */
+dialog.hoja { inset: auto 0 0 0; margin: 0 auto; width: min(100%, 36rem); max-width: none; height: var(--alto-hoja, 88svh); max-height: none; padding: 0; border: 0; background: transparent; color: inherit; overflow: visible; }
+dialog.hoja::backdrop { background: rgb(0 0 0 / 0.68); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+dialog.hoja:not(.liquida)[open] .hoja-panel { animation: hoja-sube 560ms var(--ease-salida); }
+dialog.hoja:not(.liquida)[open]::backdrop { animation: velo 420ms ease-out; }
+dialog.hoja.cerrando .hoja-panel { animation: hoja-baja 300ms ease-in forwards; }
+dialog.hoja.cerrando::backdrop { animation: velo 300ms ease-in reverse forwards; }
+dialog.hoja.liquida::backdrop { animation: none; }
+@keyframes hoja-sube { from { transform: translateY(100%); } to { transform: none; } }
+@keyframes hoja-baja { to { transform: translateY(105%); } }
+@keyframes velo { from { opacity: 0; } }
+.hoja-escalonada > * { opacity: 0; animation: aparece 700ms var(--ease-salida) forwards; animation-delay: calc(120ms + var(--d, 0) * 55ms); }
+.hoja-foto-img { opacity: 1; }
+.hoja.esperando .hoja-foto-img { opacity: 0; }
+
+html.cambia-idioma::view-transition-old(root) { animation: 220ms ease-in both salida-idioma; }
+html.cambia-idioma::view-transition-new(root) { animation: 320ms var(--ease-salida) both entrada-idioma; }
+@keyframes salida-idioma { to { opacity: 0; filter: blur(4px); } }
+@keyframes entrada-idioma { from { opacity: 0; filter: blur(4px); } }
+
+/* ── Isla dinámica de oro líquido ──────────────────────────────────────── */
 .isla { position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom) + 14px); z-index: 45; translate: -50% 0; pointer-events: none; color: #0a0a0a; }
 .isla-liquido { position: absolute; inset: 0; filter: url(#goo) drop-shadow(0 16px 26px rgb(0 0 0 / 0.6)); will-change: filter; }
 .mancha {
@@ -205,7 +154,6 @@ html.con-telon .letra { animation-delay: calc(var(--d, 0) * 1ms + var(--l) * 28m
 .mancha.gota.rapida { transition: left 380ms cubic-bezier(0.2, 0.9, 0.3, 1), bottom 380ms cubic-bezier(0.2, 0.9, 0.3, 1), width 380ms, height 380ms; }
 .mancha.quieta { transition: none !important; }
 .isla[data-estado="abierta"] .mancha.cuerpo { transition-duration: 720ms; }
-
 .isla-pildora, .isla-lupa {
   position: absolute; pointer-events: auto; display: flex; align-items: center; border-radius: 999px; color: #0a0a0a;
   transition: left 640ms var(--ease-liquido), bottom 640ms var(--ease-liquido), width 640ms var(--ease-liquido), opacity 260ms ease, transform 160ms var(--ease-salida);
@@ -222,7 +170,6 @@ html.con-telon .letra { animation-delay: calc(var(--d, 0) * 1ms + var(--l) * 28m
 .isla-texto .actual { display: inline-block; }
 .isla .flecha { flex: none; transition: transform 400ms var(--ease-resorte); }
 .isla-pildora:hover .flecha { transform: translateY(-3px); }
-
 .isla-panel { position: absolute; left: 0; bottom: 0; width: 100%; height: var(--alto-panel); display: flex; flex-direction: column; opacity: 0; pointer-events: none; transition: opacity 160ms ease; color: #0a0a0a; }
 .isla-panel.lista { opacity: 1; pointer-events: auto; transition-duration: 300ms; }
 .isla-scroll { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 14px 16px 20px; mask-image: linear-gradient(to bottom, transparent, #000 14px, #000 calc(100% - 22px), transparent); scrollbar-width: none; }
@@ -235,50 +182,19 @@ html.con-telon .letra { animation-delay: calc(var(--d, 0) * 1ms + var(--l) * 28m
 .isla-cat[aria-current="true"] .text-noche\/65 { color: rgb(210 178 106 / 0.75); }
 .isla .miniatura { flex: none; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 14px; background: #0a0a0a; overflow: hidden; }
 .isla .miniatura img { max-width: 40px; max-height: 40px; object-fit: contain; }
-.isla .miniatura img.isotipo { max-width: 30px; opacity: 0.6; }
+.isla .miniatura img.isotipo { max-width: 28px; opacity: 0.55; }
 .isla-vacio { padding: 32px 8px; text-align: center; font-size: 15px; opacity: 0.75; }
 .isla-panel.lista :is(.isla-item, .isla-resultados > li, .isla-grupo) { animation: item-isla 520ms var(--ease-salida) both; animation-delay: calc(var(--k, 0) * 22ms + 120ms); }
 @keyframes item-isla { from { opacity: 0; transform: translateY(14px) scale(0.96); } }
-
 .isla-velo { position: fixed; inset: 0; z-index: 44; background: rgb(0 0 0 / 0.62); backdrop-filter: blur(5px); opacity: 0; pointer-events: none; transition: opacity 380ms ease; }
 .isla-velo.on { opacity: 1; pointer-events: auto; }
 
-/* ── 6. Detalle del platillo: hoja inferior con morph de la foto ─────────── */
-dialog.hoja { inset: auto 0 0 0; margin: 0 auto; max-height: 92svh; max-width: none; width: min(100%, 40rem); padding: 0; border: 0; background: transparent; color: inherit; overflow: visible; }
-dialog.hoja::backdrop { background: rgb(0 0 0 / 0.72); backdrop-filter: blur(6px); }
-dialog.hoja[open] .hoja-panel { animation: hoja-sube 520ms var(--ease-salida); }
-dialog.hoja[open]::backdrop { animation: velo 400ms ease-out; }
-dialog.hoja.cerrando .hoja-panel { animation: hoja-baja 280ms ease-in forwards; }
-dialog.hoja.cerrando::backdrop { animation: velo 280ms ease-in reverse forwards; }
-@keyframes hoja-sube { from { transform: translateY(100%); } to { transform: none; } }
-@keyframes hoja-baja { to { transform: translateY(105%); } }
-@keyframes velo { from { opacity: 0; } }
-.hoja-escalonada > * { opacity: 0; animation: entra 650ms var(--ease-salida) forwards; animation-delay: calc(200ms + var(--d, 0) * 60ms); }
-
-.hoja-panel { view-transition-name: hoja; }
-dialog.hoja.vt .hoja-panel, dialog.hoja.vt::backdrop { animation: none !important; }
-::view-transition-new(hoja) { animation: hoja-sube 520ms var(--ease-salida); }
-::view-transition-old(hoja) { animation: hoja-baja 300ms ease-in forwards; }
-::view-transition-group(hoja) { animation: none; }
-::view-transition-group(foto-platillo) { animation-duration: 560ms; animation-timing-function: var(--ease-salida); }
-::view-transition-old(foto-platillo), ::view-transition-new(foto-platillo) { height: 100%; object-fit: contain; }
-::view-transition-old(root), ::view-transition-new(root) { animation-duration: 280ms; }
-
-html.cambia-idioma::view-transition-old(root) { animation: 220ms ease-in both salida-idioma; }
-html.cambia-idioma::view-transition-new(root) { animation: 320ms var(--ease-salida) both entrada-idioma; }
-@keyframes salida-idioma { to { opacity: 0; filter: blur(4px); } }
-@keyframes entrada-idioma { from { opacity: 0; filter: blur(4px); } }
-
-/* ── Reducir movimiento: sin desplazamientos, parallax, barridos ni líquido ── */
+/* ── Reducir movimiento ────────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 1ms !important; animation-iteration-count: 1 !important; transition-duration: 1ms !important; animation-delay: 0ms !important; transition-delay: 0ms !important; scroll-behavior: auto !important; }
-  .telon { display: none; }
-  .logo-pintado, .telon-iso { mask-image: none; }
-  .revela, .portada { opacity: 1; transform: none; clip-path: none; }
-  .filete-sec, .pal > span, .portada-img { transform: none; }
-  .letra { opacity: 1; }
-  .cinta, .flota, .hero-desvanece, .hero-fondo, .portada-mov, .carta, .historia.activa { animation: none !important; }
-  .inclinable { transform: none !important; }
+  .revela, .aparece, .hero-media { opacity: 1; transform: none; }
+  .linea > span, .trazo, .cortina .cortina-img { transform: none; }
+  .cortina > :first-child { clip-path: none; }
+  .hero-marco, .hero-foto, .paralaje { animation: none !important; }
   .mancha.gota { display: none; }
-  ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
 }

@@ -1,0 +1,41 @@
+---
+// "Lo más pedido": mosaico con fotos reales; cada pieza se des-funde hacia el detalle.
+import { menu } from '../data/schema';
+import { favoritos, foto } from '../data/fotos-reales';
+import { precio } from '../lib/etiquetas';
+
+const todos = menu.categorias.flatMap((c) => c.platillos.map((p) => ({ ...p, cat: c.nombre })));
+const items = favoritos.map((d) => ({ ...todos.find((p) => p.id === d.id)!, f: foto(d.foto), forma: d.forma, fotoId: d.foto }));
+const forma = { alta: 'row-span-2 sm:row-span-2', normal: '', ancha: 'col-span-2 sm:col-span-2' } as const;
+---
+<section class="contenedor pt-24" aria-labelledby="t-favoritos">
+  <div class="revela">
+    <p class="ceja"><span lang="es">Lo más pedido</span><span lang="en">Most ordered</span></p>
+    <h2 id="t-favoritos" class="mt-2 text-[34px] leading-[1.05] font-semibold tracking-[-0.03em] sm:text-[48px]">
+      <span lang="es">Favoritos de la casa</span><span lang="en">House favorites</span>
+    </h2>
+    <p class="mt-3 max-w-md text-[16px] text-niebla">
+      <span lang="es">Lo que más mencionan quienes ya nos visitaron.</span>
+      <span lang="en">What our guests talk about the most.</span>
+    </p>
+  </div>
+  <ul class="mt-8 grid grid-cols-2 grid-rows-[11.5rem_11.5rem_13rem] gap-3 sm:grid-cols-3 sm:grid-rows-[17rem_17rem]">
+    {items.map((p, i) => (
+      <li class:list={['cortina relative overflow-hidden rounded-3xl bg-pizarra', forma[p.forma]]} style={`--i:${i}`}>
+        <article class="producto group h-full" data-modo="foto">
+          <img src={p.f.src} srcset={p.f.srcset} sizes={p.forma === 'ancha' ? '(min-width: 640px) 66vw, 100vw' : '(min-width: 640px) 33vw, 50vw'} width={p.f.w} height={p.f.h}
+            alt="" loading="lazy" decoding="async" data-foto={p.id} data-real={p.fotoId} class="cortina-img absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" />
+          <div class="pointer-events-none absolute inset-0 bg-[linear-gradient(to_bottom,transparent_45%,rgb(5_5_5/0.88))]"></div>
+          <div class="absolute inset-x-0 bottom-0 p-4">
+            <h3 class="text-[17px] leading-tight font-semibold">
+              <button type="button" data-abrir={p.id} aria-haspopup="dialog" class="text-left after:absolute after:inset-0 after:rounded-3xl after:content-[''] focus-visible:outline-none focus-visible:after:outline-2 focus-visible:after:outline-oro-claro">
+                <span lang="es">{p.nombre.es}</span><span lang="en">{p.nombre.en}</span>
+              </button>
+            </h3>
+            <p class="mt-1 text-[15px] text-hueso/85 tabular-nums">{precio(p.precio)}</p>
+          </div>
+        </article>
+      </li>
+    ))}
+  </ul>
+</section>

@@ -1,49 +1,31 @@
-// Interacción del menú. Sin librerías: View Transitions API, IntersectionObserver,
-// Web Animations API, CSS scroll-driven y un filtro SVG para la isla líquida.
+// Interacción del menú. Sin librerías: Web Animations API, IntersectionObserver,
+// CSS scroll-driven y filtros SVG "goo" para la isla y el des-merge del detalle.
 import type { Platillo } from '../data/schema';
 import { etiquetasHTML, precio, usd } from '../lib/etiquetas';
 import { crearIsla } from './isla';
+import { cajaDe, contenido, crearLiquido, type Caja } from './liquido';
 
 type Txt = { es: string; en: string };
-type Real = { src: string; w: number; h: number };
+type Foto = { src: string; srcset: string; w: number; h: number };
+type Modo = 'recorte' | 'foto' | 'fila';
 type Datos = {
   tc: number;
   horario: { dia: number; abre: string; cierra: string }[];
   fotos: Record<string, [number, number]>;
-  reales: Record<string, Real>;
+  reales: Record<string, Foto>;
   cats: { id: string; nombre: Txt }[];
   platillos: (Platillo & { cat: Txt })[];
 };
 
 const datos: Datos = JSON.parse(document.getElementById('datos-menu')!.textContent!);
-const normalizar = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
-const busqueda = datos.platillos.map((p) => ({
-  id: p.id, nombre: p.nombre, cat: p.cat, precio: precio(p.precio), foto: p.foto,
-  texto: normalizar([p.nombre.es, p.nombre.en, p.descripcion?.es ?? '', p.descripcion?.en ?? '', p.cat.es, p.cat.en].join(' ')),
-}));
 const html = document.documentElement;
 const $ = <T extends Element = HTMLElement>(s: string, r: ParentNode = document) => r.querySelector<T>(s);
 const $$ = <T extends Element = HTMLElement>(s: string, r: ParentNode = document) => [...r.querySelectorAll<T>(s)];
 const reducir = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 const esIngles = () => html.lang === 'en';
-const vt = (fn: () => void) => {
-  if (!document.startViewTransition || reducir()) { fn(); return null; }
-  return document.startViewTransition(fn);
-};
-const enPantalla = (el: Element | null) => { if (!el) return false; const r = el.getBoundingClientRect(); return r.bottom > 0 && r.top < innerHeight; };
-
-/* ── Telón de entrada ─────────────────────────────────────────────── */
-const telon = $('#telon');
-if (telon && html.classList.contains('con-telon')) {
-  const levantar = () => {
-    if (telon.classList.contains('fuera')) return;
-    telon.classList.add('fuera');
-    try { sessionStorage.setItem('makizen-telon', '1'); } catch {}
-    setTimeout(() => telon.remove(), 1100);
-  };
-  telon.addEventListener('click', levantar);
-  setTimeout(levantar, 1250);
-}
+const espera = (ms: number) => new Promise((r) => setTimeout(r, ms));
+const enPantalla = (el: Element | null | undefined) => { if (!el) return false; const r = el.getBoundingClientRect(); return r.bottom > 40 && r.top < innerHeight - 40; };
+const normalizar = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
 /* ── Idioma ───────────────────────────────────────────────────────── */
 let objetivo = html.lang;
@@ -62,10 +44,10 @@ document.addEventListener('click', (e) => {
   if (objetivo === nuevo) return;
   objetivo = nuevo;
   try { localStorage.setItem('makizen-idioma', nuevo === 'en' ? 'en' : 'es'); } catch {}
+  const cambiar = () => { html.lang = objetivo; aplicarIdioma(); };
+  if (!document.startViewTransition || reducir()) { cambiar(); return; }
   html.classList.add('cambia-idioma');
-  const t = vt(() => { html.lang = objetivo; aplicarIdioma(); });
-  const fin = () => html.classList.remove('cambia-idioma');
-  t ? t.finished.finally(fin) : fin();
+  document.startViewTransition(cambiar).finished.finally(() => html.classList.remove('cambia-idioma'));
 });
 
 /* ── Abierto / cerrado (hora de Sonora, sin horario de verano) ──────── */
@@ -98,71 +80,28 @@ function estado() {
     }
   }
   $$('[data-estado-local]').forEach((el) => {
-    $('.punto', el)!.className = `punto relative size-2.5 rounded-full ${abierto ? 'pulso text-abierto' : 'text-cerrado'}`;
+    $('.punto', el)!.className = `punto relative size-2 rounded-full ${abierto ? 'punto-vivo text-abierto' : 'text-cerrado'}`;
     $('.texto', el)!.innerHTML = `<span lang="es">${es}</span><span lang="en">${en}</span>`;
   });
+  const hoyEl = $('[data-hoy]');
+  if (hoyEl) hoyEl.innerHTML = hoy ? `${h12(hoy.abre).replace(' pm', '')}–${h12(hoy.cierra)}` : '<span lang="es">Cerrado</span><span lang="en">Closed</span>';
   $$('#horario [data-dia]').forEach((li) => li.classList.toggle('hoy', Number(li.dataset.dia) === dia));
 }
 
-/* ── Portada en formato historias ──────────────────────────────────── */
-const hero = $('.hero')!;
-const historias = $$<HTMLImageElement>('.historia', hero);
-const barras = $$('.barra-h', hero);
-let actual = 0; let reloj = 0;
-const DUR = 6000;
-function verHistoria(n: number) {
-  actual = (n + historias.length) % historias.length;
-  historias.forEach((h, i) => {
-    h.classList.toggle('activa', i === actual);
-    if (i === actual) { h.loading = 'eager'; h.style.animation = 'none'; void h.offsetWidth; h.style.animation = ''; }
-  });
-  barras.forEach((b, i) => {
-    b.classList.toggle('vista', i < actual);
-    b.classList.remove('activa');
-    if (i === actual) { void b.offsetWidth; b.classList.add('activa'); }
-  });
-  clearTimeout(reloj);
-  if (!reducir()) reloj = window.setTimeout(() => verHistoria(actual + 1), DUR);
-}
-hero.style.setProperty('--dur', `${DUR}ms`);
-$$('[data-historia]').forEach((b) => b.addEventListener('click', () => verHistoria(actual + Number(b.dataset.historia))));
-new IntersectionObserver(([e]) => {
-  const fuera = !e?.isIntersecting;
-  hero.classList.toggle('pausada', fuera);
-  if (fuera) clearTimeout(reloj); else verHistoria(actual);
-}).observe(hero);
-// Precarga las demás fotos cuando el navegador esté libre.
-(window.requestIdleCallback ?? ((f: () => void) => setTimeout(f, 1500)))(() => historias.forEach((h) => (h.loading = 'eager')));
+/* ── Barra superior: sólida al salir de la portada ─────────────────── */
+const nav = $('#nav')!;
+addEventListener('scroll', () => nav.classList.toggle('solida', scrollY > 24), { passive: true });
 
 /* ── Aparición al hacer scroll ─────────────────────────────────────── */
 const revela = new IntersectionObserver(
   (entradas) => entradas.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('visto'); revela.unobserve(e.target); } }),
-  { rootMargin: '0px 0px -8% 0px', threshold: 0.08 },
+  { rootMargin: '0px 0px -10% 0px', threshold: 0.06 },
 );
-$$('.revela').forEach((el) => revela.observe(el));
-
-/* ── Tarjetas con inclinación 3D (solo con cursor) ─────────────────── */
-if (matchMedia('(hover: hover) and (pointer: fine)').matches && !reducir()) {
-  $$('.inclinable').forEach((card) => {
-    let raf = 0;
-    card.addEventListener('pointermove', (e) => {
-      cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(() => {
-        const r = card.getBoundingClientRect();
-        const x = (e.clientX - r.left) / r.width; const y = (e.clientY - r.top) / r.height;
-        card.style.setProperty('--ry', `${(x - 0.5) * 10}deg`);
-        card.style.setProperty('--rx', `${(0.5 - y) * 8}deg`);
-        card.style.setProperty('--mx', `${x * 100}%`);
-        card.style.setProperty('--my', `${y * 100}%`);
-        card.style.setProperty('--brillo', '1');
-      });
-    });
-    card.addEventListener('pointerleave', () => { ['--rx', '--ry'].forEach((p) => card.style.setProperty(p, '0deg')); card.style.setProperty('--brillo', '0'); });
-  });
-}
+$$('.revela, .cortina').forEach((el) => revela.observe(el));
 
 /* ── Isla dinámica + categoría activa ──────────────────────────────── */
 const secciones = $$('[data-seccion]');
+let bloqueo = 0; let pendiente = false;
 function ir(id: string) {
   const sec = document.getElementById(id);
   if (!sec) return;
@@ -170,7 +109,7 @@ function ir(id: string) {
   isla.actualizar(i, i >= isla.indice ? 1 : -1);
   bloqueo = Date.now() + 1000;
   setTimeout(espiar, 1050);
-  $$('.revela', sec).forEach((el) => el.classList.add('visto'));
+  $$('.revela, .cortina', sec).forEach((el) => el.classList.add('visto'));
   sec.scrollIntoView({ behavior: reducir() ? 'auto' : 'smooth', block: 'start' });
   history.replaceState(null, '', `#${id}`);
   sec.classList.remove('llega'); void sec.offsetWidth; sec.classList.add('llega');
@@ -178,13 +117,14 @@ function ir(id: string) {
 }
 const isla = crearIsla({
   cats: datos.cats,
-  platillos: busqueda,
+  platillos: datos.platillos.map((p) => ({
+    id: p.id, nombre: p.nombre, cat: p.cat, precio: precio(p.precio), foto: p.foto,
+    texto: normalizar([p.nombre.es, p.nombre.en, p.descripcion?.es ?? '', p.descripcion?.en ?? '', p.cat.es, p.cat.en].join(' ')),
+  })),
   ir,
   abrir: (id) => abrir(id, null),
   reducir,
 });
-
-let bloqueo = 0; let pendiente = false;
 function espiar() {
   pendiente = false;
   if (Date.now() < bloqueo) return;
@@ -195,94 +135,153 @@ function espiar() {
   if (nuevo !== isla.indice) isla.actualizar(nuevo, nuevo > isla.indice ? 1 : -1);
 }
 addEventListener('scroll', () => { if (!pendiente) { pendiente = true; requestAnimationFrame(espiar); } }, { passive: true });
-// La isla aparece cuando la portada sale de la pantalla.
-new IntersectionObserver(([e]) => isla.mostrar(!!e && !e.isIntersecting && e.boundingClientRect.top < 0)).observe($('#centinela')!);
+// La isla aparece al llegar al menú.
+const inicioMenu = $('#menu')!;
+new IntersectionObserver(([e]) => isla.mostrar(!!e && (e.isIntersecting || e.boundingClientRect.top < 0)), { rootMargin: '0px 0px -55% 0px' }).observe(inicioMenu);
 
-/* ── Hoja de detalle ────────────────────────────────────────────────── */
+/* ── Hoja de detalle con des-merge líquido ─────────────────────────── */
 const hoja = $<HTMLDialogElement>('#hoja')!;
 const panel = $('.hoja-panel', hoja)!;
+const scroller = $('.hoja-scroll', hoja)!;
 const hojaImg = $<HTMLImageElement>('#hoja-img')!;
 const cuerpo = $('#hoja-cuerpo')!;
-let origen: HTMLImageElement | null = null;
+const liquido = crearLiquido();
+let origen: HTMLElement | null = null;
+let modoActual: Modo = 'fila';
 let disparador: HTMLElement | null = null;
+let ocupado = false;
 
-function llenar(p: Datos['platillos'][number]) {
+const RADIO: Record<Modo, number> = { recorte: 22, foto: 24, fila: 14 };
+const ALTO_FOTO = 300;
+
+function cajaHoja(): Caja {
+  const w = Math.min(innerWidth, 576);
+  const h = Math.round(Math.min(innerHeight * 0.88, 780));
+  hoja.style.setProperty('--alto-hoja', `${h}px`);
+  return { x: (innerWidth - w) / 2, y: innerHeight - h, w, h };
+}
+/** Dónde queda la imagen principal dentro de la hoja. */
+function cajaImagenHoja(S: Caja, modo: Modo, img?: HTMLImageElement | null): Caja {
+  const marco: Caja = { x: S.x, y: S.y, w: S.w, h: ALTO_FOTO };
+  if (modo === 'foto' || !img) return marco;
+  return contenido(img, { x: S.x + S.w * 0.1, y: S.y + 30, w: S.w * 0.8, h: 240 });
+}
+
+function llenar(p: Datos['platillos'][number], modo: Modo, fotoReal?: string) {
   const t = p.foto ? datos.fotos[p.foto] : undefined;
   const real = datos.reales[p.id];
-  if (p.foto && t) {
+  const caja = $('.hoja-foto', hoja)!;
+  hojaImg.removeAttribute('srcset');
+  if (modo === 'foto' && fotoReal) {
+    hojaImg.src = fotoReal; hojaImg.className = 'hoja-foto-img absolute inset-0 h-full w-full object-cover';
+    caja.classList.add('con-foto');
+  } else if (p.foto && t) {
     hojaImg.src = `/menu/${p.foto}.webp`; hojaImg.width = t[0]; hojaImg.height = t[1];
-    hojaImg.classList.remove('opacity-40', 'max-h-[120px]');
+    hojaImg.className = 'hoja-foto-img relative max-h-[240px] w-auto max-w-[80%] object-contain drop-shadow-[0_26px_24px_rgb(0_0_0/0.85)]';
+    caja.classList.remove('con-foto');
   } else {
-    hojaImg.src = '/brand/logo-isotipo.png'; hojaImg.width = 286; hojaImg.height = 286;
-    hojaImg.classList.add('opacity-40', 'max-h-[120px]');
+    hojaImg.src = '/brand/isotipo.svg'; hojaImg.width = 579; hojaImg.height = 599;
+    hojaImg.className = 'hoja-foto-img relative h-28 w-auto opacity-30';
+    caja.classList.remove('con-foto');
   }
   const d = (n: number) => `style="--d:${n}"`;
   cuerpo.innerHTML = `
-    <p ${d(0)} class="font-alt text-[12px] uppercase tracking-[0.28em] text-oro"><span lang="es">${p.cat.es}</span><span lang="en">${p.cat.en}</span></p>
-    <h2 ${d(1)} id="hoja-titulo" class="mt-1 text-[28px] font-bold leading-tight"><span lang="es">${p.nombre.es}</span><span lang="en">${p.nombre.en}</span></h2>
+    <p ${d(0)} class="ceja mt-5"><span lang="es">${p.cat.es}</span><span lang="en">${p.cat.en}</span></p>
+    <h2 ${d(1)} id="hoja-titulo" class="mt-2 text-[30px] font-semibold leading-[1.08] tracking-[-0.025em]"><span lang="es">${p.nombre.es}</span><span lang="en">${p.nombre.en}</span></h2>
     <p ${d(1)} class="mt-1 text-[14px] text-humo"><span lang="en">${p.nombre.es}</span><span lang="es">${p.nombre.en}</span></p>
-    <div ${d(2)} class="mt-4 flex items-end justify-between gap-4 border-y border-oro/30 py-3">
-      <p class="text-[30px] font-bold tabular-nums ${p.agotado ? 'line-through decoration-2' : ''}">${precio(p.precio)} <span class="text-[14px] font-normal text-niebla">MXN</span></p>
-      <p class="text-right text-[14px] text-humo">${usd(p.precio, datos.tc)}<br><span lang="es">referencia</span><span lang="en">reference only</span></p>
+    <div ${d(2)} class="mt-5 flex items-end justify-between gap-4 rounded-2xl bg-noche/40 px-4 py-3 ring-1 ring-white/[0.05]">
+      <p class="text-[30px] font-semibold tabular-nums leading-none ${p.agotado ? 'line-through decoration-2' : ''}">${precio(p.precio)} <span class="text-[13px] font-normal text-niebla">MXN</span></p>
+      <p class="text-right text-[13px] leading-tight text-humo">${usd(p.precio, datos.tc)}<br><span lang="es">referencia</span><span lang="en">reference only</span></p>
     </div>
-    ${p.agotado ? `<p ${d(3)} class="mt-4 rounded-2xl border border-white/20 bg-white/5 px-4 py-3 text-[15px]"><span lang="es">Hoy está agotado. Pregunta por una alternativa.</span><span lang="en">Sold out today. Ask us for an alternative.</span></p>` : ''}
-    ${p.descripcion ? `<p ${d(3)} class="mt-4 text-[17px] leading-relaxed text-niebla"><span lang="es">${p.descripcion.es}</span><span lang="en">${p.descripcion.en}</span></p>` : ''}
-    ${p.gramos ? `<p ${d(4)} class="mt-2 text-[15px] text-humo"><span lang="es">Porción</span><span lang="en">Portion</span>: ${p.gramos} g</p>` : ''}
+    ${p.agotado ? `<p ${d(3)} class="mt-4 rounded-2xl bg-hueso/[0.06] px-4 py-3 text-[15px]"><span lang="es">Hoy está agotado. Pregunta por una alternativa.</span><span lang="en">Sold out today. Ask us for an alternative.</span></p>` : ''}
+    ${p.descripcion ? `<p ${d(3)} class="mt-5 text-[17px] leading-relaxed text-hueso/85"><span lang="es">${p.descripcion.es}</span><span lang="en">${p.descripcion.en}</span></p>` : ''}
+    ${p.gramos ? `<p ${d(4)} class="mt-2 text-[14px] text-humo"><span lang="es">Porción</span><span lang="en">Portion</span>: ${p.gramos} g</p>` : ''}
     ${p.incluye ? `<ul ${d(4)} class="mt-4 grid gap-2">${p.incluye.map((x) => `<li class="flex items-center gap-3 text-[16px]"><span class="size-1.5 rounded-full bg-oro"></span>${x}</li>`).join('')}</ul>` : ''}
-    <ul ${d(5)} class="visto mt-5 flex flex-wrap gap-2">${etiquetasHTML(p)}</ul>
-    ${real ? `<figure ${d(6)} class="mt-6 overflow-hidden rounded-3xl border border-oro/30">
-      <img src="${real.src}" width="${real.w}" height="${real.h}" alt="" class="block max-h-[420px] w-full object-cover" loading="lazy">
-      <figcaption class="flex items-center gap-2 bg-pizarra px-4 py-3 text-[13px] text-niebla"><span class="size-1.5 rounded-full bg-oro"></span><span lang="es">Así llega a tu mesa · foto de @makizen.puertopenasco</span><span lang="en">How it's served · photo by @makizen.puertopenasco</span></figcaption>
+    <ul ${d(5)} class="visto mt-5 flex flex-wrap gap-2 empty:hidden">${etiquetasHTML(p)}</ul>
+    ${real && modo !== 'foto' ? `<figure ${d(6)} class="mt-6 overflow-hidden rounded-3xl ring-1 ring-white/[0.06]">
+      <img src="${real.src}" srcset="${real.srcset}" sizes="(min-width: 576px) 536px, 92vw" width="${real.w}" height="${real.h}" alt="" class="block max-h-[440px] w-full object-cover" loading="lazy">
+      <figcaption class="bg-noche/40 px-4 py-3 text-[13px] text-niebla"><span lang="es">Así llega a tu mesa · foto de @makizen.puertopenasco</span><span lang="en">How it's served · photo by @makizen.puertopenasco</span></figcaption>
     </figure>` : ''}
-    <a ${d(7)} href="tel:+526383882836" class="presionable tap mt-6 flex items-center justify-center gap-2 rounded-full bg-oro px-5 py-3 text-[16px] font-semibold text-noche hover:bg-oro-claro">
+    <a ${d(7)} href="tel:+526383882836" class="boton-oro presionable mt-6 w-full text-[16px]">
       <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg>
       <span lang="es">Llamar para pedir</span><span lang="en">Call to order</span>
     </a>`;
   cuerpo.classList.remove('hoja-escalonada'); void cuerpo.offsetWidth; cuerpo.classList.add('hoja-escalonada');
 }
 
-function abrir(id: string, boton: HTMLElement | null) {
-  const p = datos.platillos.find((x) => x.id === id);
-  if (!p) return;
-  disparador = boton ?? $('.isla-pildora');
-  origen = boton?.closest('article')?.querySelector<HTMLImageElement>('img[data-foto]') ?? null;
-  if (!enPantalla(origen)) origen = null;
-  const mostrar = () => { llenar(p); hoja.showModal(); panel.scrollTop = 0; html.style.overflow = 'hidden'; };
-  if (origen && document.startViewTransition && !reducir()) {
-    // La foto viaja de la tarjeta a la hoja; el panel sube por debajo.
-    hoja.classList.add('vt');
-    origen.style.viewTransitionName = 'foto-platillo';
-    const t = document.startViewTransition(() => {
-      origen!.style.viewTransitionName = '';
-      mostrar();
-      hojaImg.style.viewTransitionName = 'foto-platillo';
-    });
-    t.finished.finally(() => { hojaImg.style.viewTransitionName = ''; hoja.classList.remove('vt'); });
-  } else {
-    mostrar();
-  }
+function abrirDialogo() {
+  hoja.showModal();
+  scroller.scrollTop = 0;
+  html.classList.add('bloqueo');
 }
 
-let cerrandoYa = false;
-function cerrar(inmediato = false) {
-  if (!hoja.open || cerrandoYa) return;
-  cerrandoYa = true;
-  const fin = () => {
-    hoja.close(); hoja.classList.remove('cerrando'); panel.style.transform = '';
-    html.style.overflow = ''; cerrandoYa = false; disparador?.focus({ preventScroll: true });
-  };
-  if (inmediato) fin();
-  else if (origen && enPantalla(origen) && document.startViewTransition && !reducir()) {
-    hoja.classList.add('vt');
-    hojaImg.style.viewTransitionName = 'foto-platillo';
-    const t = document.startViewTransition(() => { hojaImg.style.viewTransitionName = ''; origen!.style.viewTransitionName = 'foto-platillo'; fin(); });
-    t.finished.finally(() => { if (origen) origen.style.viewTransitionName = ''; hoja.classList.remove('vt'); });
-  } else if (reducir()) fin();
-  else {
-    hoja.classList.add('cerrando');
-    const anim = panel.getAnimations()[0];
-    anim ? anim.finished.then(fin, fin) : setTimeout(fin, 280);
+async function abrir(id: string, boton: HTMLElement | null) {
+  const p = datos.platillos.find((x) => x.id === id);
+  if (!p || ocupado) return;
+  disparador = boton ?? $('.isla-pildora');
+  origen = boton?.closest<HTMLElement>('article.producto') ?? null;
+  modoActual = (origen?.dataset.modo as Modo) ?? 'fila';
+  const imgOrigen = origen?.querySelector<HTMLImageElement>('img[data-foto]') ?? null;
+  const fotoReal = modoActual === 'foto' && imgOrigen ? imgOrigen.currentSrc || imgOrigen.src : undefined;
+  const S = cajaHoja();
+  llenar(p, modoActual, fotoReal);
+
+  if (!origen || !enPantalla(origen) || reducir()) {
+    hoja.classList.remove('liquida');
+    abrirDialogo();
+    return;
   }
+  ocupado = true;
+  html.classList.add('bloqueo');
+  hoja.classList.add('liquida', 'esperando');
+  const o = cajaDe(origen);
+  const vuelos: Promise<unknown>[] = [liquido.separar(o, RADIO[modoActual], S)];
+  if (imgOrigen) {
+    const destino = cajaImagenHoja(S, modoActual, imgOrigen);
+    const desde = modoActual === 'foto' ? cajaDe(imgOrigen) : contenido(imgOrigen);
+    vuelos.push(liquido.volar(imgOrigen.currentSrc || imgOrigen.src, modoActual === 'foto' ? 'cover' : 'contain', desde, destino,
+      modoActual === 'foto' ? [`${RADIO.foto}px`, liquido.RADIO_HOJA] : ['0px', '0px']));
+  }
+  await Promise.all(vuelos);
+  abrirDialogo();
+  requestAnimationFrame(() => {
+    hoja.classList.remove('esperando');
+    liquido.limpiar();
+    liquido.veloSin(false);
+    ocupado = false;
+  });
+}
+
+async function cerrar(sinLiquido = false) {
+  if (!hoja.open || ocupado) return;
+  const vuelve = () => { html.classList.remove('bloqueo'); disparador?.focus({ preventScroll: true }); };
+  const visible = origen && enPantalla(origen);
+  if (!sinLiquido && visible && !reducir() && origen) {
+    ocupado = true;
+    const S = cajaDe(panel);
+    const o = cajaDe(origen);
+    const imgOrigen = origen.querySelector<HTMLImageElement>('img[data-foto]');
+    const desde = modoActual === 'foto' ? cajaDe(hojaImg) : contenido(hojaImg);
+    const src = hojaImg.currentSrc || hojaImg.src;
+    hoja.close();
+    hoja.classList.remove('liquida');
+    const pasos: Promise<unknown>[] = [liquido.fundir(S, o, RADIO[modoActual])];
+    if (imgOrigen && modoActual !== 'fila') {
+      const hasta = modoActual === 'foto' ? cajaDe(imgOrigen) : contenido(imgOrigen);
+      pasos.push(liquido.volar(src, modoActual === 'foto' ? 'cover' : 'contain', desde, hasta, modoActual === 'foto' ? [liquido.RADIO_HOJA, `${RADIO.foto}px`] : ['0px', '0px'], 900, 0.04));
+    }
+    await Promise.all(pasos);
+    liquido.limpiar();
+    ocupado = false;
+    vuelve();
+    return;
+  }
+  const fin = () => { hoja.close(); hoja.classList.remove('cerrando', 'liquida'); panel.style.transform = ''; vuelve(); };
+  if (sinLiquido || reducir()) { fin(); return; }
+  hoja.classList.remove('liquida');
+  hoja.classList.add('cerrando');
+  await espera(300);
+  fin();
 }
 
 document.addEventListener('click', (ev) => {
@@ -293,12 +292,12 @@ $('[data-cerrar]', hoja)!.addEventListener('click', () => cerrar());
 hoja.addEventListener('cancel', (ev) => { ev.preventDefault(); cerrar(); });
 hoja.addEventListener('click', (ev) => { if (ev.target === hoja) cerrar(); });
 
-// Deslizar hacia abajo para cerrar (desde el asa o con el panel arriba del todo).
+// Deslizar hacia abajo para cerrar (desde el asa o con el contenido arriba del todo).
 let y0 = 0; let dy = 0; let arrastrando = false;
 panel.addEventListener('pointerdown', (ev) => {
   const enAsa = !!(ev.target as HTMLElement).closest('.asa');
   if (ev.pointerType === 'mouse' && !enAsa) return;
-  if (panel.scrollTop > 0 && !enAsa) return;
+  if (scroller.scrollTop > 0 && !enAsa) return;
   y0 = ev.clientY; dy = 0; arrastrando = true;
 });
 addEventListener('pointermove', (ev) => {
@@ -306,20 +305,21 @@ addEventListener('pointermove', (ev) => {
   dy = Math.max(0, ev.clientY - y0);
   if (dy > 4) { panel.style.transition = 'none'; panel.style.transform = `translateY(${dy}px)`; }
 });
-addEventListener('pointerup', () => {
+addEventListener('pointerup', async () => {
   if (!arrastrando) return;
   arrastrando = false;
   if (dy > 110) {
-    const a = panel.animate([{ transform: `translateY(${dy}px)` }, { transform: 'translateY(105%)' }], { duration: reducir() ? 1 : 220, easing: 'ease-in' });
-    a.finished.then(() => { panel.style.transition = ''; panel.style.transform = 'translateY(105%)'; cerrar(true); });
+    // Al soltar, la hoja regresa a la tarjeta como líquido desde donde quedó.
+    panel.style.transition = '';
+    if (origen && enPantalla(origen) && !reducir()) { cerrar(); requestAnimationFrame(() => (panel.style.transform = '')); }
+    else { await panel.animate([{ transform: `translateY(${dy}px)` }, { transform: 'translateY(105%)' }], { duration: 220, easing: 'ease-in' }).finished; cerrar(true); }
   } else {
-    panel.style.transition = 'transform 300ms cubic-bezier(0.34, 1.4, 0.64, 1)';
+    panel.style.transition = 'transform 320ms cubic-bezier(0.34, 1.4, 0.64, 1)';
     panel.style.transform = '';
-    setTimeout(() => (panel.style.transition = ''), 320);
+    setTimeout(() => (panel.style.transition = ''), 340);
   }
 });
 
 /* ── Inicio ─────────────────────────────────────────────────────────── */
-verHistoria(0);
 aplicarIdioma();
 setInterval(estado, 60_000);

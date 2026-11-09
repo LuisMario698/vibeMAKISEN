@@ -1,9 +1,8 @@
 ---
 import '../styles/global.css';
-import Telon from '../components/Telon.astro';
+import Nav from '../components/Nav.astro';
 import Hero from '../components/Hero.astro';
-import Marquesina from '../components/Marquesina.astro';
-import Destacados from '../components/Destacados.astro';
+import Favoritos from '../components/Favoritos.astro';
 import Seccion from '../components/Seccion.astro';
 import Visita from '../components/Visita.astro';
 import Pie from '../components/Pie.astro';
@@ -22,7 +21,7 @@ const datos = {
   cats: menu.categorias.map((c) => ({ id: c.id, nombre: c.nombre })),
   platillos: menu.categorias.flatMap((c) => c.platillos.map((p) => ({ ...p, cat: c.nombre }))),
 };
-const total = menu.categorias.length;
+const total = menu.categorias.reduce((n, c) => n + c.platillos.length, 0);
 ---
 <!doctype html>
 <html lang="es-MX">
@@ -31,20 +30,19 @@ const total = menu.categorias.length;
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>MAKIZEN Sushi & Mariscos · Menú · Puerto Peñasco</title>
     <meta name="description" content="Menú de MAKIZEN Sushi & Mariscos, estilo Sinaloa, en Puerto Peñasco (Rocky Point), Sonora. Precios en MXN, en español e inglés." />
-    <meta name="theme-color" content="#000000" />
-    <link rel="icon" href="/brand/icon-192.png" type="image/png" />
-    <link rel="apple-touch-icon" href="/brand/icon-192.png" />
+    <meta name="theme-color" content="#050505" />
+    <link rel="icon" href="/brand/isotipo.svg" type="image/svg+xml" />
+    <link rel="icon" href="/brand/icon-192.png" type="image/png" sizes="192x192" />
+    <link rel="apple-touch-icon" href="/brand/apple-touch-icon.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <link rel="preload" href="/fotos/mesa-cenital.webp" as="image" fetchpriority="high" />
+    <link rel="preload" as="image" href="/fotos/mesa-cenital-1080.webp" imagesrcset="/fotos/mesa-cenital-640.webp 640w, /fotos/mesa-cenital-1080.webp 1080w" imagesizes="100vw" fetchpriority="high" />
     <script is:inline>
-      // Antes de pintar: idioma (elegido o del teléfono) y si toca telón de entrada.
+      // Idioma antes de pintar: el elegido o el del teléfono.
       (function () {
-        var d = document.documentElement, l = null, visto = false;
-        try { l = localStorage.getItem('makizen-idioma'); visto = sessionStorage.getItem('makizen-telon') === '1'; } catch (e) {}
+        var l = null;
+        try { l = localStorage.getItem('makizen-idioma'); } catch (e) {}
         if (!l) l = (navigator.language || 'es').toLowerCase().indexOf('en') === 0 ? 'en' : 'es-MX';
-        d.lang = l === 'en' ? 'en' : 'es-MX';
-        var reducir = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
-        d.classList.add(visto || reducir ? 'sin-telon' : 'con-telon');
+        document.documentElement.lang = l === 'en' ? 'en' : 'es-MX';
       })();
     </script>
   </head>
@@ -52,13 +50,22 @@ const total = menu.categorias.length;
     <a href="#menu" class="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:rounded-full focus:bg-oro focus:px-4 focus:py-2 focus:text-noche">
       <span lang="es">Ir al menú</span><span lang="en">Skip to menu</span>
     </a>
-    <Telon />
+    <Nav />
     <Hero />
     <div id="centinela" class="h-px" aria-hidden="true"></div>
-    <Marquesina />
-    <Destacados />
-    <main id="menu" class="pb-8">
-      {menu.categorias.map((cat, i) => <Seccion cat={cat} n={i + 1} total={total} />)}
+    <Favoritos />
+    <main id="menu" class="scroll-mt-16 pt-28" aria-labelledby="t-menu">
+      <div class="contenedor revela">
+        <p class="ceja"><span lang="es">Menú</span><span lang="en">Menu</span></p>
+        <h2 id="t-menu" class="mt-2 text-[34px] leading-[1.05] font-semibold tracking-[-0.03em] sm:text-[48px]">
+          <span lang="es">La carta completa</span><span lang="en">The full menu</span>
+        </h2>
+        <p class="mt-3 max-w-md text-[16px] text-niebla">
+          <span lang="es">{total} platillos y bebidas. Usa la isla dorada de abajo para saltar entre categorías o buscar.</span>
+          <span lang="en">{total} dishes and drinks. Use the golden island below to jump between categories or search.</span>
+        </p>
+      </div>
+      {menu.categorias.map((cat, i) => <Seccion cat={cat} n={i + 1} />)}
     </main>
     <Visita />
     <Pie />

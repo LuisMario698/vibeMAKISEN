@@ -27,16 +27,16 @@ Versiones que usan:
 4. **Variante dorada**: todo el logo en dorado degradado sobre negro (publicación de "próximamente" y una del grid).
 5. En la fachada: letras corpóreas oscuras sobre listones de madera; en el interior, el isotipo **retroiluminado** en un muro.
 
-Archivos guardados en `public/brand/` (extraídos del PDF de la cartilla, en blanco con transparencia, sin modificar el dibujo):
+Archivos en `public/brand/`. **Vectorizados por nosotros** (`scripts/vectorizar-logo.mjs`) a partir de los PNG transparentes de 1000 × 1000 de la cartilla. Se trazaron con potrace por separado la capa blanca y la dorada (`#AE8B3D`), sin redibujar ni cambiar el diseño:
 
 | Archivo | Contenido |
 |---|---|
-| `logo-isotipo.png` | Isotipo redondo sobre negro (286 × 286) |
-| `logo-vertical.png` | Lockup vertical blanco + dorado, fondo transparente (1000 × 1000) |
-| `logo-horizontal.png` | Lockup horizontal blanco + dorado, fondo transparente (800 × 800) |
-| `marmol-negro.jpg` | Textura de mármol negro de fondo de la portada |
+| `logo-vertical.svg` | Isotipo + MAKIZEN + — SUSHI & MARISCOS — (transparente) |
+| `logo-horizontal.svg` | Isotipo │ MAKIZEN / SUSHI & MARISCOS (transparente) |
+| `isotipo.svg` | Solo el pez y la luna con el punto dorado (transparente) |
+| `icon-192.png`, `icon-512.png`, `apple-touch-icon.png` | Íconos de la app generados desde `isotipo.svg` sobre negro |
 
-No existe (o no encontramos) un logo vectorial (SVG/AI). Para producción hay que pedirlo al negocio o a quien les hizo el Canva.
+No existe un logo vectorial oficial (SVG/AI) publicado. El nuestro es una vectorización fiel para la demo. Para producción conviene pedir el original a quien les hizo el Canva.
 
 ## 2. Paleta real
 
@@ -149,27 +149,27 @@ Fotos: la cartilla trae **22 fotos de producto recortadas** (sin fondo). Se usar
 
 ## 7 bis. Fotografía real tomada de sus redes (8 nov 2026)
 
-Capturas de las publicaciones y reels **del propio negocio** en Instagram, en alta resolución. A las plantillas de Canva se les recortaron los textos y a los reels, los subtítulos. Se evitaron cuadros con caras de clientes o de influencers. Están en `public/fotos/`; el origen de cada una está en `src/data/fotos-redes.json`.
+Las fotos se descargaron en su **resolución original de Instagram**: las publicaciones en 1080 × 1350 (la fachada nocturna en 1350 × 1688) y los cuadros de reel extraídos del video a 1080 × 1920. No son capturas de pantalla. Solo se usaron publicaciones y reels **del propio negocio**. A las plantillas de Canva se les recortaron los textos y a los reels, los subtítulos. Se evitaron cuadros con caras de clientes o de influencers. Están en `public/fotos/` en WebP a 640 y 1080 px (`srcset`); el origen de cada una está en `src/data/fotos-redes.json`.
 
 | Archivo | De dónde sale | Uso en la demo |
 |---|---|---|
-| `mesa-cenital` | Carrusel "El antojo tiene otra forma" (29 oct), foto de estudio cenital | Portada (historia 1) |
-| `rollos-corona` | Mismo carrusel, rollo en corona sobre mármol | Portada, rollos naturales |
-| `serrano-real`, `serrano-palillos` | Mismo carrusel ("Un bocado y cambia todo") | Rollos empanizados, carrusel, detalle del Serrano Roll |
+| `mesa-cenital` | Carrusel "El antojo tiene otra forma" (29 oct), foto de estudio cenital | Portada; cabecera de Entradas |
+| `sashimi`, `gin-pepino` | Recortes de la foto cenital | Favoritos; detalle del Sashimi y del Gin de Pepino |
+| `rollo-corona` | Mismo carrusel, rollo en corona sobre mármol | Rollos naturales |
+| `serrano`, `serrano-palillos` | Mismo carrusel ("Un bocado y cambia todo") | Favoritos; rollos empanizados; detalle del Serrano Roll |
 | `mas-sabores` | Mismo carrusel ("Más sabores, más razones para volver") | Rollos especiales |
-| `bocado-detalle` | Mismo carrusel ("El placer está en los pequeños detalles") | Reserva |
-| `sashimi-real`, `gin-pepino-real` | Recortes de la foto cenital | Entradas, detalle del Sashimi y del Gin de Pepino |
-| `muro-logo` | Reel: coctel frente al muro con el logo retroiluminado | Portada, mixología, Visítanos |
-| `aguachile-real` | Reel: aguachile visto de cerca | Tostadas y aguachiles, carrusel, detalle |
-| `makizen-roll-real` | Reel: Makizen Roll con palillos | Carrusel, detalle |
-| `udon-real` | Reel de apertura (8 oct): res en pasta udon | Guisos, carrusel, detalle |
-| `fachada-atardecer` | Reel de apertura: fachada con letrero encendido al atardecer | Portada, Visítanos |
-| `fachada-dia` | Reel: letras corpóreas sobre madera | Visítanos |
+| `bocado` | Mismo carrusel ("El placer está en los pequeños detalles") | Reserva |
+| `aguachile` | Reel: aguachile de cerca | Favoritos; tostadas y aguachiles; detalle |
+| `makizen-roll` | Reel: Makizen Roll con palillos | Favoritos; detalle |
+| `rollos-plato` | Reel: plato de rollos con aguachile | Reserva |
+| `udon` | Reel de apertura (8 oct): res en pasta udon | Guisos; detalle |
+| `muro-coctel`, `muro-logo` | Reel: muro con el isotipo y "MAKIZEN" retroiluminados | Mixología; Visítanos |
+| `fachada-frente`, `fachada-lado` | Reel de apertura: fachada con letrero encendido al atardecer | Visítanos |
 | `fachada-noche` | Publicación de Halloween (31 oct), render nocturno de la fachada | Visítanos |
 
 Confirmado en las fotos: **interior con muros azules**, mesas de madera, sillas de madera curva, **muro negro con el isotipo y "MAKIZEN" retroiluminados** y barra de cocteles. La fachada combina paneles negros con listones de madera y el logo en un disco iluminado.
 
-Pendiente: para producción conviene pedir al negocio los archivos originales (los reels son de 1080 × 1920 y las fotos de Canva, de 1080 × 1350) y el permiso de uso por escrito.
+Pendiente: para producción conviene pedir al negocio los archivos originales sin comprimir y su permiso de uso por escrito.
 
 ## 8. Lo que NO existe o no encontramos
 

@@ -2,7 +2,7 @@
 
 Demo navegable del menú web móvil (PWA) de **MAKIZEN Sushi & Mariscos**, Puerto Peñasco, Sonora. Propuesta para el restaurante.
 
-- Marca, paleta, tipografías y menú reales: [`docs/marca-actual.md`](docs/marca-actual.md)
+- Marca, paleta, tipografías, fotos y menú reales: [`docs/marca-actual.md`](docs/marca-actual.md)
 - Bases del proyecto: [`docs/bases-menu-digital.html`](docs/bases-menu-digital.html)
 - Datos del menú (validados con zod al compilar): `src/data/menu.json` y `src/data/schema.ts`
 
@@ -17,38 +17,40 @@ npm run build    # sitio estático en dist/ con service worker
 npm run check    # tipos y validación de Astro
 ```
 
-- `npm run assets -- <carpeta>`: fotos recortadas de platillos y logos, extraídos del PDF de la cartilla.
-- `node scripts/prepare-fotos-redes.mjs <carpeta>`: fotos reales recortadas de publicaciones y reels de @makizen.puertopenasco (sin los textos de las plantillas ni los subtítulos).
+Recursos (se generan una vez y se versionan):
 
-## Navegación: isla dinámica de "oro líquido"
+- `node scripts/vectorizar-logo.mjs <img-cartilla>`: logo en SVG transparente (vertical, horizontal e isotipo) e íconos de la app.
+- `npm run assets -- <img-cartilla>`: fotos recortadas de platillos (cutouts) de la cartilla.
+- `node scripts/prepare-fotos-redes.mjs <originales>`: fotos reales de Instagram en resolución original, recortadas y en WebP de 640 y 1080 px.
 
-En lugar de una barra de pestañas, las categorías viven en una **isla dorada sólida** abajo de la pantalla, al alcance del pulgar:
+## Diseño
 
-- **Píldora** con anillo de progreso, número y nombre de la categoría actual. Va unida a un botón de búsqueda por un **puente líquido**.
-- Al cambiar de categoría, el nombre **rueda**, la píldora se estira o encoge con resorte y una **gota salta** y se vuelve a fundir.
-- **Deslizar** la píldora a los lados (o usar las flechas del teclado) pasa a la categoría anterior o siguiente.
-- Al tocarla se **derrama** en un panel con todas las categorías (con miniatura y número de platillos). Unas gotas salpican primero y el panel las absorbe. Al cerrar, escurre de vuelta a la píldora.
-- La lupa abre el mismo panel como **buscador**: busca en español o inglés, ignora los acentos y abre el detalle directo.
+Sobrio y editorial, fiel al lugar: negro profundo, superficies grafito, blanco hueso, el **dorado de la marca solo como acento** y fotografía real como protagonista. Poppins y Montserrat, las mismas de su cartilla.
 
-Técnica: las manchas doradas son `div` normales bajo un **filtro SVG "goo"** (`feGaussianBlur` + `feColorMatrix`): cuando se acercan se funden y cuando se separan forman un cuello, como un líquido. El texto y los botones van en otra capa **sin filtro**, así que siguen nítidos y accesibles (roles, `aria-expanded`, foco, Esc).
+1. **Portada:** titular grande con el estado del local en vivo. Debajo, una sola foto real que **se abre a todo lo ancho al hacer scroll**, y datos rápidos (hoy, dónde, a domicilio).
+2. **Favoritos de la casa:** mosaico con fotos reales.
+3. **La carta:** por categoría, una cabecera limpia con foto real opcional. Los platillos con foto van en rejilla de "producto" y el resto como lista de carta impresa.
+4. **Visítanos:** fachada al atardecer, dirección, horario con el día de hoy resaltado y galería del lugar.
+5. **Isla dinámica dorada** para navegar categorías y buscar.
+
+## Interacción líquida
+
+Dos piezas usan el mismo principio: manchas sólidas bajo un **filtro SVG "goo"** (`feGaussianBlur` + `feColorMatrix`). Cuando se acercan se funden y cuando se separan forman un cuello, como un líquido. El texto, las fotos y los botones van en otra capa sin filtro, nítidos y accesibles.
+
+- **Isla dinámica:** píldora unida a la lupa por un puente líquido. Al cambiar de categoría salta una gota; se puede deslizar a los lados; al tocarla se derrama en un panel con todas las categorías y el buscador.
+- **Seleccionar un producto (des-merge):** la tarjeta se estira, suelta una gota que cae con un cuello líquido y, desde la base de la pantalla, el líquido se derrama hacia arriba hasta formar la hoja de detalle. La foto del platillo vuela a su lugar. Al cerrar, la hoja escurre a una gota que sube y se funde otra vez con la tarjeta.
 
 ## Animación: qué se usa y por qué
 
-**0 KB de librerías.** Todo es nativo del navegador. Primera carga: HTML + CSS + JS ≈ 47 KB comprimidos, y fuentes ≈ 42 KB (WOFF2, no bloquean).
+**0 KB de librerías.** Todo es nativo del navegador (Web Animations API, IntersectionObserver, CSS scroll-driven, filtros SVG).
 
 | Momento | Técnica | Si el navegador no lo soporta |
 |---|---|---|
-| Telón de entrada: el isotipo se pinta como la pincelada de la luna y la cortina sube con borde curvo (solo la primera visita de la sesión) | CSS `@property` + `clip-path` | No aparece |
-| Portada estilo historias con fotos reales, Ken Burns, barras de progreso y tocar a los lados | CSS + `IntersectionObserver` (pausa fuera de pantalla) | Primera foto fija |
-| Lema que cae letra por letra; logo que se pinta | CSS escalonado | Texto fijo |
-| Parallax de portada, portadas de categoría y foto de la fachada | CSS scroll-driven (`scroll()` / `view()`) | Sin parallax |
-| Carrusel "Imprescindibles" con cartas que crecen al centrarse | `scroll-snap` + `view(inline)` | Carrusel normal |
-| Portadas de categoría que se abren como cortina; títulos que suben palabra por palabra | `clip-path` + `IntersectionObserver` | Aparecen sin animación |
-| Tarjetas: barrido de luz, inclinación 3D y brillo que sigue al cursor | CSS + pointer events (solo con cursor) | Tarjeta plana |
-| Isla dinámica líquida | Filtro SVG goo + transiciones con resorte | — |
-| Detalle del platillo: la foto viaja de la tarjeta a la hoja | View Transitions API | Hoja que sube con CSS |
+| Titular que sube renglón por renglón; foto que entra | CSS `@keyframes` | Aparece sin animación |
+| Foto de portada que se abre a todo lo ancho; parallax de las fotos | CSS scroll-driven (`view()`) | Foto fija con esquinas redondeadas |
+| Mosaico y cabeceras que se abren como cortina | `clip-path` + IntersectionObserver | Aparecen sin animación |
+| Des-merge del producto y fusión al cerrar | WAAPI + filtro SVG goo | Hoja que sube con CSS |
+| Isla dinámica | Filtro SVG goo + transiciones con resorte | — |
 | Cambio de idioma ES/EN | View Transitions (fundido) | Cambio instantáneo |
 
-Solo se animan `transform`, `opacity`, `filter`, `clip-path` y máscaras, más la geometría de las manchas de la isla (elementos pequeños y aislados). Con **"Reducir movimiento"** del sistema se apagan el telón, el parallax, los barridos, las gotas y la inclinación.
-
-GSAP o Motion se descartaron: añadirían 20–60 KB para efectos que el navegador ya hace nativamente.
+Con **"Reducir movimiento"** activado en el sistema se apagan el líquido, el parallax y las cortinas; todo aparece directo.

@@ -69,6 +69,14 @@ export function etiquetasHTML(p: Platillo): string {
     .join('');
 }
 
+/** La etiqueta más importante en versión compacta (icono + texto) para la rejilla. */
+export function etiquetaCorta(p: Platillo): string {
+  const e = etiquetasDe(p).find((x) => x.clave !== 'agotado' && ['favorito', 'picante', 'crudo', 'nuevo'].includes(x.clave));
+  if (!e) return '';
+  const corto = e.clave === 'picante' ? { es: 'Picante', en: 'Spicy' } : e.clave === 'crudo' ? { es: 'Crudo', en: 'Raw' } : { es: e.es, en: e.en };
+  return `${e.icono}<span lang="es">${corto.es}</span><span lang="en">${corto.en}</span>`;
+}
+
 const mxn = new Intl.NumberFormat('es-MX', { maximumFractionDigits: 0 });
 /** "$1,100" como en la cartilla (MXN con IVA incluido). */
 export const precio = (n: number) => `$${mxn.format(n)}`;
