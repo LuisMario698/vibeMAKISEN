@@ -1,0 +1,66 @@
+---
+// Tarjeta de producto. Toda la tarjeta abre el detalle (foto, nombre o precio);
+// el botón del nombre es el control accesible. La imagen puede ser el recorte de la
+// cartilla, una foto real o, si no hay foto, la ilustración de su categoría.
+import type { Platillo } from '../data/schema';
+import { menu } from '../data/schema';
+import { etiquetaCorta, etiquetasHTML, precio, usd } from '../lib/etiquetas';
+import { iconoDe } from '../lib/iconos-categoria';
+import fotos from '../data/fotos.json';
+import { foto, fotoTarjeta } from '../data/fotos-reales';
+
+interface Props { p: Platillo; cat: string; i: number; forma: 'tarjeta' | 'fila' }
+const { p, cat, i, forma } = Astro.props;
+const tc = menu.tipoCambioReferencia;
+const tam = fotos as unknown as Record<string, [number, number]>;
+const recorte = p.foto && tam[p.foto] ? { src: `/menu/${p.foto}.webp`, w: tam[p.foto]![0], h: tam[p.foto]![1] } : null;
+const real = !recorte && fotoTarjeta[p.id] ? foto(fotoTarjeta[p.id]!) : null;
+const modo = recorte ? 'recorte' : real ? 'foto' : 'icono';
+const corta = etiquetaCorta(p);
+---
+{forma === 'tarjeta' ? (
+  <li class="revela" style={`--i:${i}`}>
+    <article class:list={['producto group relative cursor-pointer', p.agotado && 'opacity-55 grayscale']} data-modo={modo} data-cat={cat}>
+      <div class="producto-marco relative aspect-square overflow-hidden rounded-[22px] bg-pizarra ring-1 ring-white/[0.06] transition-[box-shadow] duration-300 group-hover:ring-oro/40">
+        {modo !== 'foto' && <div class="absolute inset-0 bg-[radial-gradient(70%_55%_at_50%_60%,rgb(174_139_61/0.17),transparent_72%)]"></div>}
+        {recorte && <img src={recorte.src} width={recorte.w} height={recorte.h} alt="" loading="lazy" decoding="async" data-foto={p.id} class="producto-img absolute inset-0 m-auto h-[84%] w-[84%] object-contain drop-shadow-[0_18px_16px_rgb(0_0_0/0.75)]" />}
+        {real && <img src={real.src} srcset={real.srcset} sizes="(min-width: 640px) 33vw, 50vw" width={real.w} height={real.h} alt="" loading="lazy" decoding="async" data-foto={p.id} class="producto-img absolute inset-0 h-full w-full object-cover" />}
+        {modo === 'icono' && <img src={iconoDe(cat)} width="64" height="64" alt="" loading="lazy" data-foto={p.id} class="producto-img absolute inset-0 m-auto h-[46%] w-[46%] object-contain opacity-85" />}
+        {p.agotado && <p class="absolute top-2.5 left-2.5 rounded-full bg-noche/85 px-2.5 py-1 text-[11px] font-semibold tracking-wider uppercase"><span lang="es">Agotado</span><span lang="en">Sold out</span></p>}
+      </div>
+      <div class="mt-3 px-0.5">
+        <h4 class="text-[15.5px] leading-snug font-semibold">
+          <button type="button" data-abrir={p.id} aria-haspopup="dialog" class="text-left focus-visible:outline-none focus-visible:after:absolute focus-visible:after:inset-0 focus-visible:after:rounded-[22px] focus-visible:after:outline-2 focus-visible:after:outline-oro-claro focus-visible:after:content-['']">
+            <span lang="es">{p.nombre.es}</span><span lang="en">{p.nombre.en}</span>
+          </button>
+        </h4>
+        <div class="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1">
+          <p class:list={['text-[15px] font-semibold text-hueso/90 tabular-nums', p.agotado && 'line-through']}>{precio(p.precio)}<span class="ml-1.5 text-[12px] font-normal text-humo" lang="en">{usd(p.precio, tc)}</span></p>
+          {corta && <span class="inline-flex items-center gap-1 text-[12px] text-niebla" set:html={corta} />}
+        </div>
+      </div>
+    </article>
+  </li>
+) : (
+  <li class="revela" style={`--i:${i}`}>
+    <article class:list={['producto group relative flex cursor-pointer items-center gap-3.5 border-b border-hueso/[0.07] py-3', p.agotado && 'opacity-55']} data-modo={modo} data-cat={cat}>
+      <div class="producto-marco relative size-16 shrink-0 overflow-hidden rounded-2xl bg-pizarra ring-1 ring-white/[0.06]">
+        {recorte && <img src={recorte.src} width={recorte.w} height={recorte.h} alt="" loading="lazy" decoding="async" data-foto={p.id} class="producto-img absolute inset-0 m-auto h-[86%] w-[86%] object-contain" />}
+        {real && <img src={real.src} width={real.w} height={real.h} alt="" loading="lazy" decoding="async" data-foto={p.id} class="producto-img absolute inset-0 h-full w-full object-cover" />}
+        {modo === 'icono' && <img src={iconoDe(cat)} width="64" height="64" alt="" loading="lazy" data-foto={p.id} class="producto-img absolute inset-0 m-auto h-[58%] w-[58%] object-contain opacity-80" />}
+      </div>
+      <div class="min-w-0 flex-1">
+        <div class="flex items-baseline gap-3">
+          <h4 class="flex-1 text-[16px] leading-snug font-semibold">
+            <button type="button" data-abrir={p.id} aria-haspopup="dialog" class="text-left focus-visible:outline-none focus-visible:after:absolute focus-visible:after:inset-0 focus-visible:after:rounded-xl focus-visible:after:outline-2 focus-visible:after:outline-oro-claro focus-visible:after:content-['']">
+              <span lang="es">{p.nombre.es}</span><span lang="en">{p.nombre.en}</span>
+            </button>
+          </h4>
+          <p class:list={['shrink-0 text-right text-[16px] font-semibold tabular-nums', p.agotado && 'line-through']}>{precio(p.precio)}</p>
+        </div>
+        {p.descripcion && <p class="mt-0.5 line-clamp-1 text-[14px] text-niebla"><span lang="es">{p.descripcion.es}</span><span lang="en">{p.descripcion.en}</span></p>}
+        <ul class="mt-1.5 flex flex-wrap gap-1.5 empty:hidden" set:html={etiquetasHTML(p)} />
+      </div>
+    </article>
+  </li>
+)}

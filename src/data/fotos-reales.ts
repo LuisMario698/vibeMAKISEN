@@ -16,7 +16,6 @@ export const foto = (id: string): Foto => {
 
 /** Foto de cabecera de algunas categorías. */
 export const portadas: Record<string, string> = {
-  entradas: 'mesa-cenital',
   'tostadas-aguachiles': 'aguachile',
   'rollos-naturales': 'rollo-corona',
   'rollos-empanizados': 'serrano',
@@ -33,6 +32,11 @@ export const realDe: Record<string, string> = {
   'serrano-roll': 'serrano',
   'sashimi-mixto': 'sashimi',
   'gin-pepino': 'gin-pepino',
+};
+
+/** Foto real que se usa como imagen de la tarjeta cuando el platillo no tiene recorte en la cartilla. */
+export const fotoTarjeta: Record<string, string> = {
+  'res-udon': 'udon',
 };
 
 /** Mosaico "Lo más pedido": lo que más mencionan las reseñas y tiene foto real. */

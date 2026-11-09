@@ -139,6 +139,53 @@
     ],
     "origen": "IG · reel"
   },
+  "fachada-dia": {
+    "w": 2400,
+    "h": 1350,
+    "anchos": [
+      640,
+      1080,
+      1600
+    ],
+    "origen": "Google Maps · foto del negocio (nov 2026)"
+  },
+  "fachada-dia-2": {
+    "w": 2400,
+    "h": 1350,
+    "anchos": [
+      640,
+      1080
+    ],
+    "origen": "Google Maps · foto del negocio (nov 2026)"
+  },
+  "interior": {
+    "w": 1080,
+    "h": 1320,
+    "anchos": [
+      640,
+      1080
+    ],
+    "origen": "IG · reel de apertura (8 oct)"
+  },
+  "bebidas-mesa": {
+    "w": 1080,
+    "h": 1420,
+    "anchos": [
+      640,
+      1080
+    ],
+    "origen": "IG · reel de apertura (8 oct)"
+  },
+  "mesa-madera": {
+    "w": 2880,
+    "h": 1771,
+    "anchos": [
+      640,
+      1080,
+      1600
+    ],
+    "origen": "Uber Eats · portada de la tienda"
+  },
   "udon": {
     "w": 680,
     "h": 790,

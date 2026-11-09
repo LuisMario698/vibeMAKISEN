@@ -167,6 +167,23 @@ Las fotos se descargaron en su **resolución original de Instagram**: las public
 | `fachada-frente`, `fachada-lado` | Reel de apertura: fachada con letrero encendido al atardecer | Visítanos |
 | `fachada-noche` | Publicación de Halloween (31 oct), render nocturno de la fachada | Visítanos |
 
+Fotos agregadas el 8 nov 2026 (segunda ronda):
+
+| Archivo | De dónde sale | Uso en la demo |
+|---|---|---|
+| `fachada-dia`, `fachada-dia-2` | **Google Maps, foto subida por el propio negocio** (original 6188 × 3481; se usó a 2400 px) | Portada |
+| `interior` | Reel de apertura (8 oct): salón vacío con muros azules, lámparas y sillas de madera | Visítanos |
+| `bebidas-mesa` | Mismo reel: bebidas en la barra | Reserva |
+| `mesa-madera` | Uber Eats, portada de la tienda (2880 × 1771) | Bajo "La carta completa" |
+
+**Fotos de platillos: cobertura.** Solo 33 de los 85 productos tienen foto pública del negocio: 22 recortes de la cartilla más las fotos reales de redes. Lo que encontramos en otras fuentes:
+
+- **Uber Eats:** 8 fotos, las mismas sesiones de la cartilla y varias mal etiquetadas ("Sinaloa Roll" muestra el Futomaki; "Mar y Tierra", el Guamuchilito). No se usaron para asignar platillos.
+- **Google Maps:** 48 fotos. Solo las dos de la fachada son del negocio. Las otras 46 las subieron clientes (Camarón Roca, Bomba, Yakimeshi, postres, cocteles…) y **no se usaron sin su permiso**.
+- **Productos sin foto (52):** se muestran con una ilustración de línea dorada de su tipo (rollo, tazón, tostada, coctel, cerveza…) y la nota "Foto del platillo próximamente".
+
+Siguiente paso recomendado: una sesión de fotos de producto, o pedir permiso a los clientes de Google Maps.
+
 Confirmado en las fotos: **interior con muros azules**, mesas de madera, sillas de madera curva, **muro negro con el isotipo y "MAKIZEN" retroiluminados** y barra de cocteles. La fachada combina paneles negros con listones de madera y el logo en un disco iluminado.
 
 Pendiente: para producción conviene pedir al negocio los archivos originales sin comprimir y su permiso de uso por escrito.

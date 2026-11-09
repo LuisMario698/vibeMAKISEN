@@ -118,13 +118,13 @@ html[lang="en"] [lang="es"]:not(html) { display: none !important; }
 
 /* ── Selección de producto: la tarjeta se des-funde en líquido hacia la hoja ── */
 .liquido { position: fixed; inset: 0; z-index: 70; pointer-events: none; filter: url(#goo-hoja); }
-.liquido > i { position: absolute; display: block; background: var(--color-grafito); will-change: left, top, width, height; }
+.liquido > i { position: absolute; display: block; will-change: left, top, width, height; }
 .vuelo { position: fixed; z-index: 71; pointer-events: none; object-fit: contain; will-change: transform; }
 .velo-hoja { position: fixed; inset: 0; z-index: 68; background: rgb(0 0 0 / 0.68); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); opacity: 0; pointer-events: none; transition: opacity 420ms ease; }
 .velo-hoja.on { opacity: 1; }
 
 /* ── Hoja de detalle ───────────────────────────────────────────────────── */
-dialog.hoja { inset: auto 0 0 0; margin: 0 auto; width: min(100%, 36rem); max-width: none; height: var(--alto-hoja, 88svh); max-height: none; padding: 0; border: 0; background: transparent; color: inherit; overflow: visible; }
+dialog.hoja { inset: auto 0 0 0; overscroll-behavior: contain; margin: 0 auto; width: min(100%, 36rem); max-width: none; height: var(--alto-hoja, 88svh); max-height: none; padding: 0; border: 0; background: transparent; color: inherit; overflow: visible; }
 dialog.hoja::backdrop { background: rgb(0 0 0 / 0.68); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
 dialog.hoja:not(.liquida)[open] .hoja-panel { animation: hoja-sube 560ms var(--ease-salida); }
 dialog.hoja:not(.liquida)[open]::backdrop { animation: velo 420ms ease-out; }
@@ -136,6 +136,15 @@ dialog.hoja.liquida::backdrop { animation: none; }
 @keyframes velo { from { opacity: 0; } }
 .hoja-escalonada > * { opacity: 0; animation: aparece 700ms var(--ease-salida) forwards; animation-delay: calc(120ms + var(--d, 0) * 55ms); }
 .hoja-foto-img { opacity: 1; }
+/* 1 · La tarjeta elegida se levanta sobre el velo. */
+.elevada { position: relative; }
+.elevada .producto-marco, li.elevada { box-shadow: 0 34px 60px -12px rgb(0 0 0 / 0.85), 0 0 0 1px rgb(210 178 106 / 0.45); }
+/* 3 · Al terminar el líquido aparece el panel: la barrita se estira, el botón cerrar entra. */
+dialog.hoja.panel-listo .asa > span { animation: asa-entra 520ms 60ms var(--ease-resorte) both; }
+dialog.hoja.panel-listo [data-cerrar] { animation: cerrar-entra 480ms 140ms var(--ease-resorte) both; }
+@keyframes asa-entra { from { transform: scaleX(0.2); opacity: 0; } }
+@keyframes cerrar-entra { from { transform: scale(0.4) rotate(-90deg); opacity: 0; } }
+.liquido > i { background: linear-gradient(180deg, #24241f 0%, var(--color-grafito) 38%); }
 .hoja.esperando .hoja-foto-img { opacity: 0; }
 
 html.cambia-idioma::view-transition-old(root) { animation: 220ms ease-in both salida-idioma; }
@@ -182,7 +191,7 @@ html.cambia-idioma::view-transition-new(root) { animation: 320ms var(--ease-sali
 .isla-cat[aria-current="true"] .text-noche\/65 { color: rgb(210 178 106 / 0.75); }
 .isla .miniatura { flex: none; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 14px; background: #0a0a0a; overflow: hidden; }
 .isla .miniatura img { max-width: 40px; max-height: 40px; object-fit: contain; }
-.isla .miniatura img.isotipo { max-width: 28px; opacity: 0.55; }
+.isla .miniatura img.icono { max-width: 30px; max-height: 30px; }
 .isla-vacio { padding: 32px 8px; text-align: center; font-size: 15px; opacity: 0.75; }
 .isla-panel.lista :is(.isla-item, .isla-resultados > li, .isla-grupo) { animation: item-isla 520ms var(--ease-salida) both; animation-delay: calc(var(--k, 0) * 22ms + 120ms); }
 @keyframes item-isla { from { opacity: 0; transform: translateY(14px) scale(0.96); } }

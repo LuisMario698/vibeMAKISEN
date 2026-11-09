@@ -22,7 +22,7 @@ const forma = { alta: 'row-span-2 sm:row-span-2', normal: '', ancha: 'col-span-2
   <ul class="mt-8 grid grid-cols-2 grid-rows-[11.5rem_11.5rem_13rem] gap-3 sm:grid-cols-3 sm:grid-rows-[17rem_17rem]">
     {items.map((p, i) => (
       <li class:list={['cortina relative overflow-hidden rounded-3xl bg-pizarra', forma[p.forma]]} style={`--i:${i}`}>
-        <article class="producto group h-full" data-modo="foto">
+        <article class="producto group h-full cursor-pointer" data-modo="mosaico">
           <img src={p.f.src} srcset={p.f.srcset} sizes={p.forma === 'ancha' ? '(min-width: 640px) 66vw, 100vw' : '(min-width: 640px) 33vw, 50vw'} width={p.f.w} height={p.f.h}
             alt="" loading="lazy" decoding="async" data-foto={p.id} data-real={p.fotoId} class="cortina-img absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" />
           <div class="pointer-events-none absolute inset-0 bg-[linear-gradient(to_bottom,transparent_45%,rgb(5_5_5/0.88))]"></div>

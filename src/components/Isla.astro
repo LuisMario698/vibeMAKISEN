@@ -4,6 +4,7 @@
 // Capa 2: botones y panel reales, encima y sin filtro (texto nítido y accesible).
 import Idioma from './Idioma.astro';
 import { menu } from '../data/schema';
+import { iconoDe } from '../lib/iconos-categoria';
 
 const grupos = [
   { id: 'comida', es: 'Comida', en: 'Food' },
@@ -70,7 +71,7 @@ const miniatura = (c: (typeof menu.categorias)[number]) => c.platillos.find((p) 
                   <li class="isla-item">
                     <button type="button" data-ir={c.id} class="isla-cat presionable">
                       <span class="miniatura">
-                        {m ? <img src={`/menu/${m}.webp`} alt="" loading="lazy" decoding="async" /> : <img src="/brand/isotipo.svg" alt="" loading="lazy" class="isotipo" />}
+                        {m ? <img src={`/menu/${m}.webp`} alt="" loading="lazy" decoding="async" /> : <img src={iconoDe(c.id)} alt="" loading="lazy" class="icono" />}
                       </span>
                       <span class="min-w-0 text-left">
                         <span class="line-clamp-2 block text-[13.5px] leading-[1.2] font-semibold"><span lang="es">{c.nombre.es}</span><span lang="en">{c.nombre.en}</span></span>

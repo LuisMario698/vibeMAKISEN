@@ -5,7 +5,7 @@ import { foto } from '../data/fotos-reales';
 const n = menu.negocio;
 const fachada = foto('fachada-frente');
 const muro = foto('muro-logo');
-const noche = foto('fachada-noche');
+const noche = foto('interior');
 const dias = [
   { es: 'Domingo', en: 'Sunday' }, { es: 'Lunes', en: 'Monday' }, { es: 'Martes', en: 'Tuesday' },
   { es: 'Miércoles', en: 'Wednesday' }, { es: 'Jueves', en: 'Thursday' }, { es: 'Viernes', en: 'Friday' }, { es: 'Sábado', en: 'Saturday' },
@@ -57,7 +57,7 @@ const orden = [1, 2, 3, 4, 5, 6, 0];
     </div>
 
     <div class="grid grid-cols-2 gap-3">
-      {[[muro, 'Muro con el logo de MAKIZEN iluminado'], [noche, 'Fachada de MAKIZEN de noche']].map(([f, alt], i) => (
+      {[[noche, 'Interior de MAKIZEN: muros azules, lámparas y sillas de madera'], [muro, 'Muro con el logo de MAKIZEN iluminado']].map(([f, alt], i) => (
         <figure class="cortina relative aspect-square overflow-hidden rounded-3xl bg-pizarra" style={`--i:${i + 1}`}>
           <img src={(f as typeof muro).src} srcset={(f as typeof muro).srcset} sizes="(min-width: 1024px) 240px, 50vw" width={(f as typeof muro).w} height={(f as typeof muro).h} alt={alt as string} loading="lazy" decoding="async" class="cortina-img h-full w-full object-cover" />
         </figure>

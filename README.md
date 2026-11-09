@@ -27,9 +27,10 @@ Recursos (se generan una vez y se versionan):
 
 Sobrio y editorial, fiel al lugar: negro profundo, superficies grafito, blanco hueso, el **dorado de la marca solo como acento** y fotografía real como protagonista. Poppins y Montserrat, las mismas de su cartilla.
 
-1. **Portada:** titular grande con el estado del local en vivo. Debajo, una sola foto real que **se abre a todo lo ancho al hacer scroll**, y datos rápidos (hoy, dónde, a domicilio).
+1. **Portada:** titular grande con el estado del local en vivo. Debajo, la fachada del local (foto del negocio en Google Maps) que **se abre a todo lo ancho al hacer scroll**, y datos rápidos (hoy, dónde, a domicilio).
 2. **Favoritos de la casa:** mosaico con fotos reales.
-3. **La carta:** por categoría, una cabecera limpia con foto real opcional. Los platillos con foto van en rejilla de "producto" y el resto como lista de carta impresa.
+   Los productos sin foto pública (52 de 85) usan una ilustración dorada de su tipo; ver `docs/marca-actual.md`.
+3. **La carta:** por categoría, una cabecera limpia con foto real opcional. Toda la comida va en rejilla de tarjetas; las bebidas sin foto, en lista compacta con miniatura.
 4. **Visítanos:** fachada al atardecer, dirección, horario con el día de hoy resaltado y galería del lugar.
 5. **Isla dinámica dorada** para navegar categorías y buscar.
 
@@ -38,7 +39,12 @@ Sobrio y editorial, fiel al lugar: negro profundo, superficies grafito, blanco h
 Dos piezas usan el mismo principio: manchas sólidas bajo un **filtro SVG "goo"** (`feGaussianBlur` + `feColorMatrix`). Cuando se acercan se funden y cuando se separan forman un cuello, como un líquido. El texto, las fotos y los botones van en otra capa sin filtro, nítidos y accesibles.
 
 - **Isla dinámica:** píldora unida a la lupa por un puente líquido. Al cambiar de categoría salta una gota; se puede deslizar a los lados; al tocarla se derrama en un panel con todas las categorías y el buscador.
-- **Seleccionar un producto (des-merge):** la tarjeta se estira, suelta una gota que cae con un cuello líquido y, desde la base de la pantalla, el líquido se derrama hacia arriba hasta formar la hoja de detalle. La foto del platillo vuela a su lugar. Al cerrar, la hoja escurre a una gota que sube y se funde otra vez con la tarjeta.
+- **Seleccionar un producto:** se toca en cualquier parte de la tarjeta (foto, nombre o precio). La apertura tiene tres tiempos:
+  1. La tarjeta **crece** y se levanta sobre un velo, con un resorte suave.
+  2. Se vuelve **líquido y se derrama hacia abajo** como una columna, con gotas que caen por delante. Luego se abre a lo ancho hasta formar la hoja, mientras la foto vuela a su lugar.
+  3. Aparece el **panel**: la barrita se estira, entra el botón de cerrar y el contenido escalonado.
+
+  Al cerrar ocurre en reversa: la hoja se recoge en columna, sube, se funde con la tarjeta y esta vuelve a su tamaño. Arrastrar la barrita hacia arriba abre la hoja a pantalla completa; hacia abajo, la baja o la cierra.
 
 ## Animación: qué se usa y por qué
 
@@ -49,7 +55,7 @@ Dos piezas usan el mismo principio: manchas sólidas bajo un **filtro SVG "goo"*
 | Titular que sube renglón por renglón; foto que entra | CSS `@keyframes` | Aparece sin animación |
 | Foto de portada que se abre a todo lo ancho; parallax de las fotos | CSS scroll-driven (`view()`) | Foto fija con esquinas redondeadas |
 | Mosaico y cabeceras que se abren como cortina | `clip-path` + IntersectionObserver | Aparecen sin animación |
-| Des-merge del producto y fusión al cerrar | WAAPI + filtro SVG goo | Hoja que sube con CSS |
+| Tarjeta que crece, líquido que se derrama y panel | WAAPI + filtro SVG goo | Hoja que sube con CSS |
 | Isla dinámica | Filtro SVG goo + transiciones con resorte | — |
 | Cambio de idioma ES/EN | View Transitions (fundido) | Cambio instantáneo |
 

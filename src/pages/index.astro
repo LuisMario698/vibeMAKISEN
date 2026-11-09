@@ -11,6 +11,7 @@ import Isla from '../components/Isla.astro';
 import { menu } from '../data/schema';
 import fotos from '../data/fotos.json';
 import { foto, realDe } from '../data/fotos-reales';
+import { iconoDe } from '../lib/iconos-categoria';
 
 // Datos mínimos para la hoja de detalle y la búsqueda de la isla (se arman en el navegador).
 const datos = {
@@ -19,8 +20,10 @@ const datos = {
   fotos,
   reales: Object.fromEntries(Object.entries(realDe).map(([id, f]) => [id, foto(f)])),
   cats: menu.categorias.map((c) => ({ id: c.id, nombre: c.nombre })),
-  platillos: menu.categorias.flatMap((c) => c.platillos.map((p) => ({ ...p, cat: c.nombre }))),
+  platillos: menu.categorias.flatMap((c) => c.platillos.map((p) => ({ ...p, cat: c.nombre, catId: c.id }))),
+  iconos: Object.fromEntries(menu.categorias.map((c) => [c.id, iconoDe(c.id)])),
 };
+const mesa = foto('mesa-madera');
 const total = menu.categorias.reduce((n, c) => n + c.platillos.length, 0);
 ---
 <!doctype html>
@@ -35,7 +38,7 @@ const total = menu.categorias.reduce((n, c) => n + c.platillos.length, 0);
     <link rel="icon" href="/brand/icon-192.png" type="image/png" sizes="192x192" />
     <link rel="apple-touch-icon" href="/brand/apple-touch-icon.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <link rel="preload" as="image" href="/fotos/mesa-cenital-1080.webp" imagesrcset="/fotos/mesa-cenital-640.webp 640w, /fotos/mesa-cenital-1080.webp 1080w" imagesizes="100vw" fetchpriority="high" />
+    <link rel="preload" as="image" href="/fotos/fachada-dia-1080.webp" imagesrcset="/fotos/fachada-dia-640.webp 640w, /fotos/fachada-dia-1080.webp 1080w, /fotos/fachada-dia-1600.webp 1600w" imagesizes="100vw" fetchpriority="high" />
     <script is:inline>
       // Idioma antes de pintar: el elegido o el del teléfono.
       (function () {
@@ -65,6 +68,13 @@ const total = menu.categorias.reduce((n, c) => n + c.platillos.length, 0);
           <span lang="en">{total} dishes and drinks. Use the golden island below to jump between categories or search.</span>
         </p>
       </div>
+      <figure class="contenedor cortina mt-8" aria-hidden="true">
+        <div class="relative aspect-[16/10] overflow-hidden rounded-3xl bg-pizarra sm:aspect-[21/9]">
+          <div class="paralaje absolute -inset-y-[8%] inset-x-0">
+            <img src={mesa.src} srcset={mesa.srcset} sizes="(min-width: 1152px) 1120px, 100vw" width={mesa.w} height={mesa.h} alt="" loading="lazy" decoding="async" class="cortina-img h-full w-full object-cover" />
+          </div>
+        </div>
+      </figure>
       {menu.categorias.map((cat, i) => <Seccion cat={cat} n={i + 1} />)}
     </main>
     <Visita />

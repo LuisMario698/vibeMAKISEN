@@ -11,7 +11,7 @@ if (!src) throw new Error('Falta la carpeta con los originales');
 rmSync('public/fotos', { recursive: true, force: true });
 mkdirSync('public/fotos', { recursive: true });
 
-const ANCHOS = [640, 1080];
+const ANCHOS = [640, 1080, 1600];
 /** [salida, archivo, recorte (px del original) | null, origen] */
 const fotos = [
   ['mesa-cenital', 'mkz-mesa-cenital.png', { left: 0, top: 0, width: 1080, height: 1030 }, 'IG · carrusel "El antojo tiene otra forma" (29 oct)'],
@@ -30,15 +30,23 @@ const fotos = [
   ['aguachile', 'mkz-aguachile.png', { left: 0, top: 160, width: 1080, height: 1500 }, 'IG · reel'],
   ['makizen-roll', 'mkz-makizen-roll.png', { left: 0, top: 180, width: 1080, height: 1560 }, 'IG · reel'],
   ['rollos-plato', 'mkz-sinaloa-roll.png', { left: 0, top: 120, width: 1080, height: 1500 }, 'IG · reel'],
+  ['fachada-dia', 'gm-fachada-1.png', null, 'Google Maps · foto del negocio (nov 2026)'],
+  ['fachada-dia-2', 'gm-fachada-2.png', null, 'Google Maps · foto del negocio (nov 2026)'],
+  ['interior', 'mkz-interior.png', { left: 0, top: 120, width: 1080, height: 1320 }, 'IG · reel de apertura (8 oct)'],
+  ['bebidas-mesa', 'mkz-bebidas.png', { left: 0, top: 0, width: 1080, height: 1420 }, 'IG · reel de apertura (8 oct)'],
+  ['mesa-madera', 'ue-banner.jpg', null, 'Uber Eats · portada de la tienda'],
   ['udon', 'mkz-udon.png', { left: 400, top: 680, width: 680, height: 790 }, 'IG · reel de apertura (8 oct)'],
 ];
 
+// Fotos que se muestran a todo lo ancho (portada, cabeceras): también en 1600 px.
+const grande = new Set(['fachada-dia', 'mesa-madera', 'interior', 'mesa-cenital']);
 const tam = {};
 for (const [salida, archivo, recorte, origen] of fotos) {
   const base = sharp(join(src, archivo));
   const meta = await (recorte ? base.clone().extract(recorte) : base.clone()).toBuffer({ resolveWithObject: true });
   const w0 = meta.info.width, h0 = meta.info.height;
-  const anchos = ANCHOS.filter((a) => a < w0).concat(Math.min(w0, 1080)).filter((v, i, a) => a.indexOf(v) === i);
+  const tope = grande.has(salida) ? 1600 : 1080;
+  const anchos = ANCHOS.filter((a) => a < w0 && a <= tope).concat(Math.min(w0, tope)).filter((v, i, a) => a.indexOf(v) === i);
   for (const a of anchos) {
     await sharp(meta.data).resize({ width: a }).sharpen({ sigma: 0.5 }).webp({ quality: 82, effort: 6, smartSubsample: true }).toFile(`public/fotos/${salida}-${a}.webp`);
   }
