@@ -9,18 +9,29 @@ Construir una **demo navegable** del menú digital (web móvil / PWA) de **MAKIZ
 - Bilingüe ES (principal) / EN.
 
 ## Paso 1 (obligatorio antes de diseñar): investigar la marca real
-Usa Chrome (Claude in Chrome, con la sesión del usuario iniciada) para revisar:
-- Instagram: https://www.instagram.com/makizen.puertopenasco/ — foto de perfil/logo, las ~17 publicaciones, historias destacadas, captions, hashtags.
-- Facebook: página "Makizen Sushi y Marisco" — portada, fotos, menú/cartilla, reseñas, dirección.
-- La "cartilla" (menú actual en internet) que el negocio ya tiene: platillos, categorías, tamaños y precios.
+Usa Chrome (Claude in Chrome, con la sesión del usuario iniciada en Instagram y Facebook). Trabaja en una pestaña nueva y solo lee: no des "me gusta", no sigas cuentas, no comentes ni envíes mensajes.
 
-Entregable del paso 1, en `docs/marca-actual.md`:
-- Logo (descripción + guardar archivo en `public/brand/` si se puede descargar).
-- Paleta real en HEX (extraída de logo y posts) y tipografías identificadas.
-- Estética / temática / estilo del lugar (local, ambiente, fotografía, tono de voz de sus posts).
-- Público objetivo según sus publicaciones y comentarios.
-- Menú real (categorías, platillos, precios) para cargar en `src/data/menu.json`.
+1. Instagram https://www.instagram.com/makizen.puertopenasco/
+   - Foto de perfil: ábrela en grande y guarda una captura como `public/brand/logo-perfil.png`.
+   - Las ~17 publicaciones: abre cada una; guarda capturas de 3–5 representativas en `public/brand/posts/` (platillos, local, promos con texto).
+   - Captions y hashtags: cópialos tal cual (tono de voz, idioma, emojis, promos, precios mencionados).
+   - Historias destacadas: nombres y contenido (menú, ubicación, promos).
+   - Comentarios: idioma (¿hay inglés?), qué elogian y qué critican.
+2. Facebook: busca la página "Makizen Sushi y Marisco" (Puerto Peñasco; no confundir con "Maki-Zen" de Puebla).
+   - Portada y foto de perfil (capturas en `public/brand/`), sección Información (dirección exacta, teléfono, WhatsApp), reseñas, fotos del local y del menú.
+3. La cartilla (menú actual en internet): busca el enlace en la bio de Instagram, los destacados o la página de Facebook. Transcribe categorías, platillos, tamaños y precios.
+4. Paleta: corre `python3 scripts/extraer_paleta.py public/brand/logo-perfil.png public/brand/posts/*` (requiere `pip3 install pillow`) y asigna roles (fondo, primario, acento, texto) con lo que salga.
+
+Entregable: llena `docs/marca-actual.md` (ya tiene la plantilla) y `src/data/menu.json`. Después actualiza la sección de identidad visual de `docs/estudio-de-esencia.html` con los datos reales.
 No inventar identidad: todo lo visual sale de lo que tienen. Si algo no existe, decirlo.
+
+## Pedidos: por WhatsApp (decidido el 13 nov 2026)
+- Las órdenes/comandas se mandan por WhatsApp. No hay pago en línea ni pedidos guardados en base de datos en la demo.
+- Flujo: el cliente arma "Mi lista" (platillo, tamaño, cantidad, nota) → elige "Para comer aquí (mesa N)" o "Para llevar" (nombre y hora) → botón "Enviar pedido por WhatsApp" abre `https://wa.me/526381560660?text=…` con el mensaje armado (encodeURIComponent), en ES o EN según el idioma.
+- La mesa sale del QR (`?src=qr-mesa-N`); guardarla en sessionStorage.
+- La lista vive en localStorage dentro de try/catch; si se pierde, el menú sigue funcionando.
+- El mensaje incluye subtotal en MXN con IVA incluido y la nota "Precio final lo confirma el restaurante".
+- Confirmar con el negocio que el (638) 156-0660 tiene WhatsApp antes de presentar.
 
 ## Lo que ya sabemos (verificado el 8 nov 2026)
 - Nombre en IG: "MAKIZEN SUSHI & MARISCOS", @makizen.puertopenasco, 680 seguidores, 17 posts.
