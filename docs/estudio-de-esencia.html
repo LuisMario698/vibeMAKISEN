@@ -72,6 +72,8 @@ td.k { font-weight: 600; }
 .dir { display: grid; gap: 10px; }
 .dir .tag { font: 600 12px var(--f-mono); color: var(--accent); }
 pre { margin: 0; overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; font: 13px/1.6 var(--f-mono); white-space: pre-wrap; }
+.sw { display: inline-block; width: 18px; height: 18px; border-radius: 4px; border: 1px solid var(--line); vertical-align: -4px; }
+code { font-family: var(--f-mono); font-size: 0.88em; }
 details { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; }
 details summary { cursor: pointer; font-weight: 600; }
 ol.src { margin: 8px 0 0; padding-left: 22px; display: grid; gap: 4px; font-size: 14px; }
@@ -105,20 +107,20 @@ ol.src { margin: 8px 0 0; padding-left: 22px; display: grid; gap: 4px; font-size
 
   <main>
     <header class="cover">
-      <div class="eyebrow">ViBE · Ficha de esencia · 11 nov 2026</div>
+      <div class="eyebrow">ViBE · Ficha de esencia · actualizada 13 nov 2026</div>
       <h1>MAKIZEN <span>Sushi &amp; Mariscos</span></h1>
-      <p class="lede">Restaurante de sushi y mariscos estilo Sinaloa en Puerto Peñasco, Sonora. Estudio para diseñar la demo del menú digital animado.</p>
+      <p class="lede">Restaurante familiar de sushi y mariscos estilo Sinaloa en Puerto Peñasco, Sonora. Estudio para diseñar el menú digital animado. Demo: <a href="https://makizen-menu.vercel.app/">makizen-menu.vercel.app</a></p>
       <div class="note small">
-        <p><strong>Limitaciones de este estudio.</strong> No hubo fotos ni notas de una visita al local. Instagram y Facebook piden iniciar sesión y desde esta sesión no se pudieron abrir con Chrome, así que el logo, los colores reales, las fotos y los captions <b>no se vieron</b>. Lo confirmado sale de la ficha pública de Instagram, búsquedas web y directorios. Todo lo demás está marcado <span class="pc">por confirmar</span>. Los colores de esta página son de trabajo y no representan a la marca.</p>
+        <p><strong>Fuentes de este estudio.</strong> Investigación con Chrome y sesión iniciada (8 nov 2026): Instagram, la página de Facebook y la cartilla en PDF que enlazan desde Instagram. Detalle completo en <code>docs/marca-actual.md</code>. No hubo visita al local; el ambiente sale de las fotos y reels del propio negocio. Lo que sigue sin confirmar está marcado <span class="pc">por confirmar</span>. Los colores de esta página son de trabajo; la paleta de la marca está en la sección 5.</p>
       </div>
     </header>
 
     <section id="s1">
       <div class="eyebrow">1 · Resumen en 3 líneas</div>
       <div class="summary">
-        <p>MAKIZEN es un sushi y marisquería de <b>cocina estilo Sinaloa (Culiacán)</b> que abrió en octubre en Puerto Peñasco.</p>
-        <p>Es el único sushi del puerto que en las búsquedas se presenta como “estilo Sinaloa”, y junta en un mismo lugar rollos sinaloenses con aguachiles, tostadas y camarón.</p>
-        <p>Es muy nuevo (17 publicaciones, 680 seguidores): su presencia digital apenas se está formando y se puede ordenar desde el principio.</p>
+        <p>MAKIZEN es un restaurante <b>familiar</b> de sushi y mariscos <b>estilo Sinaloa</b> que abrió en octubre de 2026 en la plaza de la gasolinera Las Conchas, en Puerto Peñasco.</p>
+        <p>Une el orgullo sinaloense (rollos Culichi, Mazatleco, Guamuchilito, Zarandeado) con un <b>toque japonés elegante</b>: un pez betta dentro de una luna en pincelada, negro, blanco y dorado, y el lema 一期一会, “cada encuentro es único”.</p>
+        <p>Es muy nuevo (17 publicaciones, ~690 seguidores, 0 reseñas en Facebook) y su menú es un PDF hecho en Canva: hay espacio para un menú digital a la altura de su imagen.</p>
       </div>
     </section>
 
@@ -127,13 +129,14 @@ ol.src { margin: 8px 0 0; padding-left: 22px; display: grid; gap: 4px; font-size
       <h2>Historia y filosofía</h2>
       <div class="tbl-wrap"><table>
         <tbody>
-          <tr><td class="k">Apertura</td><td>“Abre oficialmente este 10 de octubre con cocina estilo Culiacán” (publicación de TikTok indexada). El año no aparece; por el número de posts, 2026. <span class="pc">por confirmar</span></td></tr>
-          <tr><td class="k">Origen del concepto</td><td>Su bio dice “Sushi &amp; Mariscos estilo Sinaloa”. Que los dueños o el chef sean de Culiacán o Sinaloa no aparece en ninguna fuente. <span class="pc">por confirmar</span></td></tr>
-          <tr><td class="k">Nombre</td><td>“MAKIZEN” se lee como <i>maki</i> (rollo de sushi) + <i>zen</i>. Qué quisieron transmitir con el nombre no está documentado. <span class="pc">por confirmar</span></td></tr>
-          <tr><td class="k">Valores</td><td>No hay texto público sobre su filosofía. Lo único que comunican de forma explícita es el origen culinario: Sinaloa. <span class="pc">por confirmar</span></td></tr>
+          <tr><td class="k">Apertura</td><td>Reel de apertura el 8 de octubre; “abre oficialmente este 10 de octubre con cocina estilo Culiacán” (publicación de TikTok). Año 2026. <span class="vf">confirmado en sus redes</span></td></tr>
+          <tr><td class="k">Quiénes son</td><td>Negocio familiar: los comentarios de la inauguración felicitan a varios miembros de la familia. Origen sinaloense de la familia o del chef <span class="pc">por confirmar</span>.</td></tr>
+          <tr><td class="k">Lema</td><td>La portada de la cartilla dice <b>一期一会</b> (<i>ichigo ichie</i>): “cada encuentro es único”. Cierra con “Buena comida • Buenos momentos • Siempre aquí”.</td></tr>
+          <tr><td class="k">Qué transmiten</td><td>Orgullo por la cocina de Sinaloa, momentos compartidos (“Hay momentos que se disfrutan más cuando se comparten”), celebraciones y un lujo accesible.</td></tr>
+          <tr><td class="k">Nombre</td><td><i>Maki</i> (rollo) + <i>zen</i>, coherente con el toque japonés del logo y el lema. Qué quisieron decir exactamente <span class="pc">por confirmar</span>.</td></tr>
         </tbody>
       </table></div>
-      <p class="prose muted">Por qué importa: “estilo Sinaloa” es su única declaración de identidad pública, así que es el eje que la demo debe respetar hasta que el dueño cuente su historia.</p>
+      <p class="muted" style="max-width:70ch">Por qué importa: el menú tiene que sentirse sinaloense en el sabor y japonés en la forma. Esa mezcla es suya y ya está en su logo, su lema y los nombres de sus rollos.</p>
     </section>
 
     <section id="s3">
@@ -141,30 +144,28 @@ ol.src { margin: 8px 0 0; padding-left: 22px; display: grid; gap: 4px; font-size
       <h2>Qué venden de verdad</h2>
       <div class="grid g2">
         <div class="card">
-          <h3>Lo que destacan las reseñas</h3>
+          <h3>Estrellas (cartilla y reseñas)</h3>
           <ul class="clean">
-            <li>Camarón roca</li>
-            <li>Aguachiles</li>
-            <li>Tostadas de atún</li>
-            <li>Rollos sinaloenses</li>
+            <li>Camarón Roca · $210</li>
+            <li>Aguachile Mixto · $280</li>
+            <li>Tostada de Atún (100 g) · $120</li>
+            <li>Makizen Roll empanizado · $240</li>
+            <li>Rollos con nombre sinaloense: Culichi $180, Mazatleco $200, Guamuchilito $190, Zarandeado $240, Sinaloa $230</li>
           </ul>
-          <p class="small muted">Fuente: video de reseña de La Foodie MX (solo el texto indexado; el video no se pudo abrir). <span class="pc">por confirmar con la cartilla</span></p>
+          <p class="small muted">Las reseñas de creadores locales destacan camarón roca, aguachiles, tostadas de atún, rollos sinaloenses y la mixología.</p>
         </div>
         <div class="card">
-          <h3>Qué significa “estilo Sinaloa”</h3>
-          <ul class="clean">
-            <li><b>Sushi:</b> rollos empanizados o fritos, mucho queso crema, Tampico (surimi con mayonesa y chile), salsas de anguila y chipotle, picor de chile serrano o chiltepín en lugar de wasabi.</li>
-            <li><b>Mariscos:</b> aguachile verde, rojo o negro, tostadas, callo, campechanas y torres.</li>
-          </ul>
-          <p class="small muted">Rasgos generales de la categoría según crónicas; qué prepara MAKIZEN exactamente está <span class="pc">por confirmar</span>.</p>
+          <h3>La carta completa</h3>
+          <p>Unos 85 productos en la cartilla: entradas, tostadas y aguachiles, arroces, cinco tipos de rollos (naturales, clásicos, horneados, empanizados y especiales), guisos, charolas ($445–$1,100), menú kids, postre, mixología de la casa ($120–$135), cervezas, shots, bebidas sin alcohol y <b>bebidas asiáticas</b> (sake, soju, ramune y Sapporo).</p>
+          <p class="small muted">Rollos entre $170 y $240. Precios en MXN tal como aparecen en la cartilla.</p>
         </div>
       </div>
       <div class="tbl-wrap"><table>
         <tbody>
-          <tr><td class="k">Canales de venta</td><td>Comedor, y delivery por Uber Eats (“Makizen Sushi Y Mariscos”, categorías Sushi, Mariscos y Asiática, 5.0 con 2 reseñas). <span class="vf">una fuente</span></td></tr>
-          <tr><td class="k">Horario</td><td>Lun, Mié y Jue 1–9 pm · Vie a Dom 1–10 pm · Martes cerrado. <span class="vf">confirmado</span></td></tr>
-          <tr><td class="k">Precios y menú completo</td><td>Existe una cartilla en internet, pero no se encontró. <span class="pc">por confirmar</span></td></tr>
-          <tr><td class="k">Qué los distingue</td><td>La combinación sushi + mariscos sinaloenses en un solo lugar, declarada abiertamente. Los rollos empanizados con queso crema ya son comunes en los sushis baratos del puerto, así que el diferencial real es el conjunto y el origen, no un rollo aislado.</td></tr>
+          <tr><td class="k">Canales</td><td>Comedor · domicilio por teléfono ((638) 388-2836, historia “Domicilio 📍”) · Uber Eats. En la propuesta, comandas por WhatsApp al (638) 156-0660 <span class="pc">confirmar que tiene WhatsApp</span>.</td></tr>
+          <tr><td class="k">Pago</td><td>“Aceptamos efectivo y tarjetas”.</td></tr>
+          <tr><td class="k">Horario</td><td>Lun, Mié y Jue 1–9 pm · Vie a Dom 1–10 pm · Martes cerrado.</td></tr>
+          <tr><td class="k">Qué los distingue</td><td>Sushi y mariscos sinaloenses en un mismo lugar, con identidad elegante y oscura, en lugar del estilo festivo o barato que domina la categoría. Las bebidas asiáticas refuerzan el toque japonés.</td></tr>
         </tbody>
       </table></div>
     </section>
@@ -174,47 +175,57 @@ ol.src { margin: 8px 0 0; padding-left: 22px; display: grid; gap: 4px; font-size
       <h2>Quién compra y en qué idioma</h2>
       <div class="grid g2">
         <div class="card">
-          <h3>Local y turismo nacional</h3>
-          <p>Residentes de Peñasco y visitantes de Sonora y Baja California, que llenan Semana Santa y el verano. Para ellos “estilo Sinaloa” es un código conocido y atractivo.</p>
-          <p class="small"><b>Idioma:</b> español, como base.</p>
+          <h3>Locales de Puerto Peñasco</h3>
+          <p>Familias, grupos de amigas, parejas y celebraciones de cumpleaños, según sus publicaciones. Creadores y foodies locales hacen reels y elogian “precios súper justos”, “ambiente muy bonito”, “servicio excelente” y la mixología (“10/10”).</p>
+          <p class="small"><b>Idioma:</b> español mexicano, cercano.</p>
         </div>
         <div class="card">
-          <h3>Turistas de Arizona y snowbirds</h3>
-          <p>Phoenix y Tucson están a 3.5–4 horas. La ubicación (corredor de Blvd. Fremont, rumbo a Las Conchas) está en una zona con muchas casas de estadounidenses. El “Mexican sushi” ya es conocido en Phoenix y Tucson.</p>
-          <p class="small"><b>Idioma:</b> inglés como traducción; explicar qué es “Sinaloa-style sushi”.</p>
+          <h3>Turismo nacional y de Arizona</h3>
+          <p>Visitantes de Sonora y Baja California en temporada, y turistas de Arizona y snowbirds. Ya hay señal en sus redes: un mensaje de felicitación por la apertura está en inglés. El local está rumbo a Las Conchas, zona con muchas casas de estadounidenses.</p>
+          <p class="small"><b>Idioma:</b> inglés como traducción. El negocio no tiene menú en inglés ni precios en USD.</p>
         </div>
       </div>
-      <p class="prose small muted">No se encontraron reseñas en inglés de MAKIZEN, así que el peso real del turista estadounidense en su clientela está <span class="pc">por confirmar</span>, igual que las edades. El horario (1 a 9–10 pm) apunta a comida y cena, no a vida nocturna.</p>
+      <p class="small muted" style="max-width:70ch">Cuánto pesa el turista estadounidense en ventas sigue <span class="pc">por confirmar</span>: Facebook no tiene reseñas todavía.</p>
     </section>
 
     <section id="s5">
       <div class="eyebrow">5 · Identidad visual</div>
       <h2>Identidad visual</h2>
+      <div class="card">
+        <h3>Logo</h3>
+        <p>Un <b>pez betta</b> blanco de cola larga y ondulada nadando hacia la izquierda, dentro de una <b>luna creciente en pincelada</b> (estilo ensō japonés), con un <b>punto dorado</b> arriba a la derecha. Wordmark <b>MAKIZEN</b> en serif romana de alto contraste y “— SUSHI &amp; MARISCOS —” en dorado con filetes. Siempre sobre negro.</p>
+        <p class="small muted">Versiones: isotipo redondo (redes), horizontal (encabezado de la cartilla), vertical (portada) y todo en dorado (anuncios). En el local: letras corpóreas sobre listones de madera y el isotipo retroiluminado en un muro negro. No existe un logo vectorial oficial publicado; para la demo se vectorizó fielmente desde la cartilla (<code>public/brand/</code>). Para producción, pedir el original.</p>
+      </div>
+      <h3>Paleta real</h3>
+      <p class="small muted">Medida en píxeles de la cartilla y el logo. Contraste calculado según WCAG.</p>
       <div class="tbl-wrap"><table>
-        <thead><tr><th>Elemento</th><th>Estado</th><th>Cómo se completa</th></tr></thead>
+        <thead><tr><th>Color</th><th>Rol</th><th>De dónde sale</th><th>Contraste</th></tr></thead>
         <tbody>
-          <tr><td class="k">Logo</td><td><span class="pc">por confirmar</span> No se pudo ver.</td><td>Archivo vector del dueño, o captura de la foto de perfil de Instagram.</td></tr>
-          <tr><td class="k">Paleta (5–6 HEX)</td><td><span class="pc">por confirmar</span> Sin foto ni logo no hay de dónde extraerla, y no la inventamos.</td><td>Extraer del logo (primario y acento), de la fachada o interior (fondo) y de 3–5 posts (acentos). Validar texto a 4.5:1 en claro y oscuro.</td></tr>
-          <tr><td class="k">Tipografía del logo</td><td><span class="pc">por confirmar</span></td><td>Identificarla en el logo y en sus posts; buscar la equivalente en Google Fonts para títulos.</td></tr>
+          <tr><td class="k"><span class="sw" style="background:#000000"></span> <code>#000000</code></td><td>Fondo</td><td>Todas las páginas de la cartilla y el isotipo; vetas de mármol <code>#1A1A1A</code>–<code>#5A5A5A</code> en portadas</td><td>—</td></tr>
+          <tr><td class="k"><span class="sw" style="background:#FFFFFF"></span> <code>#FFFFFF</code></td><td>Texto principal y logo</td><td>Pez, luna, wordmark, títulos y precios</td><td>21:1 sobre negro <span class="vf">AA</span></td></tr>
+          <tr><td class="k"><span class="sw" style="background:#AE8B3D"></span> <code>#AE8B3D</code></td><td>Acento de marca</td><td>Punto del logo, filetes, “SUSHI &amp; MARISCOS”</td><td>6.6:1 sobre negro <span class="vf">AA</span> · 3.2:1 sobre blanco (solo texto grande)</td></tr>
+          <tr><td class="k"><span class="sw" style="background:#786028"></span> <code>#786028</code></td><td>Sombra del dorado</td><td>Portadas de historias destacadas</td><td>3.5:1 sobre negro: solo decorativo</td></tr>
+          <tr><td class="k"><span class="sw" style="background:#BDBDBD"></span> <code>#BDBDBD</code></td><td>Texto secundario</td><td>Descripciones de platillos en la cartilla</td><td>11.2:1 sobre negro <span class="vf">AA</span></td></tr>
         </tbody>
       </table></div>
+      <p class="small" style="max-width:70ch">Colores del lugar, que no son de marca pero definen el ambiente de las fotos: <b>madera cálida</b> (<code>#8A5A33</code> aprox.) en fachada y paredes, y <b>luz azul LED</b> (<code>#2F6BD8</code> aprox.) en el interior. No hay rojo ni verde en la identidad: la marca es <b>negro + blanco + dorado</b>. Por qué importa: el menú digital debe ser oscuro y usar el dorado con medida, como la cartilla; el azul puede aparecer en fotos del local, no en la interfaz.</p>
       <div class="grid g2">
         <div class="card">
-          <h3>Tipografías sugeridas para el menú</h3>
+          <h3>Tipografías</h3>
           <ul class="clean">
-            <li><b>Títulos:</b> la de su logo o la más cercana en Google Fonts, decidida al ver el logo. Así el menú se siente suyo.</li>
-            <li><b>Texto y precios:</b> <b>DM Sans</b> (Google Fonts). Legible en pantallas pequeñas a 16 px, buen soporte de ñ y acentos, y cifras tabulares para alinear precios. Es neutra a propósito para no competir con el logo.</li>
+            <li><b>Poppins</b> (Google Fonts): es la fuente de su cartilla para títulos en mayúsculas con tracking, nombres de platillos y precios. Usarla da continuidad inmediata con lo que el cliente ya conoce.</li>
+            <li><b>Montserrat</b>: datos secundarios en la cartilla.</li>
+            <li><b>Wordmark MAKIZEN</b>: es parte del logo; usar siempre la imagen. Si hace falta una serif para títulos grandes, <b>Cinzel</b> es la equivalente más cercana <span class="pc">validar con el negocio</span>.</li>
           </ul>
+          <p class="small muted">En Instagram usan además scripts caligráficas doradas y serifs itálicas: son plantillas de Canva, no fuentes de marca.</p>
         </div>
         <div class="card">
-          <h3>Estilo fotográfico recomendado</h3>
+          <h3>Estilo fotográfico</h3>
           <ul class="clean">
-            <li>Cenital para aguachiles y tostadas; 45° para rollos, donde se ve el corte.</li>
-            <li>Luz natural de día o una sola luz suave lateral para que brille el aguachile y se note lo crujiente del empanizado.</li>
-            <li>Mismo fondo y superficie en todas (idealmente la del local), formato cuadrado.</li>
-            <li>Clips cortos de acción para la demo: corte del rollo, vertido del aguachile, limón exprimido.</li>
+            <li>Su registro de estudio: platillos <b>recortados sobre negro o mármol</b>, en platos negros o de piedra gris, muy contrastados. Mantenerlo en la sesión nueva.</li>
+            <li>Su registro de reels: celular, luz azul del local, clientes y creadores.</li>
+            <li>Falta foto pública de 52 de 85 productos, entre ellos el Camarón Roca. Se necesita una sesión de producto con el mismo fondo negro.</li>
           </ul>
-          <p class="small muted">Por qué: en esta categoría lo que vende es la textura y el “antojo”; una foto mala o de stock perjudica más que no tener foto.</p>
         </div>
       </div>
     </section>
@@ -222,13 +233,13 @@ ol.src { margin: 8px 0 0; padding-left: 22px; display: grid; gap: 4px; font-size
     <section id="s6">
       <div class="eyebrow">6 · Movimiento y animación</div>
       <h2>Movimiento</h2>
-      <p class="prose">La vibra que comunican es de <b>sabor bravo sinaloense y mariscos frescos</b>, en un lugar nuevo con energía. Encajan animaciones <b>enérgicas pero cortas</b>: arrancan rápido y frenan con un pequeño rebote, nunca lentas ni flotantes. Duración de 150 a 300 ms, solo con transform y opacidad para que vayan fluidas en teléfonos de gama media, y desactivadas si el teléfono pide menos movimiento.</p>
+      <p style="max-width:70ch">Su identidad es <b>oscura, elegante y acuática</b> (un betta que nada, una luna en pincelada, dorado fino), con el antojo sinaloense en el plato. Encajan animaciones <b>fluidas como el agua</b>, con brillos dorados medidos y respuestas rápidas al tocar. Nada de rebotes exagerados ni colores chillantes. Duración de 200 a 400 ms en transiciones grandes, menos de 150 ms en respuestas al toque, solo transform y opacidad, y todo desactivable si el teléfono pide menos movimiento.</p>
       <div class="grid g3">
-        <div class="card"><h3>Cambio de categoría</h3><p>El indicador del chip activo se desliza con resorte hasta la nueva categoría, y los platillos entran en cascada, uno tras otro cada 30–40 ms.</p></div>
-        <div class="card"><h3>Abrir un platillo</h3><p>La foto de la tarjeta crece hasta convertirse en la hoja de detalle (transición de elemento compartido) y el nivel de picante se “enciende” chile por chile.</p></div>
-        <div class="card"><h3>Agregar a mi lista</h3><p>El botón hace un pequeño “pop” y el contador de la lista rebota. Si un platillo está agotado, se desatura suavemente en lugar de desaparecer.</p></div>
+        <div class="card"><h3>Entrada</h3><p>El betta del logo nada y la luna se traza como pincelada mientras carga el menú; el punto dorado se enciende al final.</p></div>
+        <div class="card"><h3>Abrir un platillo</h3><p>La tarjeta se funde y se expande como líquido hasta el detalle, en tres tiempos: foto, nombre y precio, y descripción.</p></div>
+        <div class="card"><h3>Mi lista</h3><p>Al agregar, el platillo deja una gota dorada que viaja a la isla de “Mi lista”, que crece y muestra el total antes de enviarlo por WhatsApp.</p></div>
       </div>
-      <p class="small muted">El estilo definitivo se ajusta al logo y al ambiente real: si el lugar resulta más sobrio de lo que sugiere “estilo Sinaloa”, se bajan los rebotes y se alarga ligeramente la duración.</p>
+      <p class="small muted">La demo ya aplica esta línea: isla dinámica de “oro líquido”, transición líquida al elegir platillo y apertura en tres tiempos.</p>
     </section>
 
     <section id="s7">
@@ -236,13 +247,14 @@ ol.src { margin: 8px 0 0; padding-left: 22px; display: grid; gap: 4px; font-size
       <h2>Tono de voz</h2>
       <div class="grid g2">
         <div class="card">
-          <h3>Directo · Orgulloso de su origen · Antojador</h3>
-          <p>Su bio es corta, con emojis y solo datos útiles (qué son, dónde, horario, teléfono), y lo primero que dicen es su origen: “estilo Sinaloa”. Le habla al cliente de tú, sin rodeos. <span class="pc">por confirmar con los captions de sus posts</span></p>
+          <h3>Cercano · Cálido · Antojadizo</h3>
+          <p>Hablan de tú, en español mexicano, con emojis (🍣🦐🔥👀) y frases que provocan antojo: “Se vale antojarse, ¿pero ya se te antojó?”, “Crujientito, cremoso…”, “Hay momentos que se disfrutan más cuando se comparten”. Cierran invitando a compartir: “¡Presume tu antojo! Etiquétanos”.</p>
+          <p class="small muted">Hashtags: #Makizen #AntojoDeSushi #PuertoPeñasco #estilosinaloa</p>
         </div>
         <div class="card">
-          <h3>Ejemplos</h3>
-          <div class="quote"><p>Aguachile verde recién hecho. Pica rico, como en Culiacán.</p><p class="en">Fresh green aguachile. Spicy, Culiacán style.</p></div>
-          <div class="quote"><p>Los martes descansamos. Te esperamos el miércoles a la 1.</p><p class="en">We're closed on Tuesdays. See you Wednesday at 1 pm.</p></div>
+          <h3>Ejemplos para el menú</h3>
+          <div class="quote"><p>¿Ya se te antojó? Aguachile mixto, recién hecho. 🦐</p><p class="en">Craving yet? Fresh mixed aguachile. 🦐</p></div>
+          <div class="quote"><p>Hay momentos que se disfrutan más cuando se comparten. Pide una charola.</p><p class="en">Some moments are better shared. Order a platter.</p></div>
         </div>
       </div>
     </section>
@@ -292,11 +304,11 @@ ol.src { margin: 8px 0 0; padding-left: 22px; display: grid; gap: 4px; font-size
     <section id="s10">
       <div class="eyebrow">10 · Ideas para la demo</div>
       <h2>Tres direcciones para elegir</h2>
-      <p class="small muted">Las tres usan la paleta y el logo reales cuando los tengamos; lo que cambia es la composición y el carácter del movimiento.</p>
+      <p class="small muted">Ya con la marca real: las tres van sobre negro, con blanco y dorado, Poppins y las fotos del negocio. Lo que cambia es la composición y el carácter del movimiento.</p>
       <div class="grid g3">
-        <div class="card dir"><span class="tag">A · Barra sinaloense</span><h3>Energía y antojo</h3><p>Fotos a sangre que llenan la pantalla, títulos grandes y chips de categoría que saltan con resorte. El picante se enciende chile por chile y el botón de WhatsApp late suavemente. Es la más llamativa y la más cercana al ambiente festivo del estilo Sinaloa; necesita buenas fotos.</p></div>
-        <div class="card dir"><span class="tag">B · Zen del mar</span><h3>Calma en la forma, sabor en el plato</h3><p>Juega con el nombre: mucho aire, fondo limpio y transiciones de “marea” ligadas al scroll, donde las tarjetas emergen como olas. El contraste lo ponen las etiquetas de picante y las fotos. Es la más elegante y funciona aunque haya pocas fotos.</p></div>
-        <div class="card dir"><span class="tag">C · Comanda viva</span><h3>El menú como comanda</h3><p>Inspirada en el ticket de la cocina: precios en tipografía tipo comanda y “Mi lista” que se arma como un ticket que se imprime con animación, listo para mandar por WhatsApp. Como las comandas serán por WhatsApp, es la que mejor encaja con su operación, y la más fácil de entender para el turista. La “comanda” se puede combinar con la energía de la A.</p></div>
+        <div class="card dir"><span class="tag">A · Noche dorada</span><h3>Lujo y antojo</h3><p>Fotos recortadas sobre negro que llenan la pantalla, como en su cartilla, con brillos dorados que recorren títulos y precios. Chips de categoría con transición líquida. Es la más llamativa y la más fiel a su cartilla y sus portadas; necesita buenas fotos.</p></div>
+        <div class="card dir"><span class="tag">B · Ichigo ichie</span><h3>El betta y la luna</h3><p>Parte de su lema y su logo: mucho aire, el betta nadando en la entrada, la luna en pincelada como marco de secciones y transiciones de agua ligadas al scroll. Es la más poética y funciona aunque falten fotos.</p></div>
+        <div class="card dir"><span class="tag">C · Comanda dorada</span><h3>El menú como comanda</h3><p>“Mi lista” se arma como un ticket elegante con filetes dorados que se “imprime” con animación y se manda por WhatsApp. Como las comandas serán por WhatsApp, es la que mejor encaja con su operación y la más fácil para el turista. Se combina bien con la A.</p></div>
       </div>
     </section>
 
@@ -307,25 +319,25 @@ ol.src { margin: 8px 0 0; padding-left: 22px; display: grid; gap: 4px; font-size
         <div class="card">
           <h3>Datos por confirmar</h3>
           <ul class="clean">
-            <li>Logo, paleta y tipografía reales.</li>
-            <li>Fotos de la fachada, el interior, los platillos y los empaques.</li>
-            <li>Captions y tono de sus 17 publicaciones.</li>
-            <li>Cartilla actual: platillos, tamaños y precios.</li>
-            <li>Dirección exacta (Uber Eats: Blvd. Freemont y Josefa Ortiz de Domínguez #330; otro listado menciona Dr. Francisco Javier Carrillo Ruiz, Loc 9).</li>
-            <li>Año de apertura y origen de los dueños o el chef.</li>
-            <li>Nombre oficial: “& Mariscos”, “y Marisco” o “Y Mariscos”.</li>
+            <li>Que el (638) 156-0660 tenga WhatsApp para recibir comandas.</li>
+            <li>Etiquetas de picante y crudo: en la demo están inferidas de las descripciones; validarlas con la cocina.</li>
+            <li>Descripción del rollo Tres Quesos (la cartilla dice “Res, empanizado”).</li>
+            <li>Logo original en vector y permiso por escrito para usar sus fotos.</li>
+            <li>Origen sinaloense de la familia o del chef.</li>
+            <li>Código postal y número exacto de la dirección.</li>
+            <li>Si aceptan dólares y a qué tipo de cambio.</li>
           </ul>
         </div>
         <div class="card">
           <h3>Preguntas para el dueño</h3>
           <ol class="clean">
-            <li>¿Cuál es la historia de MAKIZEN y por qué ese nombre?</li>
-            <li>¿El equipo viene de Sinaloa? ¿Qué platillo los representa mejor?</li>
-            <li>¿Qué tanto turista estadounidense reciben?</li>
-            <li>¿Quieren recibir pedidos por WhatsApp? ¿El (638) 156-0660 tiene WhatsApp?</li>
-            <li>¿Los precios incluyen IVA? ¿Aceptan dólares?</li>
-            <li>¿Quién actualizaría el menú y con qué frecuencia cambia?</li>
-            <li>¿Tienen fotos profesionales o podemos agendar una sesión?</li>
+            <li>¿Cuál es la historia de MAKIZEN, del nombre y del lema 一期一会?</li>
+            <li>¿Quién recibirá las comandas de WhatsApp durante el servicio?</li>
+            <li>¿Qué platillos pican y cuáles van crudos o curtidos?</li>
+            <li>¿Podemos hacer una sesión de fotos de los 52 platillos sin foto, empezando por el Camarón Roca?</li>
+            <li>¿Quién les hizo el logo y la cartilla en Canva? ¿Tienen los archivos originales?</li>
+            <li>¿Qué tanto turista estadounidense reciben? ¿Quieren referencia en USD?</li>
+            <li>¿Quién actualizaría precios y agotados, y con qué frecuencia cambian?</li>
           </ol>
         </div>
       </div>
@@ -336,15 +348,15 @@ ol.src { margin: 8px 0 0; padding-left: 22px; display: grid; gap: 4px; font-size
       <details open>
         <summary>Fuentes consultadas</summary>
         <ol class="src">
-          <li><a href="https://www.instagram.com/makizen.puertopenasco/">Instagram @makizen.puertopenasco</a> (ficha pública vista el 8 nov 2026: nombre, bio, seguidores)</li>
+          <li><a href="https://www.instagram.com/makizen.puertopenasco/">Instagram @makizen.puertopenasco</a> (perfil, publicaciones, destacados y comentarios; revisado con sesión iniciada el 8 nov 2026)</li>
+          <li><a href="https://www.facebook.com/profile.php?id=61595144090878">Facebook · Makizen Sushi &amp; Mariscos</a></li>
+          <li><a href="https://drive.google.com/file/d/1_5mthhjB9_OXKfR5Lt0BITQoIqJKRpFQ">Cartilla en PDF (Google Drive, enlazada desde Instagram)</a></li>
+          <li><code>docs/marca-actual.md</code> en el repositorio: detalle de la investigación, menú completo y origen de cada foto</li>
           <li><a href="https://www.ubereats.com/mx/neighborhood/josefa-ortiz-de-dom%C3%ADnguez-puerto-pe%C3%B1asco-so">Uber Eats · Josefa Ortiz de Domínguez</a></li>
-          <li><a href="https://www.ubereats.com/mx-en/pickup/puerto-pe%C3%B1asco-so">Uber Eats · Puerto Peñasco</a></li>
           <li><a href="https://www.tiktok.com/tag/tikum">TikTok · publicación de apertura</a></li>
-          <li><a href="https://www.tiktok.com/discover/fresko-armenia-quindio-sushi">TikTok · resultado con la reseña de La Foodie MX</a></li>
           <li><a href="https://carta.menu/restaurants/puerto-penasco/sushi-sun-restaurant">carta.menu · Sushi Sun</a></li>
           <li><a href="https://restaurantguru.com/sushi-Puerto-Penasco-m27">Restaurant Guru · sushi en Puerto Peñasco</a></li>
           <li><a href="https://wanderlog.com/list/geoCategory/262275/best-seafood-restaurants-in-puerto-penasco">Wanderlog · mariscos en Puerto Peñasco</a></li>
-          <li><a href="https://www.instagram.com/mollymolly.sushi/">Instagram · MollyMolly Sushi</a></li>
           <li><a href="https://www.facebook.com/MakiZen/">Facebook · Maki-Zen (Puebla, otro negocio)</a></li>
         </ol>
       </details>
