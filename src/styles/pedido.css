@@ -432,3 +432,9 @@ dialog.lista.teclado .lista-pie > .pd-pie-fila { display: none; }
 dialog.lista.teclado .pd-pie-botones { margin-top: 0; }
 dialog.lista.teclado :is(.pd-boton-grande, .boton-whatsapp) { min-height: 46px; }
 dialog.lista.teclado .pd-atras { width: 46px; height: 46px; }
+
+/* Táctil: sin desenfoque sobre el fondo fijo de mármol (es lo que más cuesta en el teléfono). */
+@media (pointer: coarse) {
+  dialog.lista::backdrop { backdrop-filter: none; -webkit-backdrop-filter: none; background: rgb(0 0 0 / 0.76); }
+  .lista-pie { backdrop-filter: none; -webkit-backdrop-filter: none; background: linear-gradient(rgb(14 14 13 / 0.97), #0c0c0b); }
+}

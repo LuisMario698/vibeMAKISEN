@@ -178,8 +178,8 @@ li:has(> .producto[data-modo="mosaico"]) { transition: transform 160ms var(--eas
 /* ── Hoja de detalle ───────────────────────────────────────────────────── */
 dialog.hoja { inset: auto 0 0 0; overscroll-behavior: contain; margin: 0 auto; width: min(100%, 36rem); max-width: none; height: var(--alto-hoja, 88svh); max-height: none; padding: 0; border: 0; background: transparent; color: inherit; overflow: visible; }
 dialog.hoja::backdrop { background: rgb(0 0 0 / 0.68); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
-dialog.hoja:not(.liquida)[open] .hoja-panel { animation: hoja-sube 560ms var(--ease-salida); }
-dialog.hoja:not(.liquida)[open]::backdrop { animation: velo 420ms ease-out; }
+dialog.hoja:not(.liquida):not(.cerrando)[open] .hoja-panel { animation: hoja-sube 560ms var(--ease-salida); }
+dialog.hoja:not(.liquida):not(.cerrando)[open]::backdrop { animation: velo 420ms ease-out; }
 dialog.hoja.cerrando .hoja-panel { animation: hoja-baja 300ms ease-in forwards; }
 dialog.hoja.cerrando::backdrop { animation: velo 300ms ease-in reverse forwards; }
 dialog.hoja.liquida::backdrop { animation: none; }
@@ -293,7 +293,7 @@ dialog.hoja[data-forma="ventana"] .hoja-panel { border-radius: 28px; }
 dialog.hoja[data-forma="ventana"] .asa { display: none; }
 dialog.hoja[data-forma="ventana"] .hoja-foto { position: absolute !important; inset: 0 auto 0 0; width: 46%; height: auto !important; }
 dialog.hoja[data-forma="ventana"] :is(.hoja-scroll, .hoja-barra) { margin-left: 46%; }
-dialog.hoja[data-forma="ventana"]:not(.liquida)[open] .hoja-panel { animation: ventana-entra 280ms var(--ease-salida); }
+dialog.hoja[data-forma="ventana"]:not(.liquida):not(.cerrando)[open] .hoja-panel { animation: ventana-entra 280ms var(--ease-salida); }
 dialog.hoja[data-forma="ventana"].cerrando .hoja-panel { animation: ventana-sale 200ms ease-out forwards; }
 @keyframes ventana-entra { from { opacity: 0; transform: scale(0.96); } }
 @keyframes ventana-sale { to { opacity: 0; transform: scale(0.97); } }

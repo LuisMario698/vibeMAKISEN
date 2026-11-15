@@ -208,6 +208,16 @@ document.addEventListener('click', (ev) => {
   if (b) hoja.abrir(b.dataset.abrir!, b);
 });
 
+/* ── Tras un despliegue nuevo, un archivo viejo puede ya no existir: recargar una vez ── */
+addEventListener('vite:preloadError', (ev) => {
+  try {
+    if (sessionStorage.getItem('makizen-recargado')) return;
+    sessionStorage.setItem('makizen-recargado', '1');
+  } catch { return; }
+  ev.preventDefault();
+  location.reload();
+});
+
 /* ── Inicio ─────────────────────────────────────────────────────────── */
 aplicarIdioma();
 setInterval(pintarEstado, 60_000);

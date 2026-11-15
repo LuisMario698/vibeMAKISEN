@@ -193,3 +193,5 @@ dialog.hoja.sale-agregado { pointer-events: none; }
 @media (prefers-reduced-transparency: reduce) {
   .aviso-agregado { background: #141413; backdrop-filter: none; -webkit-backdrop-filter: none; }
 }
+
+@media (pointer: coarse) { .aviso-agregado { backdrop-filter: none; -webkit-backdrop-filter: none; background: #141413; } }

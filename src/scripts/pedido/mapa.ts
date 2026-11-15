@@ -19,11 +19,24 @@ export type Mapa = {
 const PIN = '<span class="pd-pin"><svg viewBox="0 0 32 42" width="32" height="42" aria-hidden="true"><path d="M16 1C8 1 2 7 2 15c0 10 14 25 14 25s14-15 14-25C30 7 24 1 16 1z" fill="#d2b26a" stroke="#050505" stroke-width="2"/><circle cx="16" cy="15" r="5.5" fill="#050505"/></svg></span><span class="pd-pin-sombra"></span>';
 const LOCAL = '<span class="pd-local"><img src="/brand/isotipo.svg" alt="" width="22" height="22"></span>';
 
+async function cargarCss() {
+  if (document.querySelector('link[data-leaflet]')) return;
+  const { default: href } = await import('leaflet/dist/leaflet.css?url');
+  await new Promise<void>((ok) => {
+    const l = document.createElement('link');
+    l.rel = 'stylesheet'; l.href = href; l.dataset.leaflet = '';
+    l.onload = () => ok(); l.onerror = () => ok();
+    document.head.append(l);
+  });
+}
+
 export async function crearMapa(el: HTMLElement, o: {
   centro: Coordenada; inicial: Coordenada | null; etiquetas: { pin: string; local: string };
   alMover: (c: Coordenada) => void; alFallarTeselas: () => void;
 }): Promise<Mapa> {
-  const [mod] = await Promise.all([import('leaflet'), import('leaflet/dist/leaflet.css')]);
+  // La hoja de estilos de Leaflet se inyecta solo aquí (como import normal Astro la
+  // subía a la carga inicial y bloqueaba el render del menú).
+  const [mod] = await Promise.all([import('leaflet'), cargarCss()]);
   const L = (mod as unknown as { default?: typeof import('leaflet') }).default ?? (mod as unknown as typeof import('leaflet'));
   // Un intento anterior que falló a medias pudo dejar el contenedor marcado por Leaflet.
   delete (el as HTMLElement & { _leaflet_id?: number })._leaflet_id;
