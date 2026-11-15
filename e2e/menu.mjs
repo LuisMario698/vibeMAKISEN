@@ -113,7 +113,7 @@ for (const [nombre, w, h] of TAMANOS) {
   ok(t.includes('Pago: efectivo, paga con $1,000 (cambio: $'), 'mensaje con efectivo y cambio');
   await page.locator('label.pago:has(input[value="tarjeta"])').click();
   t = await texto();
-  ok((await page.locator('#lista-enviar').getAttribute('href')).startsWith('https://wa.me/526381560660?text='), 'enlace a wa.me del negocio');
+  ok((await page.locator('#lista-enviar').getAttribute('href')).startsWith('https://wa.me/526381165691?text='), 'enlace a wa.me del negocio');
   ok(/Pedido MAKIZEN · MZ-[2-9A-Z]{4}/.test(t) && t.includes('En mesa: 5') && t.includes('2 x Sopa Vietnamita de Pollo o Camarón (Camarón)') && t.includes('Nota: sin cebolla') && t.includes('Pago: tarjeta') && t.includes('Precio final lo confirma el restaurante.'), 'mensaje completo con folio, mesa y pago');
 
   // Para llevar sin nombre: no deja avanzar y lo pide.
