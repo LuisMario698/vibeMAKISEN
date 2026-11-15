@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { leerMesa, sinMesa } from '../src/lib/mesa';
 import {
-  agregar, armarMensaje, cambiar, enlaceWhatsApp, LIMITES, listaVacia, piezas, sanear, subtotal, validar,
+  agregar, armarMensaje, cambiar, cambiarNota, enlaceWhatsApp, LIMITES, listaVacia, PASO_DE, piezas, restaurar, sanear, subtotal, validar,
   type Catalogo, type Entrega, type Lista,
 } from '../src/lib/pedido';
 
@@ -206,5 +206,88 @@ describe('mensaje y enlace', () => {
   });
   it('lista sin disponibles no genera enlace', () => {
     expect(enlaceWhatsApp('526381560660', con({ id: 'mojito-mango', n: 1 }), new Map([...cat, ['mojito-mango', { ...cat.get('mojito-mango')!, agotado: true }]]), entrega(), 'es')).toEqual({ ok: false, motivo: 'vacia' });
+  });
+});
+
+describe('nota, deshacer y datos nuevos del pedido', () => {
+  it('cambiar la nota de una línea', () => {
+    const l = con({ id: 'makizen-roll', n: 2 });
+    const r = cambiarNota(l, 0, '  sin  ajonjolí ', AHORA);
+    expect(r.lista.lineas[0]).toMatchObject({ n: 2, nota: 'sin ajonjolí' });
+    expect(cambiarNota(r.lista, 0, '', AHORA).lista.lineas[0]!.nota).toBeUndefined();
+    expect(cambiarNota(l, 0, 'x'.repeat(200), AHORA).lista.lineas[0]!.nota).toHaveLength(LIMITES.nota);
+  });
+  it('si la nota la iguala a otra línea, se juntan (con tope)', () => {
+    const l = con({ id: 'makizen-roll', n: 15 }, { id: 'mojito-mango', n: 1 }, { id: 'makizen-roll', n: 8, nota: 'sin queso' });
+    const r = cambiarNota(l, 2, '', AHORA);
+    expect(r.lista.lineas).toHaveLength(2);
+    expect(r.lista.lineas[0]).toMatchObject({ id: 'makizen-roll', n: LIMITES.cantidad });
+    expect(r.indice).toBe(0);
+  });
+  it('deshacer regresa la línea a su lugar', () => {
+    const l = con({ id: 'makizen-roll', n: 1 }, { id: 'mojito-mango', n: 2 }, { id: 'sopa-vietnamita', op: 'pollo', n: 1 });
+    const quitada = l.lineas[1]!;
+    const sin = cambiar(l, 1, 0, AHORA);
+    expect(restaurar(sin, 1, quitada, AHORA).lineas.map((x) => x.id)).toEqual(['makizen-roll', 'mojito-mango', 'sopa-vietnamita']);
+    // Si mientras tanto volvió a agregar el mismo platillo, se suman.
+    const otra = agregar(sin, { id: 'mojito-mango', n: 1 }, cat, AHORA).lista;
+    expect(restaurar(otra, 1, quitada, AHORA).lineas.find((x) => x.id === 'mojito-mango')!.n).toBe(3);
+  });
+  it('sanea pago, monto, ubicación y folio guardados', () => {
+    const bueno = { ...con({ id: 'makizen-roll', n: 1 }), pago: 'tarjeta', paga: 1000, ubic: { lat: 31.3157004, lng: -113.52861 }, folio: 'MZ-4F7K' };
+    expect(sanear(bueno, cat, AHORA).lista).toMatchObject({ pago: 'tarjeta', paga: 1000, ubic: { lat: 31.3157, lng: -113.52861 }, folio: 'MZ-4F7K' });
+    const malo = { ...bueno, pago: 'paypal', paga: -3, ubic: { lat: 'x' }, folio: 'MZ-0O1I' };
+    expect(sanear(malo, cat, AHORA).lista).toMatchObject({ pago: '', paga: null, ubic: null, folio: '' });
+    // Listas guardadas antes de estos campos siguen sirviendo.
+    const vieja = { v: 1, t: AHORA, lineas: [{ id: 'makizen-roll', n: 1, p: 240 }], modo: 'mesa', nombre: '', hora: 'pronto', direccion: '', referencias: '' };
+    expect(sanear(vieja, cat, AHORA).lista).toMatchObject({ lineas: [{ id: 'makizen-roll', n: 1 }], pago: '', paga: null, ubic: null, folio: '' });
+  });
+  it('valida forma de pago y que el efectivo cubra el total', () => {
+    const l = con({ id: 'makizen-roll', n: 2 });
+    expect(validar(l, cat, entrega({ pago: '' })).pago).toBe('requerido');
+    expect(validar(l, cat, entrega({ pago: 'efectivo', paga: 400 })).paga).toBe('insuficiente');
+    expect(validar(l, cat, entrega({ pago: 'efectivo', paga: 500 }))).toEqual({});
+    expect(validar(l, cat, entrega({ pago: 'efectivo', paga: 'exacto' }))).toEqual({});
+    expect(validar(l, cat, entrega({ pago: 'tarjeta', paga: 10 }))).toEqual({});
+    expect(PASO_DE.pago).toBe(3);
+    expect(PASO_DE.mesa).toBe(2);
+  });
+});
+
+describe('mensaje con folio, pago, mesa y ubicación', () => {
+  const l = con({ id: 'makizen-roll', n: 2 }, { id: 'sopa-vietnamita', op: 'camaron', n: 1, nota: 'sin cebolla' });
+  it('español, en mesa, efectivo con cambio', () => {
+    expect(armarMensaje(l, cat, entrega({ mesa: 7, folio: 'MZ-4F7K', pago: 'efectivo', paga: 1000 }), 'es')).toBe([
+      '*Pedido MAKIZEN · MZ-4F7K* (menú digital)',
+      'En mesa: 7',
+      '',
+      '2 x Makizen Roll Empanizado  $480',
+      '1 x Sopa Vietnamita de Pollo o Camarón (Camarón)  $160',
+      '   Nota: sin cebolla',
+      '',
+      '*Subtotal: $640* MXN (IVA incluido)',
+      'Pago: efectivo, paga con $1,000 (cambio: $360)',
+      'Precio final lo confirma el restaurante.',
+    ].join('\n'));
+  });
+  it('a domicilio con ubicación del mapa y tarjeta', () => {
+    const m = armarMensaje(l, cat, entrega({ modo: 'domicilio', nombre: 'Ana', direccion: 'Calle 13 #45', ubic: { lat: 31.3157, lng: -113.5286 }, folio: 'MZ-AB23', pago: 'tarjeta' }), 'es');
+    expect(m).toContain('*Pedido MAKIZEN · MZ-AB23*');
+    expect(m).toContain('Dirección: Calle 13 #45\nUbicación: https://maps.google.com/?q=31.315700,-113.528600');
+    expect(m).toContain('Pago: tarjeta (terminal al recibir)\nEnvío: lo confirma el restaurante.');
+  });
+  it('inglés: rótulos traducidos, platillos en español', () => {
+    const m = armarMensaje(l, cat, entrega({ modo: 'domicilio', nombre: 'Ann', direccion: '13th St #45', ubic: { lat: 31.3157, lng: -113.5286 }, folio: 'MZ-AB23', pago: 'efectivo', paga: 'exacto' }), 'en');
+    expect(m).toContain('*MAKIZEN order · MZ-AB23* (digital menu)');
+    expect(m).toContain('Location: https://maps.google.com/?q=31.315700,-113.528600');
+    expect(m).toContain('2 x Makizen Roll Empanizado  $480');
+    expect(m).toContain('Payment: cash (exact amount)');
+    expect(armarMensaje(l, cat, entrega({ mesa: 12, pago: 'tarjeta' }), 'en')).toContain('Dine-in, table: 12');
+  });
+  it('sin folio válido ni ubicación en mesa/llevar, no se inventan líneas', () => {
+    const m = armarMensaje(l, cat, entrega({ folio: 'malo', ubic: { lat: 31, lng: -113 } }), 'es');
+    expect(m.startsWith('*Pedido MAKIZEN* (menú digital)')).toBe(true);
+    expect(m).not.toContain('Ubicación');
+    expect(m).not.toContain('Pago:');
   });
 });

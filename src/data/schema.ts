@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import raw from './menu.json';
+import rawMesas from './mesas.json';
 
 const texto = z.object({ es: z.string().min(1), en: z.string().min(1) });
 const slug = z.string().regex(/^[a-z0-9-]+$/);
@@ -87,3 +88,37 @@ export type Opciones = z.infer<typeof Opciones>;
 
 /** Falla el build si el JSON no cumple el esquema. */
 export const menu: Menu = Menu.parse(raw);
+
+/* ── Plano de mesas (ilustrativo) y ubicación del local: src/data/mesas.json ── */
+export const MesaPlano = z.object({
+  /** Número de mesa (el mismo del QR ?src=qr-mesa-N). */
+  n: z.number().int().min(1).max(99),
+  /** Centro de la mesa en unidades del plano. */
+  x: z.number().nonnegative(),
+  y: z.number().nonnegative(),
+  forma: z.enum(['redonda', 'cuadrada', 'larga']),
+  personas: z.union([z.literal(2), z.literal(4), z.literal(6)]),
+  zona: texto,
+});
+
+export const Plano = z.object({
+  ancho: z.number().positive(),
+  alto: z.number().positive(),
+  mesas: z.array(MesaPlano).min(1),
+  /** Mesas ocupadas solo para la demostración. */
+  ocupadasDemo: z.array(z.number().int().min(1).max(99)),
+  restaurante: z.object({ lat: z.number().min(-90).max(90), lng: z.number().min(-180).max(180), aproximada: z.boolean() }),
+}).superRefine((p, ctx) => {
+  const nums = new Set<number>();
+  for (const m of p.mesas) {
+    if (nums.has(m.n)) ctx.addIssue({ code: 'custom', message: `Mesa repetida: ${m.n}` });
+    nums.add(m.n);
+    if (m.x >= p.ancho || m.y >= p.alto) ctx.addIssue({ code: 'custom', message: `Mesa ${m.n} fuera del plano` });
+  }
+  for (const n of p.ocupadasDemo) if (!nums.has(n)) ctx.addIssue({ code: 'custom', message: `Mesa ocupada que no está en el plano: ${n}` });
+});
+
+export type Plano = z.infer<typeof Plano>;
+
+/** Falla el build si el plano no cumple el esquema. */
+export const plano: Plano = Plano.parse(rawMesas);
