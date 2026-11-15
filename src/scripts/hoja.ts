@@ -1,13 +1,23 @@
 // Detalle del platillo. En teléfono y tablet es una hoja que sube desde abajo (se
 // arrastra); en computadora, una ventana centrada a dos columnas. Se abre con un
 // «revelado en mármol» desde la tarjeta (morfo.ts) y abajo tiene la barra para agregar
-// a Mi lista: cantidad, sabor (si aplica) y nota.
+// a «Mi pedido»: cantidad, sabor (si aplica) y nota.
 import { etiquetasHTML } from '../lib/etiquetas';
 import { precio, usd } from '../lib/precios';
 import { escapar } from '../lib/texto';
 import { LIMITES, type ErrorAgregar } from '../lib/pedido';
+import { rodillo } from '../lib/detalle';
 import { $, anunciar, bi, datos, enPantalla, esEscritorio, espera, html, reducir, type PlatilloCliente } from './comun';
-import { aLaBolsa, anchoVista, cajaDe, crearMorfo, proporcion, radios, rectImagen, type Ajuste, type Caja, type Forma, type Radios } from './morfo';
+import { abrirBolsa, esperar, recibirBolsa, type Destino } from './bolsa';
+import { aLaBolsa, anchoVista, cajaDe, chispear, crearMorfo, proporcion, radios, rectImagen, type Ajuste, type Caja, type Forma, type Radios } from './morfo';
+
+/** Precio que entra rodando: cada dígito da una vuelta completa y se asienta, de izquierda a derecha. */
+const COLUMNA = Array.from({ length: 20 }, (_, i) => `<span>${i % 10}</span>`).join('');
+function precioRodante(texto: string) {
+  let k = 0;
+  const piezas = rodillo(texto).map((p) => (p.tipo === 'digito' ? `<span class="rd"><span class="rd-ancho">${p.v}</span><span class="rd-col" style="--v:${p.v};--k:${k++}">${COLUMNA}</span></span>` : `<span>${escapar(p.t)}</span>`)).join('');
+  return `<span class="sr-only">${escapar(texto)}</span><span class="rodillo" aria-hidden="true">${piezas}</span>`;
+}
 
 type Modo = 'recorte' | 'foto' | 'icono' | 'fila' | 'mosaico';
 const RADIO: Record<Modo, number> = { recorte: 22, foto: 22, icono: 22, fila: 16, mosaico: 24 };
@@ -18,9 +28,11 @@ export type Agregado = { id: string; op?: string | undefined; n: number; nota?: 
 
 export function crearHoja(o: {
   agregar: (item: Agregado) => ErrorAgregar | undefined;
-  /** Después de agregar y cerrar (la isla recibe la gota). */
-  agregado: (item: Agregado) => void;
-  isla: { pildora: () => HTMLElement | null; destinoBolsa: () => Caja | null };
+  /** Cuando la miniatura llega a la bolsa (o enseguida, sin animación). */
+  agregado: (item: Agregado, destino: Destino | null) => void;
+  isla: { pildora: () => HTMLElement | null };
+  /** Bolsa visible a la que vuela el platillo (isla o barra superior). */
+  bolsa: () => Destino | null;
 }) {
   const hoja = $<HTMLDialogElement>('#hoja')!;
   const panel = $('.hoja-panel', hoja)!;
@@ -35,6 +47,10 @@ export function crearHoja(o: {
   const menos = $<HTMLButtonElement>('[data-menos]', barra)!;
   const mas = $<HTMLButtonElement>('[data-mas]', barra)!;
   const zonaFoto = $('.hoja-foto', hoja)!;
+  const sombra = $('.hoja-sombra', hoja)!;
+  const brillo = $('.hoja-brillo', hoja)!;
+  const chispasEl = $('.hoja-chispas', hoja)!;
+  const enso = $<SVGSVGElement>('.enso', hoja)!;
   const morfo = crearMorfo();
 
   let actual: PlatilloCliente | null = null;
@@ -133,7 +149,7 @@ export function crearHoja(o: {
       <h2 ${d(1)} id="hoja-titulo" class="mt-2 text-[30px] font-semibold leading-[1.08] tracking-[-0.025em]">${bi(p.nombre)}</h2>
       <p ${d(1)} class="mt-1 text-[14px] text-humo"><span data-ver="es" lang="en">${escapar(p.nombre.en)}</span><span data-ver="en" lang="es">${escapar(p.nombre.es)}</span></p>
       <div ${d(2)} class="mt-5 flex items-end justify-between gap-4 rounded-2xl bg-noche/40 px-4 py-3 ring-1 ring-white/[0.05]">
-        <p class="text-[30px] font-semibold tabular-nums leading-none ${p.agotado ? 'line-through decoration-2' : ''}">${precio(p.precio)} <span class="text-[13px] font-normal text-niebla">MXN</span></p>
+        <p class="hoja-precio text-[30px] font-semibold tabular-nums leading-none ${p.agotado ? 'line-through decoration-2' : ''}">${p.agotado ? escapar(precio(p.precio)) : precioRodante(precio(p.precio))} <span class="text-[13px] font-normal text-niebla">MXN</span></p>
         <p class="text-right text-[13px] leading-tight text-humo">${usd(p.precio, datos.tc)}<br>${bi('referencia', 'reference only')}</p>
       </div>
       ${p.agotado ? `<p ${d(3)} class="mt-4 rounded-2xl bg-hueso/[0.06] px-4 py-3 text-[15px]">${bi('Hoy está agotado. Pregunta por una alternativa.', 'Sold out today. Ask us for an alternative.')}</p>` : ''}
@@ -161,7 +177,43 @@ export function crearHoja(o: {
     n = 1;
     agregando = false;
     btnAgregar.disabled = false;
+    btnAgregar.classList.remove('exito');
+    limpiarAterrizaje();
     pintarBarra();
+  }
+
+  /* ── Aterrizaje: sombra que se abre, brillo que recorre el platillo y chispas de oro ── */
+  function limpiarAterrizaje() {
+    [sombra, brillo, brillo.firstElementChild as HTMLElement].forEach((e) => e.getAnimations().forEach((a) => a.cancel()));
+    chispasEl.replaceChildren();
+    sombra.style.opacity = '0';
+    brillo.style.opacity = '0';
+  }
+  function aterrizar() {
+    if (reducir() || !hoja.open) return;
+    limpiarAterrizaje();
+    const Z = cajaDe(zonaFoto);
+    const a = proporcion(hojaImg);
+    const contiene = !cubre(modoActual);
+    // Rectángulo visible de la imagen dentro de la zona de la foto.
+    const R = contiene ? rectImagen(cajaDe(hojaImg), a, 'contain') : Z;
+    const rel = { x: R.x - Z.x, y: R.y - Z.y, w: R.w, h: R.h };
+    // El brillo usa la propia imagen como máscara: solo recorre el platillo, no el mármol.
+    const src = hojaImg.currentSrc || hojaImg.src;
+    Object.assign(brillo.style, { left: `${rel.x}px`, top: `${rel.y}px`, width: `${rel.w}px`, height: `${rel.h}px`, opacity: '1' });
+    brillo.style.setProperty('--mascara', contiene ? `url("${encodeURI(src).replace(/"/g, '%22')}")` : 'none');
+    brillo.classList.toggle('a-sangre', !contiene);
+    (brillo.firstElementChild as HTMLElement).animate([{ transform: 'translateX(-130%) skewX(-18deg)' }, { transform: 'translateX(230%) skewX(-18deg)' }],
+      { duration: 1100, delay: contiene ? 260 : 120, easing: 'cubic-bezier(0.45, 0.05, 0.25, 1)', fill: 'both' });
+    if (!contiene) return;
+    // Sombra de contacto bajo el platillo: se abre como si acabara de posarse.
+    const ancho = Math.min(rel.w * 0.86, 260);
+    Object.assign(sombra.style, { left: `${rel.x + rel.w / 2 - ancho / 2}px`, top: `${rel.y + rel.h - 22}px`, width: `${ancho}px` });
+    sombra.animate([{ transform: 'scale(0.35, 0.5)', opacity: 0 }, { transform: 'scale(1.06, 1.1)', opacity: 0.95, offset: 0.55 }, { transform: 'scale(1, 1)', opacity: 0.85 }],
+      { duration: 620, easing: 'cubic-bezier(0.16, 1, 0.3, 1)', fill: 'forwards' });
+    // Chispas de hoja de oro desde el anillo del ensō.
+    const E = cajaDe(enso);
+    if (E.w > 0) void chispear(chispasEl, E.x - Z.x + E.w / 2, E.y - Z.y + E.h / 2, (E.w / 2) * 0.86);
   }
 
   function mostrarPanel() {
@@ -176,6 +228,9 @@ export function crearHoja(o: {
     void cuerpo.offsetWidth;
     hoja.classList.add('panel-listo');
     cuerpo.classList.add('hoja-escalonada');
+    // Con el revelado el platillo ya llegó; con la subida simple, se espera a que asiente.
+    const abierto = actual;
+    window.setTimeout(() => { if (hoja.open && actual === abierto && !hoja.classList.contains('recogiendo')) aterrizar(); }, hoja.classList.contains('liquida') ? 0 : 380);
   }
 
   async function abrir(id: string, boton: HTMLElement | null) {
@@ -204,15 +259,19 @@ export function crearHoja(o: {
     html.classList.add('bloqueo');
     hoja.classList.add('liquida');
     const pieza = piezaDe(origen, modoActual);
-    const dur = esEscritorio() ? 480 : 560;
+    const dur = esEscritorio() ? 380 : 420;
     const pasos: Promise<unknown>[] = [morfo.crecer(cajaDe(pieza), radios(RADIO[modoActual]), S, radiosPanel(), forma(), dur)];
     if (imgOrigen) {
       // Los recortes aterrizan con un pequeño rebote; las fotos a sangre, sin pasarse del marco.
       pasos.push(morfo.volar(imgOrigen.currentSrc || imgOrigen.src, proporcion(imgOrigen), extremoTarjeta(pieza, imgOrigen, modoActual), extremoHoja(S, modoActual),
-        dur + 40, cubre(modoActual) ? 'cubic-bezier(0.32, 0.72, 0, 1)' : 'cubic-bezier(0.34, 1.22, 0.64, 1)'));
+        dur + 20, cubre(modoActual) ? 'cubic-bezier(0.32, 0.72, 0, 1)' : 'cubic-bezier(0.34, 1.12, 0.64, 1)'));
       imgOrigen.style.visibility = 'hidden';
     }
-    await Promise.all(pasos);
+    // Con la curva de cajón, al 85 % del tiempo la lámina y la foto ya están a ~1 px de su
+    // lugar: ahí el diálogo toma el relevo (sin esperar el asentamiento invisible). La marca
+    // es una animación vacía para que siga el mismo reloj que las demás.
+    const marca = $('#velo-hoja')!.animate([{}, {}], { duration: Math.round(dur * 0.85) }).finished.catch(() => undefined);
+    await Promise.race([Promise.all(pasos).catch(() => undefined), marca]);
     // El diálogo real ocupa el lugar de la lámina en el mismo cuadro (sin parpadeo).
     mostrarPanel();
     morfo.quitarVuelo();
@@ -236,6 +295,7 @@ export function crearHoja(o: {
       const imgOrigen = origen.querySelector<HTMLImageElement>('img[data-foto]');
       // 1 · El contenido se apaga (y, ya invisible, el scroll vuelve arriba).
       hoja.classList.add('recogiendo');
+      limpiarAterrizaje();
       await espera(110);
       // Si el navegador cerró el diálogo por su cuenta (Escape repetido, gesto atrás), no hay
       // panel que medir: solo se limpia.
@@ -260,7 +320,10 @@ export function crearHoja(o: {
       let vuelo: Promise<unknown> = Promise.resolve();
       if (imgOrigen) {
         imgOrigen.style.visibility = 'hidden';
-        vuelo = morfo.volar(src, a, desde, extremoTarjeta(pieza, imgOrigen, modoActual), dur).then(() => {
+        // Los recortes regresan en arco (suben y caen en su tarjeta); las fotos a sangre, directo.
+        const hasta = extremoTarjeta(pieza, imgOrigen, modoActual);
+        const arco = cubre(modoActual) ? 0 : Math.min(90, Math.max(36, Math.abs(hasta.caja.y - desde.caja.y) * 0.18));
+        vuelo = morfo.volar(src, a, desde, hasta, dur + (arco ? 60 : 0), undefined, arco).then(() => {
           imgOrigen.style.visibility = '';
           morfo.quitarVuelo();
           // 3 · La tarjeta recibe la foto con un asentamiento leve.
@@ -293,7 +356,7 @@ export function crearHoja(o: {
       $('#hoja-opciones', cuerpo)?.removeAttribute('aria-invalid');
     }
   });
-  btnAgregar.addEventListener('click', async () => {
+  btnAgregar.addEventListener('click', async (ev) => {
     if (!actual || ocupado || agregando) return;
     const op = cuerpo.querySelector<HTMLInputElement>('input[name="hoja-op"]:checked')?.value;
     if (actual.opciones && !op) {
@@ -306,22 +369,29 @@ export function crearHoja(o: {
       return;
     }
     const item: Agregado = { id: actual.id, n, op, nota: $<HTMLInputElement>('#hoja-nota', cuerpo)?.value };
+    // Mientras el platillo vuela, el contador de la bolsa conserva el número anterior.
+    if (!reducir()) esperar();
     const error = o.agregar(item);
-    if (error) return;
+    if (error) { recibirBolsa(null); return; }
     agregando = true;
+    navigator.vibrate?.(12);
+    // 1 · El botón confirma: un relleno de oro claro nace del toque y se dibuja la palomita.
+    const r = btnAgregar.getBoundingClientRect();
+    const conPuntero = ev.detail > 0 && ev.clientX > 0;
+    btnAgregar.style.setProperty('--tx', `${conPuntero ? ev.clientX - r.left : r.width / 2}px`);
+    btnAgregar.style.setProperty('--ty', `${conPuntero ? ev.clientY - r.top : r.height / 2}px`);
+    btnAgregar.classList.add('exito');
     btnAgregar.disabled = true;
-    btnAgregar.classList.add('agregado');
-    await espera(reducir() ? 0 : 140);
-    btnAgregar.classList.remove('agregado');
-    // La foto del platillo cae en la bolsa mientras la hoja baja. Sale solo de la parte que
+    await espera(reducir() ? 0 : 380);
+    // 2 · La foto del platillo cae en la bolsa mientras la hoja baja. Sale solo de la parte que
     // se ve (la hoja pudo desplazarse); si casi no se ve, sale del botón «Agregar».
-    const destino = o.isla.destinoBolsa();
+    const destino = o.bolsa();
     const a = proporcion(hojaImg);
     const src = hojaImg.currentSrc || hojaImg.src;
     const base = cubre(modoActual) ? cajaDe(zonaFoto) : rectImagen(cajaDe(hojaImg), a, 'contain');
     let desde = interseccion(interseccion(base, cajaDe(scroller)), cajaDe(panel));
     if (desde.w < 24 || desde.h < 24) { const b = cajaDe(btnAgregar); desde = { x: b.x + 12, y: b.y + b.h / 2 - 20, w: 40, h: 40 }; }
-    const lanzar = () => (destino && !reducir() ? aLaBolsa(src, a, desde, destino, cubre(modoActual)) : Promise.resolve());
+    const lanzar = () => (destino && !reducir() ? aLaBolsa(src, a, desde, destino.caja, cubre(modoActual), () => abrirBolsa(destino.el)) : Promise.resolve());
     // Con popover la miniatura vuela encima de la hoja que baja; sin popover quedaría tapada
     // por el diálogo (capa superior), así que primero se cierra y luego vuela.
     const conPopover = typeof HTMLElement.prototype.showPopover === 'function';
@@ -330,8 +400,24 @@ export function crearHoja(o: {
     await cerrar('rapido');
     if (!conPopover) vuelo = lanzar();
     await vuelo;
-    o.agregado(item);
+    // 3 · La bolsa recibe el platillo (cierra, rebota, el contador rueda).
+    o.agregado(item, destino);
   });
+
+  /* ── Toque en una tarjeta: un destello de oro la cruza al presionarla ── */
+  document.addEventListener('pointerdown', (ev) => {
+    if (ev.button !== 0 || reducir()) return;
+    const t = ev.target as HTMLElement;
+    if (t.closest('[data-agregar]')) return;
+    const art = t.closest<HTMLElement>('article.producto');
+    if (!art) return;
+    const pieza = art.dataset.modo === 'mosaico' ? art.parentElement : art.querySelector<HTMLElement>('.producto-marco');
+    if (!pieza) return;
+    pieza.classList.remove('destello');
+    void pieza.offsetWidth;
+    pieza.classList.add('destello');
+    window.setTimeout(() => pieza.classList.remove('destello'), 800);
+  }, { passive: true });
 
   const interseccion = (a: Caja, b: Caja): Caja => {
     const x = Math.max(a.x, b.x), y = Math.max(a.y, b.y);

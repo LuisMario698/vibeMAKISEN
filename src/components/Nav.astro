@@ -1,5 +1,7 @@
 ---
 import Idioma from './Idioma.astro';
+import IconoBolsa from './IconoBolsa.astro';
+import '../styles/detalle.css';
 ---
 <header id="nav" class="nav fixed inset-x-0 top-0 z-40 pt-[env(safe-area-inset-top)]">
   <div class="contenedor flex h-16 items-center justify-between gap-3">
@@ -7,10 +9,11 @@ import Idioma from './Idioma.astro';
       <img src="/brand/logo-horizontal.svg" width="891" height="349" alt="MAKIZEN Sushi & Mariscos" class="aparece h-10 w-auto" style="--d:0" />
     </a>
     <div class="flex items-center gap-2">
-      <button type="button" data-abrir-lista class="nav-lista presionable aparece" style="--d:80" aria-label="Mi lista / My list">
-        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8h12l-1 12H7z" /><path d="M9 8a3 3 0 0 1 6 0" /></svg>
-        <span class="hidden sm:inline"><span lang="es">Mi lista</span><span lang="en">My list</span></span>
-        <span data-contador-lista class="nav-contador tabular-nums" hidden>0</span>
+      <button type="button" data-abrir-lista class="nav-lista bolsa-boton presionable aparece" style="--d:80" aria-label="Mi pedido / My order">
+        <span class="bolsa-onda" aria-hidden="true"></span>
+        <IconoBolsa tam={21} />
+        <span class="hidden sm:inline"><span lang="es">Mi pedido</span><span lang="en">My order</span></span>
+        <span data-contador-lista data-ocultar-cero aria-hidden="true" class="nav-contador tabular-nums" data-vista="0" data-antes="0" hidden>0</span>
       </button>
       <Idioma class="aparece" />
     </div>

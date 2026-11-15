@@ -3,10 +3,19 @@
 // (src/scripts/morfo.ts); el contenido y la barra para agregar los maneja src/scripts/hoja.ts.
 // #morfo es una réplica del panel sin contenido: es la lámina que crece y se recoge.
 import { menu } from '../data/schema';
+import { arcoEnso, trazoEnso } from '../lib/detalle';
+import IconoBolsa from './IconoBolsa.astro';
+import '../styles/detalle.css';
 const n = menu.negocio;
+// Ensō de pincel: contorno relleno con grosor variable, revelado por una máscara que
+// recorre el mismo arco que el pincel (lib/detalle.ts).
+const enso = { trazo: trazoEnso(), guia: arcoEnso(), fibra: arcoEnso({ r: 75, inicio: 205, barrido: 150 }) };
+const gap = (101 * Math.PI) / 180;
+const punto = { x: Math.round((100 + 84 * Math.cos(gap)) * 10) / 10, y: Math.round((100 + 84 * Math.sin(gap)) * 10) / 10 };
 ---
 <div id="velo-hoja" class="velo-hoja" aria-hidden="true"></div>
-<div id="morfo" class="morfo" aria-hidden="true" hidden><div class="morfo-panel marmol-panel"><div class="morfo-foto zona-marmol"></div></div></div>
+<div id="morfo-filo" class="morfo-filo" aria-hidden="true" hidden></div>
+<div id="morfo" class="morfo" aria-hidden="true" hidden><div class="morfo-panel marmol-panel"><div class="morfo-foto zona-marmol"></div><span class="morfo-luz"></span></div></div>
 <dialog id="hoja" class="hoja" aria-labelledby="hoja-titulo">
   <div class="hoja-panel marmol-panel relative flex h-full flex-col overflow-hidden rounded-t-[28px] ring-1 ring-white/[0.06]">
     <div class="asa absolute inset-x-0 top-0 z-10 flex h-8 touch-none justify-center pt-2.5" aria-hidden="true"><span class="h-1.5 w-11 rounded-full bg-hueso/35"></span></div>
@@ -16,11 +25,25 @@ const n = menu.negocio;
     <div class="hoja-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain">
       <div class="hoja-foto zona-marmol relative grid h-[300px] shrink-0 place-items-center overflow-hidden">
         <svg class="enso" viewBox="0 0 200 200" aria-hidden="true" focusable="false">
-          <circle class="enso-trazo" cx="100" cy="100" r="86" pathLength="100" />
-          <circle class="enso-eco" cx="100" cy="100" r="80" pathLength="100" />
-          <circle class="enso-punto" cx="168" cy="47" r="5.5" />
+          <defs>
+            <linearGradient id="enso-oro" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#ecd598" />
+              <stop offset="0.45" stop-color="#ae8b3d" />
+              <stop offset="0.8" stop-color="#d2b26a" />
+              <stop offset="1" stop-color="#8a6d2f" />
+            </linearGradient>
+            <mask id="enso-mascara" maskUnits="userSpaceOnUse" x="-10" y="-10" width="220" height="220">
+              <path class="enso-guia" d={enso.guia} pathLength="100" />
+            </mask>
+          </defs>
+          <path class="enso-trazo" d={enso.trazo} mask="url(#enso-mascara)" />
+          <path class="enso-fibra" d={enso.fibra} pathLength="100" />
+          <circle class="enso-punto" cx={punto.x} cy={punto.y} r="5" />
         </svg>
+        <span class="hoja-sombra" aria-hidden="true"></span>
         <img id="hoja-img" alt="" class="hoja-foto-img" />
+        <span class="hoja-brillo" aria-hidden="true"><i></i></span>
+        <span class="hoja-chispas" aria-hidden="true"></span>
       </div>
       <div id="hoja-cuerpo" class="hoja-escalonada px-5 pb-8 lg:px-8"></div>
     </div>
@@ -30,9 +53,16 @@ const n = menu.negocio;
         <output id="hoja-n" aria-live="polite" class="tabular-nums">1</output>
         <button type="button" data-mas class="presionable" aria-label="Uno más / One more"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 12h12M12 6v12" /></svg></button>
       </div>
-      <button type="button" id="hoja-agregar" class="boton-oro presionable min-w-0 flex-1 text-[16px]">
-        <svg class="bolsa-ico" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8h12l-1 12H7z" /><path d="M9 8a3 3 0 0 1 6 0" /></svg>
-        <span><span lang="es">Agregar</span><span lang="en">Add</span></span><span aria-hidden="true">·</span><span class="total tabular-nums"></span>
+      <button type="button" id="hoja-agregar" class="boton-oro boton-agregar presionable min-w-0 flex-1 text-[16px]">
+        <span class="ba-relleno" aria-hidden="true"></span>
+        <span class="ba-normal">
+          <IconoBolsa tam={20} />
+          <span><span lang="es">Agregar</span><span lang="en">Add</span></span><span aria-hidden="true">·</span><span class="total tabular-nums"></span>
+        </span>
+        <span class="ba-ok" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path class="ba-palomita" d="m5 12.5 4.2 4.2L19 7" pathLength="1" /></svg>
+          <span><span lang="es">Agregado</span><span lang="en">Added</span></span>
+        </span>
       </button>
       <p class="agotado-txt flex-1 text-[15px] text-niebla" hidden><span lang="es">Agotado hoy</span><span lang="en">Sold out today</span></p>
       <a id="hoja-llamar" href={`tel:${n.telefonoFijo}`} class="boton-linea presionable text-[15px]" hidden><span lang="es">Llamar</span><span lang="en">Call</span></a>

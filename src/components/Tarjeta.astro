@@ -68,8 +68,9 @@ const veta = `--mx:${semilla % 100}%;--my:${(semilla * 7) % 100}%`;
         <ul class="mt-1.5 flex flex-wrap gap-1.5 empty:hidden" set:html={etiquetasHTML(p)} />
       </div>
       {rapido && (
-        <button type="button" data-agregar={p.id} class="agregar-rapido presionable relative z-10" aria-label={`Agregar ${p.nombre.es} a mi lista / Add ${p.nombre.en} to my list`}>
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 12h12M12 6v12" /></svg>
+        <button type="button" data-agregar={p.id} class="agregar-rapido presionable relative z-10" aria-label={`Agregar ${p.nombre.es} a mi pedido / Add ${p.nombre.en} to my order`}>
+          <svg class="ar-mas" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 12h12M12 6v12" /></svg>
+          <svg class="ar-ok" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5.5 12.5 4 4L18.5 7.5" pathLength="1" /></svg>
         </button>
       )}
     </article>
