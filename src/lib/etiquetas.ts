@@ -77,8 +77,4 @@ export function etiquetaCorta(p: Platillo): string {
   return `${e.icono}<span lang="es">${corto.es}</span><span lang="en">${corto.en}</span>`;
 }
 
-const mxn = new Intl.NumberFormat('es-MX', { maximumFractionDigits: 0 });
-/** "$1,100" como en la cartilla (MXN con IVA incluido). */
-export const precio = (n: number) => `$${mxn.format(n)}`;
-/** "≈ US$11": solo referencia, nunca precio de cobro. */
-export const usd = (n: number, tc: number) => `≈ US$${Math.max(1, Math.round(n / tc))}`;
+export { precio, usd } from './precios';
