@@ -335,3 +335,7 @@ dialog.lista.enviado .pd-etapa { animation: pd-linea-entra 460ms var(--ease-sali
 #lista-form, .pd-bloque, .pd-horas, [data-vista="3"] > div { grid-template-columns: minmax(0, 1fr); }
 :is(#lista-form, .pd-bloque, .pd-horas) > * { min-width: 0; }
 .lista-panel { overflow: clip; }
+
+/* Teselas de respaldo (OpenStreetMap) oscurecidas para que combinen con el mármol. */
+.pd-mapa .pd-teselas-osm { filter: invert(1) hue-rotate(180deg) brightness(0.85) contrast(0.9) saturate(0.6); }
+.pd-mapa.leaflet-container { touch-action: none; }

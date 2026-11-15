@@ -1,8 +1,8 @@
 // Mapa de entrega (solo "A domicilio"). Leaflet se carga con import dinámico la
 // primera vez que se necesita, así no pesa en la carga del menú.
 // Teselas oscuras de CARTO con atribución © OpenStreetMap © CARTO.
-// En pantallas táctiles el mapa no se arrastra con un dedo (el panel sigue haciendo
-// scroll): el pin dorado sí se arrastra y un toque en el mapa lo mueve ahí.
+// Se arrastra con un dedo o el ratón; un toque mueve el pin dorado ahí y el pin también
+// se arrastra. Si las teselas de CARTO fallan, cambia solo a las de OpenStreetMap.
 import type { Coordenada } from '../../lib/ubicacion';
 
 export type Mapa = {
@@ -21,23 +21,34 @@ export async function crearMapa(el: HTMLElement, o: {
   const [mod] = await Promise.all([import('leaflet'), import('leaflet/dist/leaflet.css')]);
   const L = (mod as unknown as { default?: typeof import('leaflet') }).default ?? (mod as unknown as typeof import('leaflet'));
   el.replaceChildren();
-  const tactil = matchMedia('(pointer: coarse)').matches;
   const mapa = L.map(el, {
     center: [o.centro.lat, o.centro.lng],
     zoom: 15,
-    dragging: !tactil,
+    dragging: true,
     scrollWheelZoom: false,
     touchZoom: true,
     zoomControl: true,
     attributionControl: true,
   });
   mapa.attributionControl.setPrefix(false);
-  let avisado = false;
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-    subdomains: 'abcd',
-    maxZoom: 19,
-    attribution: '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> © <a href="https://carto.com/attributions" target="_blank" rel="noopener">CARTO</a>',
-  }).on('tileerror', () => { if (!avisado) { avisado = true; o.alFallarTeselas(); } }).addTo(mapa);
+  const OSM = '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>';
+  let fallos = 0; let cargadas = 0; let respaldo = false;
+  const carto = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    subdomains: 'abcd', maxZoom: 19, attribution: `${OSM} © <a href="https://carto.com/attributions" target="_blank" rel="noopener">CARTO</a>`,
+  });
+  // Respaldo: OpenStreetMap estándar, oscurecido con CSS para que combine con el mármol.
+  const usarRespaldo = () => {
+    if (respaldo) return;
+    respaldo = true;
+    mapa.removeLayer(carto);
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: OSM, className: 'pd-teselas-osm' })
+      .on('tileerror', () => o.alFallarTeselas()).addTo(mapa);
+  };
+  carto.on('tileload', () => { cargadas++; });
+  carto.on('tileerror', () => { fallos++; if (cargadas === 0 && fallos >= 2) usarRespaldo(); });
+  carto.addTo(mapa);
+  // Si en 6 s no llegó ninguna tesela (red que bloquea CARTO), también se cambia.
+  setTimeout(() => { if (cargadas === 0) usarRespaldo(); }, 6000);
 
   L.marker([o.centro.lat, o.centro.lng], {
     icon: L.divIcon({ html: LOCAL, className: 'pd-icono-local', iconSize: [34, 34], iconAnchor: [17, 17] }),

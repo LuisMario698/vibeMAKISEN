@@ -463,7 +463,12 @@ export function crearLista(o: { alCambiar: (piezas: number, total: number) => vo
         centro, inicial: lista.ubic,
         etiquetas: en() ? { pin: 'Delivery point', local: 'MAKIZEN (approximate)' } : { pin: 'Punto de entrega', local: 'MAKIZEN (aproximado)' },
         alMover: (c) => { mensajeMapa = null; actualizar({ ubic: redondear(c) }); pintarUbicacion(); pintarErrores(); anunciar('Punto de entrega fijado en el mapa.', 'Delivery pin set on the map.'); },
-        alFallarTeselas: () => { mapaEl.dataset.sinTeselas = '1'; },
+        alFallarTeselas: () => {
+          if (mapaEl.dataset.sinTeselas) return;
+          mapaEl.dataset.sinTeselas = '1';
+          mensajeMapa = ['El mapa no cargó con tu conexión. Usa tu ubicación o escribe tu dirección y referencias.', "The map didn't load on your connection. Use your location or type your address and landmarks."];
+          pintarUbicacion();
+        },
       });
       requestAnimationFrame(() => mapa?.ajustar());
     } catch {
