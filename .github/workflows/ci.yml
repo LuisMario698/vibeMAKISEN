@@ -1,0 +1,25 @@
+name: CI
+on:
+  push:
+  pull_request:
+jobs:
+  verificar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+      - run: npm test
+      - run: npm run build
+      - run: npm run verificar
+      - name: Pruebas en navegador (teléfono, tablet y computadora)
+        run: |
+          npm i --no-save playwright wait-on
+          npx playwright install --with-deps chromium
+          npx astro preview --port 4329 &
+          npx wait-on http://localhost:4329 --timeout 60000
+          npm run e2e

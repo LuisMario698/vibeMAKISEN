@@ -1,0 +1,32 @@
+# Cabeceras de Cloudflare (Workers Static Assets). Las reglas se suman: no repetir
+# Cache-Control en /* porque se uniría con coma a las reglas de abajo.
+
+/_astro/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/fotos/*
+  Cache-Control: public, max-age=2592000
+
+/menu/*
+  Cache-Control: public, max-age=2592000
+
+/brand/*
+  Cache-Control: public, max-age=604800
+
+/og/*
+  Cache-Control: public, max-age=604800
+
+/sw.js
+  Cache-Control: no-cache
+
+/manifest.webmanifest
+  Cache-Control: no-cache
+
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+
+# Las URL de prueba de workers.dev nunca se indexan.
+https://:subdomain.workers.dev/*
+  X-Robots-Tag: noindex

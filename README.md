@@ -1,9 +1,10 @@
-# MAKIZEN · Menú digital (demo)
+# MAKIZEN · Menú digital
 
-Demo navegable del menú web móvil (PWA) de **MAKIZEN Sushi & Mariscos**, Puerto Peñasco, Sonora. Propuesta para el restaurante.
+Menú web (PWA) de **MAKIZEN Sushi & Mariscos**, Puerto Peñasco, Sonora: bilingüe, para teléfono, tablet y computadora, con **Mi lista** y pedido por WhatsApp (en mesa, para llevar o a domicilio). Propuesta para el restaurante.
 
+- Propuesta (requerimientos, lógica, plan): [`docs/propuesta-menu-digital.html`](docs/propuesta-menu-digital.html)
 - Marca, paleta, tipografías, fotos y menú reales: [`docs/marca-actual.md`](docs/marca-actual.md)
-- Bases del proyecto: [`docs/bases-menu-digital.html`](docs/bases-menu-digital.html)
+- Bases técnicas: [`docs/bases-menu-digital.html`](docs/bases-menu-digital.html)
 - Datos del menú (validados con zod al compilar): `src/data/menu.json` y `src/data/schema.ts`
 
 ## Uso
@@ -12,20 +13,42 @@ Requiere Node 24 LTS (Astro 7 pide >= 22.23.4).
 
 ```bash
 npm install
-npm run dev      # http://localhost:4321
-npm run build    # sitio estático en dist/ con service worker
-npm run check    # tipos y validación de Astro
+npm run dev        # http://localhost:4321
+npm test           # pruebas de la lógica (vitest)
+npm run check      # tipos y validación de Astro
+npm run build      # sitio estático en dist/ + service worker (scripts/sw.mjs)
+npm run verificar  # revisa dist/ (páginas, noindex, JSON-LD, precache)
+npx astro preview --port 4329 & npm run e2e   # pruebas en navegador a 390, 820 y 1440 px
 ```
 
-### Despliegue
+| Comando | Para qué |
+|---|---|
+| `npm run og` | Regenera `public/og/makizen.jpg` (vista previa al compartir). |
+| `SITE_URL=https://… npm run qr -- 12` | QR por mesa en `qr/` (SVG por mesa y `hoja.html` para imprimir). |
 
-Publicada en **https://makizen-menu.vercel.app** (proyecto `makizen-menu` en Vercel). La página lleva `noindex` por ser una demo.
+### Cambiar precios, agotados o platillos
 
-```bash
-npx vercel deploy --prod   # usa vercel.json: npm run build → dist/
-```
+Todo está en `src/data/menu.json`. `agotado: true` deja el platillo visible en gris y no se puede agregar a la lista. `opciones` define sabores a elegir (sin cambio de precio). Si un dato está mal, `npm run build` falla y el sitio publicado sigue como estaba.
 
-`npm run build` corre `astro build` y luego `scripts/precache-html.mjs`, que agrega `index.html` al precache del service worker para que el menú abra sin conexión.
+### Despliegue en Cloudflare
+
+El sitio es 100 % estático y se publica con **Cloudflare Workers Static Assets** conectado a GitHub (cada push publica):
+
+1. Cloudflare → **Workers & Pages** → **Create** → **Import a repository** → `LuisMario698/vibeMAKISEN`.
+2. Nombre del proyecto: `makizen-menu` (igual que `wrangler.jsonc`).
+3. Build command: `npm run build` · Deploy command: `npx wrangler deploy`.
+4. Rama de producción: `claude/affectionate-hawking-ps3z4n`.
+5. Variables de build: `SITE_URL` = la URL que asigne Cloudflare (por ejemplo `https://makizen-menu.<cuenta>.workers.dev`). `PUBLIC_INDEXAR=true` solo cuando el restaurante apruebe que se indexe.
+
+`public/_headers` define la caché (`immutable` para `/_astro/*`, `no-cache` para `sw.js`) y `noindex` en `*.workers.dev`. La versión anterior sigue en Vercel (`vercel.json`) hasta validar Cloudflare.
+
+### PWA y sin conexión
+
+`scripts/sw.mjs` genera `dist/sw.js` con workbox-build después del build: precache solo del shell (JS, CSS, fuentes, logo, íconos y `/offline/`), navegación red-primero con espera de 3 s (ignora `?src=`), fotos caché-primero. Al activarse guarda `/` y `/en/`, así el menú abre sin señal desde la primera visita.
+
+### Pedido por WhatsApp
+
+La lógica es pura y probada en `src/lib/pedido.ts` (`tests/pedido.test.ts`); la interfaz en `src/scripts/lista.ts` y `src/components/Lista.astro`. La mesa llega por el QR (`?src=qr-mesa-N`), se guarda en la sesión y se quita de la URL. El mensaje va en el idioma del cliente con los nombres de platillo en español, subtotal en MXN con IVA y "Precio final lo confirma el restaurante".
 
 Recursos (se generan una vez y se versionan):
 

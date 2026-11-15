@@ -9,24 +9,34 @@
   },
   "scripts": {
     "dev": "astro dev",
-    "build": "astro build && node scripts/precache-html.mjs",
+    "build": "astro build && node scripts/sw.mjs",
     "preview": "astro preview",
     "check": "astro check",
-    "assets": "node scripts/prepare-assets.mjs"
+    "test": "vitest run",
+    "verificar": "node scripts/verificar-dist.mjs",
+    "e2e": "node e2e/menu.mjs",
+    "assets": "node scripts/prepare-assets.mjs",
+    "og": "node scripts/og.mjs",
+    "qr": "node scripts/qr.mjs",
+    "deploy": "npm run build && wrangler deploy"
   },
   "dependencies": {
     "@fontsource/montserrat": "^5.3.0",
     "@fontsource/poppins": "^5.3.0",
-    "@vite-pwa/astro": "^2.0.1",
     "astro": "^7.4.7",
     "zod": "^4.6.7"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.12",
     "@tailwindcss/vite": "^4.3.5",
+    "@types/qrcode": "^1.5.6",
     "potrace": "^2.1.8",
+    "qrcode": "^1.5.4",
     "sharp": "^0.35.5",
     "tailwindcss": "^4.3.5",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "vitest": "^5.1.0",
+    "workbox-build": "^7.4.1",
+    "wrangler": "^4.162.0"
   }
 }

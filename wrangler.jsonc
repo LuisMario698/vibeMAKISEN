@@ -1,0 +1,11 @@
+{
+  // Cloudflare Workers con Static Assets: sirve la carpeta dist/ (sitio 100% estático).
+  // En el panel de Cloudflare el proyecto debe llamarse igual que "name".
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "makizen-menu",
+  "compatibility_date": "2026-11-15",
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "404-page"
+  }
+}

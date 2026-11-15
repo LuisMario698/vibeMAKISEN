@@ -6,3 +6,6 @@ dist/
 .env*
 .vercel/
 .vercel
+e2e/*.png
+qr/
+.wrangler/
