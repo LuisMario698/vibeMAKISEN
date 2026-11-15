@@ -25,13 +25,11 @@ Usa Chrome (Claude in Chrome, con la sesión del usuario iniciada en Instagram y
 Entregable: llena `docs/marca-actual.md` (ya tiene la plantilla) y `src/data/menu.json`. Después actualiza la sección de identidad visual de `docs/estudio-de-esencia.html` con los datos reales.
 No inventar identidad: todo lo visual sale de lo que tienen. Si algo no existe, decirlo.
 
-## Pedidos: por WhatsApp (decidido el 13 nov 2026)
-- Las órdenes/comandas se mandan por WhatsApp. No hay pago en línea ni pedidos guardados en base de datos en la demo.
-- Flujo: el cliente arma "Mi lista" (platillo, tamaño, cantidad, nota) → elige "Para comer aquí (mesa N)" o "Para llevar" (nombre y hora) → botón "Enviar pedido por WhatsApp" abre `https://wa.me/526381560660?text=…` con el mensaje armado (encodeURIComponent), en ES o EN según el idioma.
-- La mesa sale del QR (`?src=qr-mesa-N`); guardarla en sessionStorage.
-- La lista vive en localStorage dentro de try/catch; si se pierde, el menú sigue funcionando.
-- El mensaje incluye subtotal en MXN con IVA incluido y la nota "Precio final lo confirma el restaurante".
-- Confirmar con el negocio que el (638) 156-0660 tiene WhatsApp antes de presentar.
+## Pedidos: por WhatsApp (decidido; propuesta en docs/propuesta-menu-digital.html)
+- Las comandas se mandan por WhatsApp a `negocio.whatsapp`. Sin pago en línea ni pedidos guardados en servidor.
+- "Mi lista": platillo, opción (sabor), cantidad 1–20, nota ≤ 80; máx. 30 líneas. Estado en localStorage (`makizen-lista`, versión `v:1`, caduca a las 12 h) siempre en try/catch; se sanea contra el menú vigente (agotados fuera del total, precios actualizados, platillos inexistentes fuera).
+- Tres modalidades: **en mesa** (mesa 1–99 desde `?src=qr-mesa-N`, guardada en sessionStorage y quitada de la URL), **para llevar** (nombre + hora) y **a domicilio** (nombre + dirección + referencias; envío lo confirma el restaurante).
+- Mensaje en ES o EN según el idioma, con el nombre del platillo siempre en español, subtotal en MXN con IVA y "Precio final lo confirma el restaurante". La lógica pura vive en `src/lib/pedido.ts` con pruebas.
 
 ## Lo que ya sabemos (verificado el 8 nov 2026)
 - Nombre en IG: "MAKIZEN SUSHI & MARISCOS", @makizen.puertopenasco, 680 seguidores, 17 posts.
@@ -44,12 +42,13 @@ No inventar identidad: todo lo visual sale de lo que tienen. Si algo no existe, 
 
 ## Decisiones técnicas (ver docs/bases-menu-digital.html)
 - Astro 7.4.x (Node 24 LTS; Astro exige >= 22.23.4), Tailwind CSS 4.3.x con tokens en `@theme`, TypeScript estricto, zod para el esquema de `src/data/menu.json`.
-- PWA con @vite-pwa/astro 2.x (Workbox 7.4). Hosting previsto: Cloudflare Workers Static Assets.
+- PWA: service worker generado después del build (`scripts/sw.mjs`, workbox-build); precache solo del shell, navegación red-primero. Hosting: Cloudflare Workers Static Assets conectado a GitHub (`wrangler.jsonc`, `public/_headers`).
 - Para la demo: datos en `src/data/menu.json` (sin Supabase todavía).
 - Animación: elegir lo mejor para el proyecto (p. ej. View Transitions de Astro, CSS scroll-driven animations, Motion o GSAP), justificando peso y rendimiento. Siempre respetar `prefers-reduced-motion` y no romper el scroll ni la legibilidad.
 
 ## Reglas
-- Precios en MXN con IVA incluido y textos en español como principales; USD solo como "≈ referencia" (Profeco / LFPC art. 7 Bis).
+- Precios en MXN con IVA incluido y textos en español como principales; USD como "≈ referencia" visible en ambos idiomas, con tipo de cambio y fecha (Profeco / LFPC art. 7 Bis).
+- Lógica pura (horario, precios, pedido, mesa, SEO) en `src/lib/` con pruebas vitest. Nunca `innerHTML` con texto del cliente; escapar datos interpolados.
 - Etiquetas de platillo: picante 0–3 (icono + texto, nunca solo color), crudo/curtido, empanizado/natural/horneado, nuevo, favorito, agotado (visible en gris).
 - Accesibilidad AA, objetivos táctiles >= 44 px, texto base >= 16 px, zoom permitido.
 - Rama de trabajo: `claude/affectionate-hawking-ps3z4n`. Commits en español, claros.
