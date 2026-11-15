@@ -7,7 +7,7 @@
 import { generateSW } from 'workbox-build';
 import { readFileSync, writeFileSync } from 'node:fs';
 
-const VERSION = 'v2';
+const VERSION = 'v3';
 const { count, size, warnings } = await generateSW({
   globDirectory: 'dist',
   globPatterns: ['_astro/**/*.{js,css,woff2}', 'brand/{logo-horizontal,logo-vertical,isotipo}.svg', 'brand/icon-*.png', 'offline/index.html', 'manifest.webmanifest'],
@@ -35,9 +35,10 @@ const { count, size, warnings } = await generateSW({
             cacheKeyWillBeUsed: async ({ request }) => {
               const u = new URL(request.url);
               u.search = '';
-              if (u.pathname === '/en') u.pathname = '/en/';
               return u.href;
             },
+            // Solo se guardan respuestas buenas y finales (nunca una redirección).
+            cacheWillUpdate: async ({ response }) => (response && response.ok && !response.redirected ? response : null),
           },
         ],
       },

@@ -6,7 +6,7 @@ import { etiquetasHTML } from '../lib/etiquetas';
 import { precio, usd } from '../lib/precios';
 import { escapar } from '../lib/texto';
 import { LIMITES, type ErrorAgregar } from '../lib/pedido';
-import { $, bi, datos, enPantalla, esEscritorio, espera, html, reducir, type PlatilloCliente } from './comun';
+import { $, anunciar, bi, datos, enPantalla, esEscritorio, espera, html, reducir, type PlatilloCliente } from './comun';
 import { cajaDe, contenido, crearLiquido, ESCALA, type Caja, type Via } from './liquido';
 
 type Modo = 'recorte' | 'foto' | 'icono' | 'fila' | 'mosaico';
@@ -43,6 +43,8 @@ export function crearHoja(o: {
   let ocupado = false;
   /** Cierre pedido mientras terminaba la apertura: se ejecuta al terminar. */
   let cierrePendiente = false;
+  /** Evita sumar dos veces con un doble toque en «Agregar». */
+  let agregando = false;
   let n = 1;
   let altoHoja = 0;
 
@@ -108,7 +110,7 @@ export function crearHoja(o: {
     cuerpo.innerHTML = `
       <p ${d(0)} class="ceja mt-5">${bi(p.cat)}</p>
       <h2 ${d(1)} id="hoja-titulo" class="mt-2 text-[30px] font-semibold leading-[1.08] tracking-[-0.025em]">${bi(p.nombre)}</h2>
-      <p ${d(1)} class="mt-1 text-[14px] text-humo"><span lang="en">${escapar(p.nombre.es)}</span><span lang="es">${escapar(p.nombre.en)}</span></p>
+      <p ${d(1)} class="mt-1 text-[14px] text-humo"><span data-ver="es" lang="en">${escapar(p.nombre.en)}</span><span data-ver="en" lang="es">${escapar(p.nombre.es)}</span></p>
       <div ${d(2)} class="mt-5 flex items-end justify-between gap-4 rounded-2xl bg-noche/40 px-4 py-3 ring-1 ring-white/[0.05]">
         <p class="text-[30px] font-semibold tabular-nums leading-none ${p.agotado ? 'line-through decoration-2' : ''}">${precio(p.precio)} <span class="text-[13px] font-normal text-niebla">MXN</span></p>
         <p class="text-right text-[13px] leading-tight text-humo">${usd(p.precio, datos.tc)}<br>${bi('referencia', 'reference only')}</p>
@@ -118,7 +120,7 @@ export function crearHoja(o: {
       ${p.gramos ? `<p ${d(4)} class="mt-2 text-[14px] text-humo">${bi('Porción', 'Portion')}: ${escapar(p.gramos)} g</p>` : ''}
       ${p.incluye ? `<ul ${d(4)} class="mt-4 grid gap-2">${p.incluye.map((x) => `<li class="flex items-center gap-3 text-[16px]"><span class="size-1.5 rounded-full bg-oro"></span>${bi(x)}</li>`).join('')}</ul>` : ''}
       <ul ${d(5)} class="visto mt-5 flex flex-wrap gap-2 empty:hidden">${etiquetasHTML(p)}</ul>
-      ${op && !p.agotado ? `<fieldset ${d(5)} id="hoja-opciones" class="mt-6">
+      ${op && !p.agotado ? `<fieldset ${d(5)} id="hoja-opciones" class="mt-6" aria-describedby="hoja-op-error">
         <legend class="text-[15px] font-semibold">${bi(op.titulo)} <span class="text-[13px] font-normal text-niebla">${bi('· elige uno', '· choose one')}</span></legend>
         <div class="mt-3 flex flex-wrap gap-2">${op.valores.map((v) => `<label class="opcion presionable"><input type="radio" name="hoja-op" value="${escapar(v.id)}" class="sr-only"><span>${bi(v.nombre)}</span></label>`).join('')}</div>
         <p id="hoja-op-error" class="mt-2 text-[14px] text-[#ffb4a3]" hidden>${bi(`Elige ${op.titulo.es.toLowerCase()} para agregar.`, `Choose a ${op.titulo.en.toLowerCase()} to add.`)}</p>
@@ -136,10 +138,15 @@ export function crearHoja(o: {
     const nota = $<HTMLInputElement>('#hoja-nota', cuerpo);
     if (nota) nota.placeholder = html.lang === 'en' ? nota.dataset.phEn! : nota.dataset.phEs!;
     n = 1;
+    agregando = false;
+    btnAgregar.disabled = false;
     pintarBarra();
   }
 
   function mostrarPanel() {
+    // Si se giró la pantalla durante la apertura, el panel toma la forma vigente.
+    hoja.dataset.forma = esEscritorio() ? 'ventana' : 'hoja';
+    cajaHoja(esEscritorio() ? undefined : Math.min(altoHoja || altoMedio(), altoCompleto()));
     hoja.showModal();
     scroller.scrollTop = 0;
     html.classList.add('bloqueo');
@@ -201,7 +208,7 @@ export function crearHoja(o: {
   async function cerrar(modo: 'liquido' | 'rapido' | 'instantaneo' = 'liquido') {
     if (ocupado && hoja.open) { cierrePendiente = true; return; }
     if (!hoja.open || ocupado) return;
-    const vuelve = () => { html.classList.remove('bloqueo'); disparador?.focus({ preventScroll: true }); };
+    const vuelve = () => { if (!document.querySelector('dialog[open]')) html.classList.remove('bloqueo'); disparador?.focus({ preventScroll: true }); };
     if (modo === 'liquido' && origen && enPantalla(origen) && !reducir()) {
       ocupado = true;
       const art = modoActual === 'mosaico' ? (origen.parentElement as HTMLElement) : origen;
@@ -244,14 +251,19 @@ export function crearHoja(o: {
   menos.addEventListener('click', () => { n = Math.max(1, n - 1); pintarBarra(); });
   mas.addEventListener('click', () => { n = Math.min(LIMITES.cantidad, n + 1); pintarBarra(); });
   cuerpo.addEventListener('change', (e) => {
-    if ((e.target as HTMLElement).matches('input[name="hoja-op"]')) $('#hoja-op-error', cuerpo)?.setAttribute('hidden', '');
+    if ((e.target as HTMLElement).matches('input[name="hoja-op"]')) {
+      $('#hoja-op-error', cuerpo)?.setAttribute('hidden', '');
+      $('#hoja-opciones', cuerpo)?.removeAttribute('aria-invalid');
+    }
   });
   btnAgregar.addEventListener('click', async () => {
-    if (!actual || ocupado) return;
+    if (!actual || ocupado || agregando) return;
     const op = cuerpo.querySelector<HTMLInputElement>('input[name="hoja-op"]:checked')?.value;
     if (actual.opciones && !op) {
       const err = $('#hoja-op-error', cuerpo)!;
       err.hidden = false;
+      $('#hoja-opciones', cuerpo)!.setAttribute('aria-invalid', 'true');
+      anunciar(`Elige ${actual.opciones.titulo.es.toLowerCase()} para agregar.`, `Choose a ${actual.opciones.titulo.en.toLowerCase()} to add.`);
       $('#hoja-opciones', cuerpo)!.scrollIntoView({ behavior: reducir() ? 'auto' : 'smooth', block: 'center' });
       cuerpo.querySelector<HTMLInputElement>('input[name="hoja-op"]')?.focus();
       return;
@@ -259,12 +271,18 @@ export function crearHoja(o: {
     const item: Agregado = { id: actual.id, n, op, nota: $<HTMLInputElement>('#hoja-nota', cuerpo)?.value };
     const error = o.agregar(item);
     if (error) return;
+    agregando = true;
+    btnAgregar.disabled = true;
     btnAgregar.classList.add('agregado');
     await espera(reducir() ? 0 : 160);
     btnAgregar.classList.remove('agregado');
     await cerrar('rapido');
     o.agregado(item);
   });
+
+  // Durante la animación líquida el velo atrapa los toques (no llegan a la página de abajo);
+  // un toque ahí pide cerrar en cuanto termine la apertura.
+  $('#velo-hoja')!.addEventListener('click', () => { if (ocupado) cierrePendiente = true; });
 
   /* ── Cerrar ── */
   $('[data-cerrar]', hoja)!.addEventListener('click', () => cerrar());

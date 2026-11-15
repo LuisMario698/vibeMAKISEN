@@ -8,11 +8,12 @@ import {
   type Aviso, type Campo, type Catalogo, type ErrorAgregar, type Modo,
 } from '../lib/pedido';
 import { precio, usd } from '../lib/precios';
-import { $, $$, anunciar, datos, guardar, html, idioma, ponerBi, reducir } from './comun';
+import { $, $$, anunciar, avisar, datos, guardar, html, idioma, ponerBi, reducir } from './comun';
 import type { Agregado } from './hoja';
 
 const CLAVE = 'makizen-lista';
 const CLAVE_MESA = 'makizen-mesa';
+const CLAVE_MESA_QR = 'makizen-mesa-qr';
 
 export function crearLista(o: { alCambiar: (piezas: number, total: number) => void }) {
   const catalogo: Catalogo = new Map(datos.platillos.map((p) => [p.id, { nombre: p.nombre, precio: p.precio, agotado: p.agotado, opciones: p.opciones }]));
@@ -42,11 +43,12 @@ export function crearLista(o: { alCambiar: (piezas: number, total: number) => vo
   const deQR = leerMesa(location.search);
   if (deQR) {
     guardar.escribir(CLAVE_MESA, String(deQR), true);
+    guardar.escribir(CLAVE_MESA_QR, '1', true);
     history.replaceState(history.state, '', sinMesa(location.href));
   }
   const mesaGuardada = Number(guardar.leer(CLAVE_MESA, true));
   let mesa: number | null = Number.isInteger(mesaGuardada) && mesaGuardada >= 1 && mesaGuardada <= 99 ? mesaGuardada : null;
-  let mesaDeQR = mesa !== null;
+  let mesaDeQR = mesa !== null && guardar.leer(CLAVE_MESA_QR, true) === '1';
 
   /* ── Estado guardado, saneado contra el menú vigente ── */
   const leer = () => { try { return JSON.parse(guardar.leer(CLAVE) ?? 'null'); } catch { return null; } };
@@ -107,12 +109,20 @@ export function crearLista(o: { alCambiar: (piezas: number, total: number) => vo
     ul.replaceChildren(frag);
   }
 
-  function opcionesHora() {
+  /** Opciones de hora vigentes. Con `conservar`, una hora elegida que ya venció se queda visible (deshabilitada) para marcar el error. */
+  function opcionesHora(conservar = false) {
     const actual = lista.hora;
     const ranuras = ranurasHoy(datos.horario, ahoraEn());
     const opts: [string, string, string][] = [['pronto', 'Lo antes posible', 'As soon as possible'], ...ranuras.map((r) => [r, h12(r), h12(r)] as [string, string, string])];
-    inp.hora.replaceChildren(...opts.map(([v, es, en]) => { const op = document.createElement('option'); op.value = v; op.textContent = idioma() === 'en' ? en : es; return op; }));
-    if (!opts.some(([v]) => v === actual)) lista = { ...lista, hora: 'pronto' };
+    const els = opts.map(([v, es, en]) => { const op = document.createElement('option'); op.value = v; op.textContent = idioma() === 'en' ? en : es; return op; });
+    const vigente = opts.some(([v]) => v === actual);
+    if (!vigente && conservar && /^\d{2}:\d{2}$/.test(actual)) {
+      const op = document.createElement('option');
+      op.value = actual; op.disabled = true;
+      op.textContent = `${h12(actual)} · ${idioma() === 'en' ? 'no longer available' : 'ya no disponible'}`;
+      els.push(op);
+    } else if (!vigente) lista = { ...lista, hora: 'pronto' };
+    inp.hora.replaceChildren(...els);
     inp.hora.value = lista.hora;
   }
 
@@ -134,7 +144,7 @@ export function crearLista(o: { alCambiar: (piezas: number, total: number) => vo
   }
 
   function pintarErrores() {
-    const err = validar(lista, catalogo, entrega());
+    const err = validar(lista, catalogo, entrega(), ranurasHoy(datos.horario, ahoraEn()));
     const campos = ['mesa', 'nombre', 'hora', 'direccion'] as const;
     for (const c of campos) {
       const p = $(`#err-${c}`, dlg)!;
@@ -143,10 +153,13 @@ export function crearLista(o: { alCambiar: (piezas: number, total: number) => vo
       if (mostrar) ponerBi(p, MENSAJES_ERROR[c].es, MENSAJES_ERROR[c].en);
       inp[c].setAttribute('aria-invalid', String(mostrar));
     }
-    const enlace = enlaceWhatsApp(datos.whatsapp, lista, catalogo, entrega(), idioma());
+    // Un fallo al armar el enlace nunca debe tumbar el menú.
+    let enlace: ReturnType<typeof enlaceWhatsApp>;
+    try { enlace = enlaceWhatsApp(datos.whatsapp, lista, catalogo, entrega(), idioma()); } catch { enlace = { ok: false, motivo: 'larga' }; }
     const hayErrores = Object.keys(err).length > 0;
     const listo = !hayErrores && enlace.ok;
-    enviar.setAttribute('aria-disabled', String(!listo));
+    // El enlace siempre se puede tocar: si falta algo, al tocarlo muestra qué.
+    if (intentado && !listo) enviar.setAttribute('aria-describedby', 'lista-errores'); else enviar.removeAttribute('aria-describedby');
     enviar.href = enlace.ok && !hayErrores ? enlace.url : '#';
     const mensajes: [string, string][] = [];
     if (intentado) {
@@ -195,7 +208,7 @@ export function crearLista(o: { alCambiar: (piezas: number, total: number) => vo
       dlg.classList.remove('cerrando');
     }
     dlg.close();
-    html.classList.remove('bloqueo');
+    if (!document.querySelector('dialog[open]')) html.classList.remove('bloqueo');
     foco?.focus({ preventScroll: true });
   }
 
@@ -214,7 +227,7 @@ export function crearLista(o: { alCambiar: (piezas: number, total: number) => vo
       persistir(); pintar();
       if (nuevo <= 0) {
         anunciar('Platillo quitado de tu lista.', 'Item removed from your list.');
-        ($<HTMLElement>(`[data-i="${Math.min(i, lista.lineas.length - 1)}"] [data-l="menos"]`, ul) ?? $<HTMLElement>('#lista-titulo', dlg))?.focus();
+        ($<HTMLElement>(`[data-i="${Math.min(i, lista.lineas.length - 1)}"] [data-l="menos"]`, ul) ?? $<HTMLElement>('#lista-titulo', dlg))?.focus({ preventScroll: true });
       } else {
         $<HTMLElement>(`[data-i="${i}"] [data-l="${b.dataset.l}"]`, ul)?.focus();
       }
@@ -228,7 +241,13 @@ export function crearLista(o: { alCambiar: (piezas: number, total: number) => vo
   });
   form.addEventListener('input', (e) => {
     const t = e.target as HTMLElement;
-    if (t === inp.mesa) { const v = Number(inp.mesa.value); mesa = Number.isInteger(v) && v >= 1 && v <= 99 ? v : null; mesaDeQR = false; if (mesa) guardar.escribir(CLAVE_MESA, String(mesa), true); }
+    if (t === inp.mesa) {
+      const v = Number(inp.mesa.value);
+      mesa = inp.mesa.value && Number.isInteger(v) && v >= 1 && v <= 99 ? v : null;
+      mesaDeQR = false;
+      guardar.borrar(CLAVE_MESA_QR, true);
+      if (mesa) guardar.escribir(CLAVE_MESA, String(mesa), true); else guardar.borrar(CLAVE_MESA, true);
+    }
     else if (t === inp.nombre) lista = { ...lista, nombre: inp.nombre.value.slice(0, LIMITES.nombre) };
     else if (t === inp.direccion) lista = { ...lista, direccion: inp.direccion.value.slice(0, LIMITES.direccion) };
     else if (t === inp.referencias) lista = { ...lista, referencias: inp.referencias.value.slice(0, LIMITES.referencias) };
@@ -246,6 +265,8 @@ export function crearLista(o: { alCambiar: (piezas: number, total: number) => vo
   });
 
   enviar.addEventListener('click', (e) => {
+    // La hora pudo vencer con la lista abierta: se recalculan las opciones antes de validar.
+    if (lista.modo === 'llevar') opcionesHora(true);
     const { err, listo } = (intentado = true, pintarErrores());
     if (!listo) {
       e.preventDefault();
@@ -265,6 +286,7 @@ export function crearLista(o: { alCambiar: (piezas: number, total: number) => vo
     if (Date.now() < confirmar) { vaciar(false); return; }
     confirmar = Date.now() + 3000;
     ponerBi(btnVaciar, '¿Seguro? Toca otra vez', 'Sure? Tap again');
+    anunciar('¿Seguro? Toca otra vez para vaciar la lista.', 'Sure? Tap again to clear the list.');
     setTimeout(() => { if (Date.now() >= confirmar) ponerBi(btnVaciar, 'Vaciar lista', 'Clear list'); }, 3100);
   });
   function vaciar(cerrarDespues: boolean) {
@@ -276,12 +298,16 @@ export function crearLista(o: { alCambiar: (piezas: number, total: number) => vo
     persistir(); pintar();
     anunciar('Lista vacía.', 'List cleared.');
     if (cerrarDespues) cerrar();
+    else $<HTMLElement>('#lista-titulo', dlg)?.focus({ preventScroll: true });
   }
 
-  // Otra pestaña cambió la lista.
+  // Otra pestaña cambió la lista: se toman sus platillos y se conservan los datos de entrega
+  // de esta pestaña (su modalidad, su mesa del QR y lo que esté escribiendo).
   addEventListener('storage', (e) => {
     if (e.key !== CLAVE) return;
-    ({ lista, avisos } = sanear(leer(), catalogo, Date.now()));
+    const r = sanear(leer(), catalogo, Date.now());
+    lista = { ...lista, lineas: r.lista.lineas, t: r.lista.t };
+    avisos = r.avisos;
     pintar();
   });
 
@@ -295,14 +321,18 @@ export function crearLista(o: { alCambiar: (piezas: number, total: number) => vo
     agregar(item: Agregado): ErrorAgregar | undefined {
       const r = agregarLinea(lista, item, catalogo, Date.now());
       if (r.error) {
-        const [es, en] = r.error === 'llena' ? ['Tu lista llegó al máximo de 30 platillos distintos.', 'Your list reached the 30-item limit.'] : r.error === 'agotado' ? ['Ese platillo está agotado.', 'That item is sold out.'] : ['No se pudo agregar.', "Couldn't add it."];
-        anunciar(es, en);
+        const [es, en] = r.error === 'llena' ? ['Tu lista llegó al máximo de 30 platillos distintos.', 'Your list reached the 30-item limit.']
+          : r.error === 'tope' ? [`Ya tienes ${LIMITES.cantidad}, el máximo por platillo.`, `You already have ${LIMITES.cantidad}, the most per item.`]
+          : r.error === 'agotado' ? ['Ese platillo está agotado.', 'That item is sold out.'] : ['No se pudo agregar.', "Couldn't add it."];
+        avisar(es, en);
         return r.error;
       }
       lista = r.lista; avisos = [];
       persistir(); pintar();
       const c = catalogo.get(item.id)!;
-      anunciar(`Agregado: ${item.n} × ${c.nombre.es}. Total ${precio(subtotal(lista, catalogo))}.`, `Added: ${item.n} × ${c.nombre.en}. Total ${precio(subtotal(lista, catalogo))}.`);
+      const total = precio(subtotal(lista, catalogo));
+      if (r.agregadas < item.n) avisar(`Se agregaron ${r.agregadas}: ${LIMITES.cantidad} es el máximo por platillo.`, `Added ${r.agregadas}: ${LIMITES.cantidad} is the most per item.`);
+      else anunciar(`Agregado: ${r.agregadas} × ${c.nombre.es}. Total ${total}.`, `Added: ${r.agregadas} × ${c.nombre.en}. Total ${total}.`);
       return undefined;
     },
     puedeAgregarDirecto(id: string) { const c = catalogo.get(id); return !!c && !c.agotado && !c.opciones; },

@@ -109,6 +109,36 @@ for (const [nombre, w, h] of TAMANOS) {
   await ctx.close();
 }
 
+// Regresiones de la revisión: doble clic en Agregar y notas con emoji en un pedido largo.
+{
+  console.log('\nregresiones');
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, serviceWorkers: 'block' });
+  const page = await ctx.newPage();
+  const errores = [];
+  page.on('pageerror', (e) => errores.push(e.message));
+  await page.goto(BASE, { waitUntil: 'networkidle' });
+  await page.locator('#entradas').scrollIntoViewIfNeeded();
+  await page.locator('[data-abrir="camaron-roca"]').click();
+  await page.waitForSelector('#hoja[open]');
+  await page.waitForTimeout(300);
+  await page.locator('#hoja-agregar').dblclick();
+  await page.waitForFunction(() => !document.querySelector('#hoja').open, null, { timeout: 5000 });
+  const l = await page.evaluate(() => JSON.parse(localStorage.getItem('makizen-lista')));
+  ok(l.lineas[0].n === 1, 'doble clic en Agregar suma solo 1');
+  // Lista guardada con notas que ponen un emoji en el punto de corte del modo compacto.
+  await page.evaluate(() => {
+    const nota = 'a'.repeat(39) + '😀' + 'b'.repeat(39);
+    const lineas = Array.from({ length: 12 }, (_, i) => ({ id: 'makizen-roll', n: 1, p: 240, nota: i + nota }));
+    localStorage.setItem('makizen-lista', JSON.stringify({ v: 1, t: Date.now(), lineas, modo: 'mesa', nombre: '', hora: 'pronto', direccion: '', referencias: '' }));
+  });
+  await page.reload({ waitUntil: 'networkidle' });
+  await page.locator('#entradas').scrollIntoViewIfNeeded();
+  await page.locator('[data-abrir="camaron-roca"]').click();
+  await page.waitForSelector('#hoja[open]', { timeout: 5000 });
+  ok(errores.length === 0, `con notas largas y emojis el menú sigue funcionando${errores.length ? ': ' + errores.join(' | ') : ''}`);
+  await ctx.close();
+}
+
 // Movimiento reducido: el detalle abre directo, sin capa líquida.
 {
   console.log('\nmovimiento reducido');

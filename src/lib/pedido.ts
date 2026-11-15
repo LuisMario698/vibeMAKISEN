@@ -39,39 +39,48 @@ export type Entrega = Pick<Lista, 'modo' | 'nombre' | 'hora' | 'direccion' | 're
 export const LIMITES = { cantidad: 20, lineas: 30, nota: 80, nombre: 40, direccion: 160, referencias: 160, horas: 12 } as const;
 export const VERSION = 1;
 
+/** Recorta por caracteres reales (no parte emojis ni otros pares sustitutos). */
+export const recortar = (s: string, max: number) => (s.length <= max ? s : Array.from(s).slice(0, max).join('').replace(/[\uD800-\uDBFF]$/, ''));
+
 /** Quita caracteres de control, junta espacios y recorta. */
 export const limpiar = (s: unknown, max: number) =>
-  typeof s === 'string' ? s.replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max) : '';
+  typeof s === 'string' ? recortar(s.replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim(), max).trim() : '';
 
 export const listaVacia = (ahora: number, modo: Modo = 'llevar'): Lista => ({ v: VERSION, t: ahora, lineas: [], modo, nombre: '', hora: 'pronto', direccion: '', referencias: '' });
 
 export const clave = (l: Pick<Linea, 'id' | 'op' | 'nota'>) => `${l.id}|${l.op ?? ''}|${l.nota ?? ''}`;
 
-export type ErrorAgregar = 'inexistente' | 'agotado' | 'opcion' | 'llena';
+export type ErrorAgregar = 'inexistente' | 'agotado' | 'opcion' | 'llena' | 'tope';
 
-/** Agrega (o suma a una línea igual). No muta la lista recibida. */
+/**
+ * Agrega (o suma a una línea igual). No muta la lista recibida.
+ * `agregadas` es lo que de verdad se sumó (puede ser menos que lo pedido por el tope de 20).
+ */
 export function agregar(
   lista: Lista,
   item: { id: string; op?: string | undefined; n: number; nota?: string | undefined },
   catalogo: Catalogo,
   ahora: number,
-): { lista: Lista; error?: ErrorAgregar } {
+): { lista: Lista; error?: ErrorAgregar; agregadas: number } {
   const c = catalogo.get(item.id);
-  if (!c) return { lista, error: 'inexistente' };
-  if (c.agotado) return { lista, error: 'agotado' };
+  if (!c) return { lista, error: 'inexistente', agregadas: 0 };
+  if (c.agotado) return { lista, error: 'agotado', agregadas: 0 };
   const op = c.opciones ? item.op : undefined;
-  if (c.opciones && !c.opciones.valores.some((v) => v.id === op)) return { lista, error: 'opcion' };
+  if (c.opciones && !c.opciones.valores.some((v) => v.id === op)) return { lista, error: 'opcion', agregadas: 0 };
   const nota = limpiar(item.nota, LIMITES.nota) || undefined;
   const n = Math.max(1, Math.min(LIMITES.cantidad, Math.floor(item.n) || 1));
   const nueva: Linea = { id: item.id, n, p: c.precio, ...(op ? { op } : {}), ...(nota ? { nota } : {}) };
   const k = clave(nueva);
   const i = lista.lineas.findIndex((l) => clave(l) === k);
   if (i >= 0) {
-    const lineas = lista.lineas.map((l, j) => (j === i ? { ...l, n: Math.min(LIMITES.cantidad, l.n + n), p: c.precio } : l));
-    return { lista: { ...lista, lineas, t: ahora } };
+    const actual = lista.lineas[i]!.n;
+    const agregadas = Math.min(LIMITES.cantidad, actual + n) - actual;
+    if (agregadas === 0) return { lista, error: 'tope', agregadas: 0 };
+    const lineas = lista.lineas.map((l, j) => (j === i ? { ...l, n: actual + agregadas, p: c.precio } : l));
+    return { lista: { ...lista, lineas, t: ahora }, agregadas };
   }
-  if (lista.lineas.length >= LIMITES.lineas) return { lista, error: 'llena' };
-  return { lista: { ...lista, lineas: [...lista.lineas, nueva], t: ahora } };
+  if (lista.lineas.length >= LIMITES.lineas) return { lista, error: 'llena', agregadas: 0 };
+  return { lista: { ...lista, lineas: [...lista.lineas, nueva], t: ahora }, agregadas: n };
 }
 
 /** Cambia la cantidad de una línea; 0 la quita. */
@@ -143,12 +152,15 @@ export const MENSAJES_ERROR: Record<Campo, Txt> = {
   lista: { es: 'Agrega al menos un platillo disponible.', en: 'Add at least one available item.' },
   mesa: { es: 'Escribe el número de mesa (1 a 99).', en: 'Enter your table number (1 to 99).' },
   nombre: { es: 'Escribe tu nombre.', en: 'Enter your name.' },
-  hora: { es: 'Elige a qué hora pasas.', en: 'Choose a pickup time.' },
+  hora: { es: 'Elige a qué hora pasas (la que elegiste ya no está disponible).', en: 'Choose a pickup time (the one you picked is no longer available).' },
   direccion: { es: 'Escribe la dirección de entrega.', en: 'Enter the delivery address.' },
 };
 
-/** Qué falta para poder enviar, según la modalidad. */
-export function validar(lista: Lista, catalogo: Catalogo, e: Entrega): Errores {
+/**
+ * Qué falta para poder enviar, según la modalidad. `horasVigentes` (de ranurasHoy)
+ * hace que una hora de recoger que ya pasó o cae después del cierre no sea válida.
+ */
+export function validar(lista: Lista, catalogo: Catalogo, e: Entrega, horasVigentes?: string[]): Errores {
   const err: Errores = {};
   if (vigentes(lista, catalogo).length === 0) err.lista = 'vacia';
   if (e.modo === 'mesa') {
@@ -156,6 +168,7 @@ export function validar(lista: Lista, catalogo: Catalogo, e: Entrega): Errores {
   } else {
     if (limpiar(e.nombre, LIMITES.nombre).length < 2) err.nombre = 'requerido';
     if (e.modo === 'llevar' && !(e.hora === 'pronto' || /^\d{2}:\d{2}$/.test(e.hora))) err.hora = 'requerida';
+    else if (e.modo === 'llevar' && e.hora !== 'pronto' && horasVigentes && !horasVigentes.includes(e.hora)) err.hora = 'pasada';
     if (e.modo === 'domicilio' && limpiar(e.direccion, LIMITES.direccion).length < 8) err.direccion = 'requerida';
   }
   return err;
@@ -197,7 +210,10 @@ export function armarMensaje(lista: Lista, catalogo: Catalogo, e: Entrega, idiom
     const c = catalogo.get(l.id)!;
     const op = l.op ? c.opciones?.valores.find((v) => v.id === l.op)?.nombre.es : undefined;
     out.push(`${l.n} x ${c.nombre.es}${op ? ` (${op})` : ''}  ${precio(c.precio * l.n)}`);
-    if (l.nota) out.push(`   ${t.nota}: ${compacto ? l.nota.slice(0, 40) : l.nota}`);
+    if (l.nota) {
+      const corta = compacto ? recortar(l.nota, 40) : l.nota;
+      out.push(`   ${t.nota}: ${corta}${corta.length < l.nota.length ? '…' : ''}`);
+    }
   }
   if (!compacto) out.push('');
   out.push(`${b(`${t.subtotal}: ${precio(subtotal(lista, catalogo))}`)} ${t.iva}`);

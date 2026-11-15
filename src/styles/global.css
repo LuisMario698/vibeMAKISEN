@@ -40,6 +40,8 @@
     -webkit-tap-highlight-color: transparent;
     color-scheme: dark;
     scroll-padding-top: 5rem;
+    /* Con barras de desplazamiento clásicas, abrir un diálogo no mueve el contenido. */
+    scrollbar-gutter: stable;
   }
   html.bloqueo { overflow: hidden; }
   body { min-height: 100svh; font-size: 1rem; line-height: 1.55; -webkit-font-smoothing: antialiased; overflow-x: clip; }
@@ -51,6 +53,9 @@
 /* Bilingüe: los dos idiomas están en el HTML y se muestra uno. */
 html[lang^="es"] [lang="en"]:not(html),
 html[lang="en"] [lang="es"]:not(html) { display: none !important; }
+/* Texto en el otro idioma que se muestra a propósito (p. ej. el nombre en inglés bajo el título en español). */
+html[lang^="es"] [data-ver="es"], html[lang="en"] [data-ver="en"] { display: inline !important; }
+html[lang^="es"] [data-ver="en"], html[lang="en"] [data-ver="es"] { display: none !important; }
 
 @layer components {
   .contenedor { width: 100%; max-width: 72rem; margin-inline: auto; padding-inline: max(1rem, env(safe-area-inset-left)); }
@@ -123,7 +128,7 @@ html[lang="en"] [lang="es"]:not(html) { display: none !important; }
 .liquido > i { position: absolute; display: block; will-change: left, top, width, height; }
 .vuelo { position: fixed; z-index: 71; pointer-events: none; object-fit: contain; will-change: transform; }
 .velo-hoja { position: fixed; inset: 0; z-index: 68; background: rgb(0 0 0 / 0.68); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); opacity: 0; pointer-events: none; transition: opacity 420ms ease; }
-.velo-hoja.on { opacity: 1; }
+.velo-hoja.on { opacity: 1; pointer-events: auto; }
 
 /* ── Hoja de detalle ───────────────────────────────────────────────────── */
 dialog.hoja { inset: auto 0 0 0; overscroll-behavior: contain; margin: 0 auto; width: min(100%, 36rem); max-width: none; height: var(--alto-hoja, 88svh); max-height: none; padding: 0; border: 0; background: transparent; color: inherit; overflow: visible; }
@@ -181,8 +186,9 @@ html.cambia-idioma::view-transition-new(root) { animation: 320ms var(--ease-sali
 .filtro { flex: none; min-height: 44px; padding: 0 16px; border-radius: 999px; background: rgb(0 0 0 / 0.1); font-size: 14px; font-weight: 600; white-space: nowrap; }
 .filtro:hover { background: rgb(0 0 0 / 0.18); }
 .filtro[aria-pressed="true"] { background: #0a0a0a; color: var(--color-oro-claro); }
-.isla-nota { padding: 14px 8px 0; text-align: center; font-size: 13px; opacity: 0.72; }
-.isla-res.agotado { opacity: 0.55; }
+.isla-nota { padding: 14px 8px 0; text-align: center; font-size: 13px; }
+.isla-res.agotado .miniatura { opacity: 0.45; }
+.isla-res.agotado .tabular-nums { text-decoration: line-through; }
 .isla .anillo { position: relative; flex: none; width: 36px; height: 36px; }
 .isla .anillo .avance { transition: stroke-dashoffset 700ms var(--ease-salida); }
 .isla .anillo .num { position: absolute; inset: 0; display: grid; place-items: center; font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums; }
@@ -193,13 +199,13 @@ html.cambia-idioma::view-transition-new(root) { animation: 320ms var(--ease-sali
 .isla-panel { position: absolute; left: 0; bottom: 0; width: 100%; height: var(--alto-panel); display: flex; flex-direction: column; opacity: 0; pointer-events: none; transition: opacity 160ms ease; color: #0a0a0a; }
 .isla-panel.lista { opacity: 1; pointer-events: auto; transition-duration: 300ms; }
 .isla-scroll { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 14px 16px 20px; mask-image: linear-gradient(to bottom, transparent, #000 14px, #000 calc(100% - 22px), transparent); scrollbar-width: none; }
-.isla-grupo { margin: 6px 4px 8px; font-family: var(--font-alt); font-size: 11px; font-weight: 500; letter-spacing: 0.28em; text-transform: uppercase; opacity: 0.7; }
+.isla-grupo { margin: 6px 4px 8px; font-family: var(--font-alt); font-size: 12px; font-weight: 600; letter-spacing: 0.24em; text-transform: uppercase; }
 .isla-grupo:not(:first-child) { margin-top: 18px; }
 .isla-cat, .isla-res { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 56px; padding: 6px 10px 6px 6px; border-radius: 18px; background: rgb(0 0 0 / 0.08); text-align: left; }
 .isla-res { gap: 12px; padding-right: 14px; }
 .isla-cat:hover, .isla-res:hover { background: rgb(0 0 0 / 0.16); }
 .isla-cat[aria-current="true"] { background: #0a0a0a; color: var(--color-oro-claro); }
-.isla-cat[aria-current="true"] .text-noche\/65 { color: rgb(210 178 106 / 0.75); }
+.isla-cat[aria-current="true"] .text-noche\/85 { color: var(--color-oro-claro); }
 .isla .miniatura { flex: none; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 14px; background: #0a0a0a; overflow: hidden; }
 .isla .miniatura img { max-width: 40px; max-height: 40px; object-fit: contain; }
 .isla .miniatura img.icono { max-width: 30px; max-height: 30px; }
@@ -301,6 +307,14 @@ dialog.lista.cerrando .lista-panel { animation: hoja-baja 220ms var(--ease-cajon
 .riel-item[aria-current="true"] { background: rgb(174 139 61 / 0.14); color: var(--color-hueso); }
 .riel-item .num { font-family: var(--font-alt); font-size: 12px; color: var(--color-oro-claro); }
 .riel-item .cuenta { font-size: 13px; color: var(--color-humo); }
+
+/* Agotado: solo la foto se apaga; el texto conserva su contraste (el precio va tachado). */
+.agotado-marco { opacity: 0.5; filter: grayscale(1); }
+
+/* Aviso flotante (tope de la lista, platillo agotado). */
+.aviso-flotante { position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom) + 84px); z-index: 90; translate: -50% 0; width: max-content; max-width: min(92vw, 28rem); padding: 12px 18px; border-radius: 16px; background: var(--color-hueso); color: #0a0a0a; font-size: 15px; font-weight: 600; text-align: center; box-shadow: 0 18px 40px rgb(0 0 0 / 0.5); animation: aviso-entra 220ms var(--ease-salida); }
+.aviso-flotante.sale { opacity: 0; transform: translateY(8px); transition: opacity 180ms ease-out, transform 180ms ease-out; }
+@keyframes aviso-entra { from { opacity: 0; transform: translateY(10px) scale(0.98); } }
 
 /* ── Reducir movimiento ────────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {

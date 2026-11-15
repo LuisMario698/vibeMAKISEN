@@ -15,7 +15,7 @@ const modos = [
   <div class="lista-panel">
     <header class="lista-cabeza">
       <div class="min-w-0 flex-1">
-        <h2 id="lista-titulo" class="text-[24px] leading-tight font-semibold tracking-[-0.02em]"><span lang="es">Mi lista</span><span lang="en">My list</span></h2>
+        <h2 id="lista-titulo" tabindex="-1" class="focus:outline-none "text-[24px] leading-tight font-semibold tracking-[-0.02em]"><span lang="es">Mi lista</span><span lang="en">My list</span></h2>
         <p id="lista-resumen" class="mt-0.5 text-[14px] text-niebla"></p>
       </div>
       <button type="button" data-lista-cerrar class="presionable tap grid place-items-center rounded-full bg-hueso/[0.06] hover:bg-hueso/[0.12]" aria-label="Cerrar / Close">
@@ -125,3 +125,4 @@ const modos = [
   </li>
 </template>
 <div id="anuncio" class="sr-only" aria-live="polite"></div>
+<p id="aviso-flotante" class="aviso-flotante" aria-hidden="true" hidden></p>

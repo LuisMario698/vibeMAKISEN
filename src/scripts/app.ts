@@ -101,6 +101,8 @@ const lista = crearLista({
     piezasLista = n;
     isla.contar(n, precio(total));
     $$('[data-contador-lista]').forEach((el) => { el.textContent = String(n); el.hidden = n === 0; });
+    const en = html.lang === 'en';
+    $$('#nav [data-abrir-lista]').forEach((b) => b.setAttribute('aria-label', en ? `My list: ${n} ${n === 1 ? 'item' : 'items'}, ${precio(total)}` : `Mi lista: ${n} ${n === 1 ? 'artículo' : 'artículos'}, ${precio(total)}`));
     visibilidad();
   },
 });

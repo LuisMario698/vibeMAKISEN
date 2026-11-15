@@ -27,6 +27,7 @@
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=()
 
-# Las URL de prueba de workers.dev nunca se indexan.
-https://:subdomain.workers.dev/*
+# Las URL de prueba de workers.dev (makizen-menu.<cuenta>.workers.dev) nunca se indexan.
+# Si algún día se indexa la URL de workers.dev, quitar esta regla.
+https://:worker.:subdomain.workers.dev/*
   X-Robots-Tag: noindex

@@ -55,6 +55,19 @@ export function anunciar(es: string, en: string = es) {
   requestAnimationFrame(() => (r.textContent = esIngles() ? en : es));
 }
 
+/** Aviso visible unos segundos (y anunciado al lector de pantalla). */
+let tAviso = 0;
+export function avisar(es: string, en: string = es) {
+  anunciar(es, en);
+  const el = $('#aviso-flotante');
+  if (!el) return;
+  ponerBi(el, es, en);
+  el.hidden = false;
+  el.classList.remove('sale');
+  clearTimeout(tAviso);
+  tAviso = window.setTimeout(() => { el.classList.add('sale'); tAviso = window.setTimeout(() => { el.hidden = true; el.classList.remove('sale'); }, 200); }, 3200);
+}
+
 export const guardar = {
   leer(k: string, sesion = false): string | null { try { return (sesion ? sessionStorage : localStorage).getItem(k); } catch { return null; } },
   escribir(k: string, v: string, sesion = false) { try { (sesion ? sessionStorage : localStorage).setItem(k, v); } catch { /* sin almacenamiento: vive en memoria */ } },

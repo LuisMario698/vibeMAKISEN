@@ -56,6 +56,13 @@ describe('agregar y cambiar', () => {
     expect(agregar(base(), { id: 'hanagoi', n: 1 }, cat, AHORA).error).toBe('agotado');
     expect(agregar(base(), { id: 'nada', n: 1 }, cat, AHORA).error).toBe('inexistente');
   });
+  it('avisa cuántas piezas se sumaron y da error al llegar al tope', () => {
+    const l = con({ id: 'makizen-roll', n: 18 });
+    const r = agregar(l, { id: 'makizen-roll', n: 5 }, cat, AHORA);
+    expect(r.agregadas).toBe(2);
+    expect(r.lista.lineas[0]!.n).toBe(20);
+    expect(agregar(r.lista, { id: 'makizen-roll', n: 1 }, cat, AHORA)).toMatchObject({ error: 'tope', agregadas: 0 });
+  });
   it('respeta el tope de cantidad y de líneas', () => {
     expect(con({ id: 'makizen-roll', n: 50 }).lineas[0]!.n).toBe(LIMITES.cantidad);
     let l = base();
@@ -121,6 +128,12 @@ describe('validar', () => {
     expect(validar(l, cat, entrega({ mesa: 100 })).mesa).toBeDefined();
     expect(validar(l, cat, entrega({ mesa: 7 }))).toEqual({});
   });
+  it('una hora de recoger que ya pasó no es válida', () => {
+    const e = entrega({ modo: 'llevar', nombre: 'Ana', hora: '21:45' });
+    expect(validar(l, cat, e, ['22:00', '22:15']).hora).toBe('pasada');
+    expect(validar(l, cat, e, ['21:45'])).toEqual({});
+    expect(validar(l, cat, { ...e, hora: 'pronto' }, [])).toEqual({});
+  });
   it('para llevar pide nombre y hora', () => {
     expect(validar(l, cat, entrega({ modo: 'llevar', nombre: 'A', hora: '' }))).toEqual({ nombre: 'requerido', hora: 'requerida' });
     expect(validar(l, cat, entrega({ modo: 'llevar', nombre: 'Ana', hora: '19:30' }))).toEqual({});
@@ -179,6 +192,17 @@ describe('mensaje y enlace', () => {
     let enorme = base();
     for (let i = 0; i < 30; i++) enorme = agregar(enorme, { id: 'makizen-roll', n: 2, nota: `${'ñ'.repeat(70)}${i}` }, cat, AHORA).lista;
     expect(enlaceWhatsApp('526381560660', enorme, cat, entrega(), 'es')).toEqual({ ok: false, motivo: 'larga' });
+  });
+  it('no parte emojis al recortar notas (pedido largo compacto)', () => {
+    let l = base();
+    const nota = `${'a'.repeat(39)}😀${'b'.repeat(39)}`;
+    for (let i = 0; i < 12; i++) l = agregar(l, { id: 'makizen-roll', n: 1, nota: `${i}${nota}` }, cat, AHORA).lista;
+    const r = enlaceWhatsApp('526381560660', l, cat, entrega(), 'es');
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.compacto).toBe(true);
+    // Nota de 80 unidades con el emoji justo en el límite.
+    const borde = agregar(base(), { id: 'makizen-roll', n: 1, nota: `${'x'.repeat(79)}😀` }, cat, AHORA).lista;
+    expect(() => encodeURIComponent(borde.lineas[0]!.nota!)).not.toThrow();
   });
   it('lista sin disponibles no genera enlace', () => {
     expect(enlaceWhatsApp('526381560660', con({ id: 'mojito-mango', n: 1 }), new Map([...cat, ['mojito-mango', { ...cat.get('mojito-mango')!, agotado: true }]]), entrega(), 'es')).toEqual({ ok: false, motivo: 'vacia' });

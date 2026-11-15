@@ -62,7 +62,7 @@ const miniatura = (c: (typeof menu.categorias)[number]) => c.platillos.find((p) 
     <form role="search" class="relative mx-4 mt-3" onsubmit="return false">
       <svg class="pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><circle cx="11" cy="11" r="6.5" /><path d="m16 16 4 4" /></svg>
       <input id="buscar" type="search" inputmode="search" autocomplete="off" enterkeyhint="search" aria-label="Buscar en el menú" placeholder="Buscar…"
-        class="h-12 w-full rounded-full border-0 bg-noche/12 pr-4 pl-10 text-[16px] font-medium text-noche placeholder:text-noche/55 focus:bg-noche/18 focus:outline-2 focus:outline-noche" />
+        class="h-12 w-full rounded-full border-0 bg-noche/12 pr-4 pl-10 text-[16px] font-medium text-noche placeholder:text-noche/75 focus:bg-noche/18 focus:outline-2 focus:outline-noche" />
     </form>
     <div class="isla-filtros mx-4 mt-2.5 flex gap-2 overflow-x-auto" role="group" aria-label="Filtros / Filters">
       <button type="button" data-filtro="favorito" aria-pressed="false" class="filtro presionable"><span lang="es">Favoritos</span><span lang="en">Favorites</span></button>
@@ -86,7 +86,7 @@ const miniatura = (c: (typeof menu.categorias)[number]) => c.platillos.find((p) 
                       </span>
                       <span class="min-w-0 text-left">
                         <span class="line-clamp-2 block text-[13.5px] leading-[1.2] font-semibold"><span lang="es">{c.nombre.es}</span><span lang="en">{c.nombre.en}</span></span>
-                        <span class="block text-[13px] text-noche/70">{c.platillos.length}</span>
+                        <span class="block text-[13px] text-noche/85">{c.platillos.length}</span>
                       </span>
                     </button>
                   </li>
@@ -97,6 +97,7 @@ const miniatura = (c: (typeof menu.categorias)[number]) => c.platillos.find((p) 
         ))}
       </div>
       <ul class="isla-resultados" hidden></ul>
+      <p id="isla-estado" class="sr-only" aria-live="polite"></p>
       <p class="isla-vacio" hidden><span lang="es">Sin resultados. Prueba otra palabra o quita un filtro.</span><span lang="en">No matches. Try another word or remove a filter.</span></p>
       <p class="isla-nota"><span lang="es">Picante y crudo: etiquetas por confirmar con cocina.</span><span lang="en">Spicy and raw labels: pending kitchen confirmation.</span></p>
     </div>

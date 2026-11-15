@@ -113,6 +113,9 @@ export function crearIsla(o: {
     poner(lupa, btn);
     poner(btnLista, piezas > 0 ? bol : btn);
     isla.dataset.lista = piezas > 0 ? 'si' : 'no';
+    // Botones invisibles no deben recibir foco con Tab.
+    pildora.inert = lupa.inert = estado !== 'pildora';
+    btnLista.inert = estado !== 'pildora' || piezas === 0;
   }
 
   /* ── Mostrar / ocultar: cae una gota y se divide en píldora + botón ── */
@@ -224,6 +227,7 @@ export function crearIsla(o: {
       (!filtros.has('cocido') || (p.comida && !p.crudo)),
     ).slice(0, 60);
     cats.hidden = true;
+    anunciarResultados(hits.length);
     vacio.hidden = hits.length > 0;
     resultados.hidden = hits.length === 0;
     resultados.innerHTML = hits
@@ -231,12 +235,20 @@ export function crearIsla(o: {
         (p, k) => `<li style="--k:${Math.min(k, 12)}"><button type="button" data-platillo="${escapar(p.id)}" class="isla-res presionable${p.agotado ? ' agotado' : ''}">
           <span class="miniatura">${p.foto ? `<img src="/menu/${escapar(p.foto)}.webp" alt="" loading="lazy">` : `<img src="${escapar(p.icono)}" alt="" class="icono">`}</span>
           <span class="min-w-0 flex-1 text-left"><span class="block truncate text-[15px] font-semibold">${bi(p.nombre)}</span>
-          <span class="block truncate text-[13px] text-noche/70">${bi(p.cat)}</span></span>
+          <span class="block truncate text-[13px] text-noche/85">${bi(p.cat)}</span></span>
           <span class="text-[15px] font-bold tabular-nums">${escapar(p.precio)}</span></button></li>`,
       )
       .join('');
   }
   input.addEventListener('input', buscar);
+  const estadoBusqueda = $('#isla-estado');
+  let tBusqueda = 0;
+  function anunciarResultados(n: number) {
+    clearTimeout(tBusqueda);
+    tBusqueda = window.setTimeout(() => {
+      estadoBusqueda.textContent = n === 0 ? (es() ? 'Sin resultados.' : 'No matches.') : es() ? `${n} ${n === 1 ? 'resultado' : 'resultados'}` : `${n} ${n === 1 ? 'result' : 'results'}`;
+    }, 400);
+  }
   panel.querySelectorAll<HTMLButtonElement>('[data-filtro]').forEach((b) => b.addEventListener('click', () => {
     const f = b.dataset.filtro as Filtro;
     if (filtros.has(f)) filtros.delete(f); else filtros.add(f);
