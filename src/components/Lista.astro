@@ -31,15 +31,15 @@ const WA = 'M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2a8.2 8
   <div class="lista-panel">
     <span class="pd-asa" aria-hidden="true"></span>
     <header class="lista-cabeza">
-      <div class="flex items-start gap-3">
-        <div class="min-w-0 flex-1">
+      <div class="pd-cabeza-fila flex items-start gap-3">
+        <div class="pd-cabeza-titulo min-w-0 flex-1">
           <h2 id="lista-titulo" tabindex="-1" class="pd-titulo">
             <span data-titulo="pedido"><span lang="es">Mi pedido</span><span lang="en">My order</span></span>
             <span data-titulo="enviado" hidden><span lang="es">Pedido enviado</span><span lang="en">Order sent</span></span>
           </h2>
           <p id="lista-resumen" class="pd-resumen" aria-live="polite"></p>
         </div>
-        <button type="button" data-lista-cerrar class="pd-icono-boton presionable" aria-label="Cerrar / Close">
+        <button type="button" data-lista-cerrar class="pd-icono-boton pd-cerrar presionable" aria-label="Cerrar / Close">
           <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
         </button>
       </div>
@@ -204,7 +204,7 @@ const WA = 'M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2a8.2 8
               <p id="pd-entrega-titulo" class="text-[16px] font-semibold"></p>
               <p id="pd-entrega-detalle" class="text-[14px] text-niebla"></p>
             </div>
-            <button type="button" data-ir-paso="2" class="pd-boton pd-boton-sutil pd-boton-chico presionable">
+            <button type="button" data-ir-paso="2" class="pd-boton pd-boton-sutil pd-boton-chico pd-cambiar presionable">
               <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4" /></svg>
               <span><span lang="es">Cambiar</span><span lang="en">Change</span></span>
             </button>
@@ -312,8 +312,8 @@ const WA = 'M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2a8.2 8
     </div>
 
     <footer class="lista-pie">
-      <div class="flex items-end justify-between gap-3">
-        <div class="min-w-0">
+      <div class="pd-pie-fila flex items-end justify-between gap-3">
+        <div class="pd-sumario min-w-0">
           <p class="text-[14px] text-niebla"><span lang="es">Subtotal</span><span lang="en">Subtotal</span></p>
           <p class="pd-total"><span class="pd-total-num" id="lista-subtotal"></span> <span class="text-[13px] font-normal text-niebla">MXN</span></p>
           <p class="whitespace-nowrap text-[13px] text-humo tabular-nums"><span id="lista-usd"></span> <span lang="es">referencia</span><span lang="en">reference</span></p>

@@ -3,6 +3,11 @@
 // Teselas oscuras de CARTO con atribución © OpenStreetMap © CARTO.
 // Se arrastra con un dedo o el ratón; un toque mueve el pin dorado ahí y el pin también
 // se arrastra. Si las teselas de CARTO fallan, cambia solo a las de OpenStreetMap.
+//
+// En el teléfono el contenedor cambia de tamaño (el panel se abre, se gira la pantalla,
+// aparece el teclado): un ResizeObserver avisa a Leaflet para que nunca quede gris a medias.
+// El plazo de respaldo (sin teselas → OSM) solo corre cuando el mapa ya pidió teselas, no
+// mientras está oculto con tamaño cero.
 import type { Coordenada } from '../../lib/ubicacion';
 
 export type Mapa = {
@@ -20,6 +25,8 @@ export async function crearMapa(el: HTMLElement, o: {
 }): Promise<Mapa> {
   const [mod] = await Promise.all([import('leaflet'), import('leaflet/dist/leaflet.css')]);
   const L = (mod as unknown as { default?: typeof import('leaflet') }).default ?? (mod as unknown as typeof import('leaflet'));
+  // Un intento anterior que falló a medias pudo dejar el contenedor marcado por Leaflet.
+  delete (el as HTMLElement & { _leaflet_id?: number })._leaflet_id;
   el.replaceChildren();
   const mapa = L.map(el, {
     center: [o.centro.lat, o.centro.lng],
@@ -29,10 +36,12 @@ export async function crearMapa(el: HTMLElement, o: {
     touchZoom: true,
     zoomControl: true,
     attributionControl: true,
+    // Un toque con el dedo que tiembla un poco sigue siendo un toque (no un arrastre).
+    tapTolerance: 18,
   });
   mapa.attributionControl.setPrefix(false);
   const OSM = '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>';
-  let fallos = 0; let cargadas = 0; let respaldo = false;
+  let fallos = 0; let cargadas = 0; let respaldo = false; let plazo = 0;
   const carto = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
     subdomains: 'abcd', maxZoom: 19, attribution: `${OSM} © <a href="https://carto.com/attributions" target="_blank" rel="noopener">CARTO</a>`,
   });
@@ -40,15 +49,19 @@ export async function crearMapa(el: HTMLElement, o: {
   const usarRespaldo = () => {
     if (respaldo) return;
     respaldo = true;
+    clearTimeout(plazo);
     mapa.removeLayer(carto);
+    let osmCargadas = 0; let osmFallos = 0;
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: OSM, className: 'pd-teselas-osm' })
-      .on('tileerror', () => o.alFallarTeselas()).addTo(mapa);
+      .on('tileload', () => { osmCargadas++; })
+      .on('tileerror', () => { osmFallos++; if (osmCargadas === 0 && osmFallos >= 2) o.alFallarTeselas(); })
+      .addTo(mapa);
   };
-  carto.on('tileload', () => { cargadas++; });
+  carto.on('tileload', () => { cargadas++; clearTimeout(plazo); });
   carto.on('tileerror', () => { fallos++; if (cargadas === 0 && fallos >= 2) usarRespaldo(); });
+  // Si 8 s después de pedir las primeras teselas no llegó ninguna (red que bloquea CARTO), se cambia.
+  carto.on('loading', () => { if (!plazo && !respaldo && cargadas === 0) plazo = window.setTimeout(() => { if (cargadas === 0) usarRespaldo(); }, 8000); });
   carto.addTo(mapa);
-  // Si en 6 s no llegó ninguna tesela (red que bloquea CARTO), también se cambia.
-  setTimeout(() => { if (cargadas === 0) usarRespaldo(); }, 6000);
 
   L.marker([o.centro.lat, o.centro.lng], {
     icon: L.divIcon({ html: LOCAL, className: 'pd-icono-local', iconSize: [34, 34], iconAnchor: [17, 17] }),
@@ -74,6 +87,19 @@ export async function crearMapa(el: HTMLElement, o: {
   pin.on('dragend', () => { pin.getElement()?.classList.remove('arrastrando'); soltar(); avisar(); });
   mapa.on('click', (e: { latlng: { lat: number; lng: number } }) => { pin.setLatLng(e.latlng); poner(); soltar(); avisar(); });
 
+  // Cada vez que el contenedor cambia de tamaño (incluido pasar de oculto a visible), Leaflet
+  // recalcula y pide las teselas que faltan. Sin ResizeObserver queda el ajuste manual.
+  let ultimo = '';
+  const ajustar = () => {
+    const w = el.clientWidth, h = el.clientHeight;
+    if (!w || !h) return;
+    const t = `${w}x${h}`;
+    if (t === ultimo) return;
+    ultimo = t;
+    mapa.invalidateSize();
+  };
+  if ('ResizeObserver' in window) new ResizeObserver(() => requestAnimationFrame(ajustar)).observe(el);
+
   return {
     mover(c, acercar = false) {
       pin.setLatLng([c.lat, c.lng]);
@@ -82,7 +108,7 @@ export async function crearMapa(el: HTMLElement, o: {
       else mapa.panTo([c.lat, c.lng]);
       soltar();
     },
-    ajustar() { mapa.invalidateSize(); },
+    ajustar() { ultimo = ''; ajustar(); },
     quitar() { pin.remove(); mapa.panTo([o.centro.lat, o.centro.lng]); },
   };
 }

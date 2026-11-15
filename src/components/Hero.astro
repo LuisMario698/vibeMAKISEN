@@ -55,7 +55,7 @@ const olaA = ola(10, 60, 7.5, 4.6);
 const olaB = ola(13, 45, 15.5, 2.4);
 ---
 <section id="inicio" class="relative pt-[calc(4rem+env(safe-area-inset-top))]" aria-labelledby="t-inicio">
-  <div class="contenedor pt-7 sm:pt-14">
+  <div class="hero-cont contenedor pt-7 sm:pt-14">
     <!-- Logotipo completo en grande: que se sepa de inmediato qué restaurante es. -->
     <div class="marca-hero aparece" style="--d:40">
       <img src="/brand/logo-horizontal.svg" width="891" height="349" alt="MAKIZEN Sushi & Mariscos" fetchpriority="high" decoding="async" class="marca-hero-img" />
@@ -157,3 +157,14 @@ const olaB = ola(13, 45, 15.5, 2.4);
     </li>
   </ul>
 </section>
+
+<style>
+  /* Teléfono en horizontal (poca altura): el logotipo y la foto caben en la pantalla
+     y el titular asoma sin tener que desplazar tanto. */
+  @media (orientation: landscape) and (max-height: 32rem) {
+    .hero-cont { padding-top: 0.75rem; }
+    .marca-hero { width: min(300px, 40vw); }
+    .titular { font-size: clamp(2.4rem, 19svh, 6.8rem); }
+    .hero-marco { aspect-ratio: auto; height: 82svh; }
+  }
+</style>

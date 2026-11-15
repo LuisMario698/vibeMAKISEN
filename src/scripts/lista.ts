@@ -25,6 +25,7 @@ const CLAVE = 'makizen-lista';
 const CLAVE_PEDIDO = 'makizen-pedido';
 const CLAVE_MESA = 'makizen-mesa';
 const CLAVE_MESA_QR = 'makizen-mesa-qr';
+const CLAVE_REABRIR = 'makizen-reabrir';
 
 type Paso = 1 | 2 | 3;
 type Vista = Paso | 'seguimiento';
@@ -453,12 +454,36 @@ export function crearLista(o: { alCambiar: (piezas: number, total: number) => vo
     ponerBi(estadoMapa, es, ing);
     estadoMapa.classList.toggle('ok', !!lista.ubic && !mensajeMapa);
   }
+  // El módulo del mapa se pide una vez más si falla (red que parpadea). Si vuelve a fallar
+  // suele ser una pestaña abierta desde una versión anterior del sitio: sus archivos ya no
+  // existen. Entonces se ofrece recargar y el panel vuelve a abrirse en «Entrega».
+  const importarMapa = () => import('./pedido/mapa').catch(() => new Promise((r) => setTimeout(r, 600)).then(() => import('./pedido/mapa')));
+  function mapaNoCargo() {
+    mapaEl.replaceChildren();
+    const caja = document.createElement('div');
+    caja.className = 'pd-mapa-cargando';
+    const p = document.createElement('p');
+    ponerBi(p, 'No se pudo cargar el mapa. Puedes recargarlo, usar tu ubicación o solo escribir tu dirección.', "The map couldn't load. Reload it, use your location, or just type your address.");
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'pd-boton pd-boton-linea presionable';
+    const t = document.createElement('span');
+    ponerBi(t, 'Recargar mapa', 'Reload map');
+    b.append(t);
+    b.addEventListener('click', () => {
+      guardar.escribir(CLAVE_REABRIR, '2', true);
+      location.reload();
+    });
+    caja.append(p, b);
+    mapaEl.append(caja);
+    if (!lista.ubic) { mensajeMapa = ['Sin el mapa, basta con tu dirección y referencias.', 'Without the map, your address and landmarks are enough.']; pintarUbicacion(); }
+  }
   async function prepararMapa() {
     if (mapa) { requestAnimationFrame(() => mapa?.ajustar()); return; }
     if (cargandoMapa) return;
     cargandoMapa = true;
     try {
-      const { crearMapa } = await import('./pedido/mapa');
+      const { crearMapa } = await importarMapa();
       mapa = await crearMapa(mapaEl, {
         centro, inicial: lista.ubic,
         etiquetas: en() ? { pin: 'Delivery point', local: 'MAKIZEN (approximate)' } : { pin: 'Punto de entrega', local: 'MAKIZEN (aproximado)' },
@@ -472,11 +497,7 @@ export function crearLista(o: { alCambiar: (piezas: number, total: number) => vo
       });
       requestAnimationFrame(() => mapa?.ajustar());
     } catch {
-      mapaEl.replaceChildren();
-      const p = document.createElement('p');
-      p.className = 'pd-mapa-cargando';
-      ponerBi(p, 'No se pudo cargar el mapa. Escribe tu dirección y referencias, o usa tu ubicación.', "The map couldn't load. Type your address and landmarks, or use your location.");
-      mapaEl.append(p);
+      mapaNoCargo();
     } finally { cargandoMapa = false; }
   }
   const btnUbic = $<HTMLButtonElement>('#pd-mi-ubicacion', dlg)!;
@@ -702,6 +723,50 @@ export function crearLista(o: { alCambiar: (piezas: number, total: number) => vo
     if (t.matches('input:not([type="radio"]), textarea')) setTimeout(() => t.scrollIntoView({ block: 'center', inline: 'nearest', behavior: reducir() ? 'auto' : 'smooth' }), 250);
   });
 
+  /* ── Teclado del teléfono ──
+     En iOS (y en Android desde Chrome 108) el teclado solo encoge el «viewport visual»: el
+     panel, anclado abajo, quedaría detrás del teclado con el campo y el botón tapados. Con el
+     teclado abierto el panel se ajusta al área visible (--vv-alto / --vv-arriba) y entra en
+     modo compacto (.teclado: cabecera y pie reducidos). Si el teclado sí encoge la página
+     (resizes-content), 100dvh ya se ajusta y aquí solo se compacta. */
+  const vv = window.visualViewport;
+  if (vv) {
+    let base = 0; let anchoBase = 0;
+    const campoTexto = () => !!(document.activeElement as HTMLElement | null)?.matches?.('#lista input:not([type="radio"]):not([type="checkbox"]), #lista textarea');
+    const ajustarTeclado = () => {
+      if (!dlg.open) return;
+      // Altura de referencia sin teclado (se reinicia al girar o cambiar el ancho).
+      if (vv.width !== anchoBase) { anchoBase = vv.width; base = 0; }
+      if (!campoTexto()) base = Math.max(base, vv.height, innerHeight);
+      else base = Math.max(base, innerHeight);
+      const sinZoom = Math.abs(vv.scale - 1) < 0.05;
+      const teclado = sinZoom && campoTexto() && base - vv.height > 140;
+      dlg.classList.toggle('teclado', teclado);
+      // Solo cuando el teclado tapa la página (no la encoge) se ancla el panel al área visible.
+      const tapa = teclado && innerHeight - vv.height > 80;
+      dlg.classList.toggle('teclado-vv', tapa);
+      if (tapa) {
+        dlg.style.setProperty('--vv-alto', `${Math.round(vv.height)}px`);
+        dlg.style.setProperty('--vv-arriba', `${Math.round(vv.offsetTop)}px`);
+      } else {
+        dlg.style.removeProperty('--vv-alto');
+        dlg.style.removeProperty('--vv-arriba');
+      }
+      // El teclado terminó de abrir (o cambió de alto): el campo vuelve al centro del área visible.
+      const alto = Math.round(vv.height);
+      if (teclado && alto !== altoTeclado) requestAnimationFrame(() => (document.activeElement as HTMLElement | null)?.scrollIntoView({ block: 'center', inline: 'nearest' }));
+      altoTeclado = teclado ? alto : 0;
+    };
+    let altoTeclado = 0;
+    let cuadro = 0;
+    const pedir = () => { cancelAnimationFrame(cuadro); cuadro = requestAnimationFrame(ajustarTeclado); };
+    vv.addEventListener('resize', pedir);
+    vv.addEventListener('scroll', pedir);
+    dlg.addEventListener('focusin', pedir);
+    dlg.addEventListener('focusout', () => setTimeout(pedir, 60));
+    dlg.addEventListener('close', () => { dlg.classList.remove('teclado', 'teclado-vv'); dlg.style.removeProperty('--vv-alto'); dlg.style.removeProperty('--vv-arriba'); });
+  }
+
   // Pago
   const vistaPago = $('[data-vista="3"]', dlg)!;
   vistaPago.addEventListener('change', (e) => {
@@ -836,6 +901,11 @@ export function crearLista(o: { alCambiar: (piezas: number, total: number) => vo
   pintar();
   // Estado de la mesa del QR que viene ocupada en la demo o fuera del plano: se acepta con aviso.
   if (mesa && mesaDeQR && estadoMesa(plano, mesa) !== 'libre') pintarMesa();
+  // Se recargó la página para traer el mapa: el panel vuelve a abrirse en «Entrega».
+  if (guardar.leer(CLAVE_REABRIR, true) === '2') {
+    guardar.borrar(CLAVE_REABRIR, true);
+    if (lista.lineas.length) requestAnimationFrame(() => { abrir(); irPaso(2, false); });
+  }
 
   return {
     abrir, cerrar,
