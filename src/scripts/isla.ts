@@ -3,6 +3,8 @@
 // Aquí solo se calcula la geometría de cada estado; el movimiento lo hace CSS.
 
 import { escapar, normalizar } from '../lib/texto';
+import { etiquetaPedido } from '../lib/detalle';
+import { ponerContador } from './bolsa';
 
 type Txt = { es: string; en: string };
 type Cat = { id: string; nombre: Txt };
@@ -79,7 +81,7 @@ export function crearIsla(o: {
   function geo() {
     const W = ancho();
     const nombre = idx >= 0 ? o.cats[idx]!.nombre[es() ? 'es' : 'en'] : '';
-    // Con algo en la lista aparece un tercer botón (Mi lista) a la derecha.
+    // Con algo en la lista aparece un tercer botón (Mi pedido) a la derecha.
     const extra = piezas > 0 ? H + GAP : 0;
     const cw = Math.max(piezas > 0 ? 150 : 168, Math.min(W - H - GAP - extra, 9 + 36 + 10 + medir(nombre) + 10 + 20 + 16));
     const l0 = (W - (cw + GAP + H + extra)) / 2;
@@ -256,29 +258,30 @@ export function crearIsla(o: {
     buscar();
   }));
 
-  /* ── Mi lista: contador y rebote de la bolsa al agregar ── */
+  /* ── Mi pedido: contador y rebote de la bolsa al agregar ── */
+  let totalTxt = '';
   function contar(n: number, total: string) {
     const antes = piezas;
     piezas = n;
-    contador.textContent = n > 99 ? '99+' : String(n);
-    btnLista.setAttribute('aria-label', es() ? `Mi lista: ${n} ${n === 1 ? 'artículo' : 'artículos'}, ${total}` : `My list: ${n} ${n === 1 ? 'item' : 'items'}, ${total}`);
+    totalTxt = total;
+    ponerContador(contador, n);
+    btnLista.setAttribute('aria-label', etiquetaPedido(n, total, es() ? 'es' : 'en'));
     if ((antes > 0) !== (n > 0)) pintar();
   }
-  /** Caja final (en pantalla) de la bolsa de Mi lista, aunque aún esté en transición. */
+  /** Caja final (en pantalla) de la bolsa de Mi pedido, aunque aún esté en transición. */
   function destinoBolsa() {
     if (estado !== 'pildora' || piezas === 0) return null;
     const g = geo();
     const r = isla.getBoundingClientRect();
     return { x: r.left + g.l0 + g.cw + GAP + H + GAP, y: r.bottom - H, w: H, h: H };
   }
-  /** La bolsa rebota al recibir un platillo. */
-  function rebotar() {
+  /** El líquido de la bolsa se hincha al recibir un platillo (la bolsa y el contador los anima bolsa.ts). */
+  function rebotar(conLiquido = true) {
     if (estado === 'oculta') mostrar(true);
-    if (o.reducir() || estado !== 'pildora') return;
-    const resorte = { duration: 380, easing: 'cubic-bezier(0.34, 1.4, 0.64, 1)' };
-    btnLista.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.16)' }, { transform: 'scale(1)' }], resorte);
-    bolsa.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.18)' }, { transform: 'scale(1)' }], resorte);
-    contador.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.3)' }, { transform: 'scale(1)' }], { ...resorte, delay: 60 });
+    if (o.reducir() || estado !== 'pildora' || !conLiquido) return;
+    const resorte = { duration: 460, easing: 'cubic-bezier(0.34, 1.4, 0.64, 1)' };
+    btnLista.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.12)', offset: 0.35 }, { transform: 'scale(1)' }], resorte);
+    bolsa.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.22)', offset: 0.35 }, { transform: 'scale(1)' }], resorte);
   }
 
   /* ── Eventos ── */
@@ -327,5 +330,10 @@ export function crearIsla(o: {
 
   if (o.reducir()) isla.classList.add('sin-movimiento');
   pintar();
-  return { mostrar, actualizar, pintar, cerrar, contar, rebotar, destinoBolsa, abrir, get indice() { return idx; }, get estado() { return estado; }, pildora: () => pildora };
+  return {
+    mostrar, actualizar, pintar, cerrar, contar, rebotar, destinoBolsa, abrir,
+    get indice() { return idx; }, get estado() { return estado; }, pildora: () => pildora, bolsaEl: () => btnLista,
+    /** Al cambiar de idioma: la etiqueta del botón del pedido. */
+    idioma() { btnLista.setAttribute('aria-label', etiquetaPedido(piezas, totalTxt, es() ? 'es' : 'en')); },
+  };
 }

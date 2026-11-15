@@ -1,8 +1,10 @@
 // Interacción del menú. Sin librerías: Web Animations API, IntersectionObserver,
 // CSS scroll-driven, filtro SVG "goo" para la isla y clip-path + FLIP para el detalle.
 // Este archivo solo conecta los módulos: idioma, estado del local, isla, hoja y lista.
+import { etiquetaPedido } from '../lib/detalle';
 import { precio } from '../lib/precios';
 import { normalizar } from '../lib/texto';
+import { abrirBolsa, avisarAgregado, esperar, ocultarAviso, ponerContador, prepararAviso, recibirBolsa, type Destino } from './bolsa';
 import { $, $$, datos, guardar, html, reducir } from './comun';
 import { pintarEstado } from './estado';
 import { crearHoja } from './hoja';
@@ -23,6 +25,8 @@ function aplicarIdioma() {
   pintarEstado();
   hoja.idioma();
   lista.pintar();
+  etiquetaNav();
+  isla.idioma();
   requestAnimationFrame(() => { isla.pintar(); espiar(); });
 }
 document.addEventListener('click', (e) => {
@@ -78,7 +82,7 @@ const isla = crearIsla({
   })),
   ir,
   abrir: (id) => hoja.abrir(id, null),
-  abrirLista: () => { isla.cerrar(false); lista.abrir(); },
+  abrirLista: () => { ocultarAviso(true); isla.cerrar(false); lista.abrir(); },
   reducir,
 });
 
@@ -93,51 +97,88 @@ function espiar() {
 }
 addEventListener('scroll', () => { if (!pendiente) { pendiente = true; requestAnimationFrame(espiar); } }, { passive: true });
 
-/* ── Mi lista ──────────────────────────────────────────────────────── */
+/* ── Mi pedido ─────────────────────────────────────────────────────── */
 let enMenu = false;
 let piezasLista = 0;
+let totalLista = 0;
 const visibilidad = () => isla.mostrar(enMenu || piezasLista > 0);
+function etiquetaNav() {
+  const txt = etiquetaPedido(piezasLista, precio(totalLista), html.lang === 'en' ? 'en' : 'es');
+  $$('#nav [data-abrir-lista]').forEach((b) => b.setAttribute('aria-label', txt));
+}
 const lista = crearLista({
   alCambiar: (n, total) => {
     piezasLista = n;
+    totalLista = total;
     isla.contar(n, precio(total));
-    $$('[data-contador-lista]').forEach((el) => { el.textContent = String(n); el.hidden = n === 0; });
-    const en = html.lang === 'en';
-    $$('#nav [data-abrir-lista]').forEach((b) => b.setAttribute('aria-label', en ? `My list: ${n} ${n === 1 ? 'item' : 'items'}, ${precio(total)}` : `Mi lista: ${n} ${n === 1 ? 'artículo' : 'artículos'}, ${precio(total)}`));
+    $$('[data-contador-lista]').forEach((el) => { ponerContador(el, n); if (!el.hasAttribute('data-ocultar-cero')) el.hidden = n === 0; });
+    etiquetaNav();
     visibilidad();
   },
 });
-// La isla aparece al llegar al menú, o siempre que la lista tenga algo.
+// La isla aparece al llegar al menú, o siempre que el pedido tenga algo.
 new IntersectionObserver(([e]) => { enMenu = !!e && (e.isIntersecting || e.boundingClientRect.top < 0); visibilidad(); }, { rootMargin: '0px 0px -55% 0px' }).observe($('#menu')!);
+
+/** Bolsa a la que vuela lo agregado: la de la isla si está a la vista; si no, la de la barra superior. */
+function destinoBolsa(): Destino | null {
+  const c = isla.destinoBolsa();
+  if (c) return { caja: c, el: isla.bolsaEl() };
+  const b = $('#nav [data-abrir-lista]');
+  const ico = b?.querySelector('.bolsa-ico')?.getBoundingClientRect();
+  if (!b || !ico || ico.width === 0 || ico.bottom < 0) return null;
+  return { caja: { x: ico.left - 8, y: ico.top - 8, w: ico.width + 16, h: ico.height + 16 }, el: b };
+}
+/** Foto pequeña para el aviso «Agregado». */
+function miniatura(id: string) {
+  const p = datos.platillos.find((x) => x.id === id);
+  if (!p) return undefined;
+  return p.foto ? `/menu/${p.foto}.webp` : datos.reales[p.id]?.src ?? datos.iconos[p.catId];
+}
+/** La bolsa recibió el platillo: cierra y rebota, el contador rueda y aparece el aviso. */
+function llego(id: string, n: number, destino: Destino | null) {
+  visibilidad();
+  isla.rebotar(destino?.el === isla.bolsaEl());
+  recibirBolsa(destino?.el);
+  const p = datos.platillos.find((x) => x.id === id);
+  if (p) avisarAgregado({ nombre: p.nombre, foto: miniatura(id), n, abrirPedido: () => { isla.cerrar(false); lista.abrir(); } });
+}
+prepararAviso();
 
 /* ── Detalle del platillo ──────────────────────────────────────────── */
 const hoja = crearHoja({
   agregar: (item) => lista.agregar(item),
-  agregado: () => { visibilidad(); isla.rebotar(); },
+  agregado: (item, destino) => llego(item.id, item.n, destino),
   isla,
+  bolsa: destinoBolsa,
 });
 
-/* ── Clics: agregar directo, abrir la lista, índice lateral, tarjeta ── */
+/* ── Clics: agregar directo, abrir el pedido, índice lateral, tarjeta ── */
 document.addEventListener('click', (ev) => {
   const t = ev.target as HTMLElement;
   const rapido = t.closest<HTMLButtonElement>('[data-agregar]');
   if (rapido) {
     ev.stopPropagation();
-    if (lista.agregar({ id: rapido.dataset.agregar!, n: 1 })) return;
-    rapido.classList.remove('ok'); void rapido.offsetWidth; rapido.classList.add('ok');
+    const id = rapido.dataset.agregar!;
+    if (!reducir()) esperar();
+    if (lista.agregar({ id, n: 1 })) { recibirBolsa(null); return; }
+    navigator.vibrate?.(12);
+    // El «+» se vuelve palomita sobre oro y regresa solo.
+    rapido.classList.remove('hecho'); void rapido.offsetWidth; rapido.classList.add('hecho');
+    clearTimeout(Number(rapido.dataset.t));
+    rapido.dataset.t = String(window.setTimeout(() => rapido.classList.remove('hecho'), 1400));
     visibilidad();
-    // La miniatura de la bebida cae en la bolsa de Mi lista.
+    // La miniatura de la bebida cae en la bolsa de Mi pedido, con su estela de oro.
     const img = rapido.closest('article')?.querySelector<HTMLImageElement>('img[data-foto]');
-    const destino = isla.destinoBolsa();
+    const destino = destinoBolsa();
     if (img && destino && !reducir()) {
       const cubre = img.classList.contains('object-cover');
       const a = proporcion(img);
       const desde = cubre ? cajaDe(img) : rectImagen(cajaDe(img), a, 'contain');
-      void aLaBolsa(img.currentSrc || img.src, a, desde, destino, cubre).then(() => isla.rebotar());
-    } else requestAnimationFrame(() => isla.rebotar());
+      void aLaBolsa(img.currentSrc || img.src, a, desde, destino.caja, cubre, () => abrirBolsa(destino.el)).then(() => llego(id, 1, destino));
+    } else requestAnimationFrame(() => llego(id, 1, destino));
     return;
   }
-  if (t.closest('[data-abrir-lista]')) { lista.abrir(); return; }
+  if (t.closest('[data-abrir-lista]')) { ocultarAviso(true); lista.abrir(); return; }
   const riel = t.closest<HTMLElement>('.riel [data-ir]');
   if (riel) { ir(riel.dataset.ir!); return; }
   if (t.closest('a[href]')) return;

@@ -186,27 +186,17 @@ dialog.hoja.liquida::backdrop { animation: none; }
 @keyframes hoja-sube { from { transform: translateY(100%); } to { transform: none; } }
 @keyframes hoja-baja { to { transform: translateY(105%); } }
 @keyframes velo { from { opacity: 0; } }
-.hoja-escalonada > * { opacity: 0; animation: aparece 520ms var(--ease-salida) forwards; animation-delay: calc(40ms + var(--d, 0) * 45ms); }
+/* El contenido entra escalonado y pasa de desenfocado a nítido (desenfoque corto: ≤ 4 px). */
+.hoja-escalonada > * { opacity: 0; animation: aparece-nitido 560ms var(--ease-salida) forwards; animation-delay: calc(60ms + var(--d, 0) * 48ms); }
+@keyframes aparece-nitido { from { opacity: 0; transform: translateY(14px); filter: blur(4px); } to { opacity: 1; transform: none; filter: none; } }
 /* Panel y lámina comparten la misma superficie de mármol (el cambio no se nota). */
 .marmol-panel { background: linear-gradient(rgb(18 18 17 / 0.9), rgb(18 18 17 / 0.94)), var(--marmol) center / cover no-repeat, #121211; }
 /* Zona de la foto: el mármol a plena luz, como las fotos de la cartilla, con un halo dorado. */
 .zona-marmol { background: radial-gradient(58% 52% at 50% 56%, rgb(174 139 61 / 0.2), transparent 72%), linear-gradient(to bottom, transparent 62%, rgb(18 18 17 / 0.94)), var(--marmol) center / cover no-repeat, #0c0c0b; }
 :is(dialog.hoja, .morfo)[data-forma="ventana"] .zona-marmol { background: radial-gradient(58% 46% at 50% 50%, rgb(174 139 61 / 0.2), transparent 72%), linear-gradient(to right, transparent 70%, rgb(18 18 17 / 0.94)), var(--marmol) center / cover no-repeat, #0c0c0b; }
-/* Ensō dorado (la luna de pincel del logo) que se traza detrás del platillo al llegar. */
-.enso { position: absolute; left: 50%; top: 50%; width: min(272px, 88%); aspect-ratio: 1; translate: -50% -50%; overflow: visible; pointer-events: none; }
-dialog.hoja[data-forma="ventana"] .enso { width: min(400px, 84%); }
-.enso circle { fill: none; transform-box: fill-box; transform-origin: center; }
-.enso-trazo { stroke: var(--color-oro); stroke-width: 2.4; stroke-linecap: round; stroke-dasharray: 84 100; rotate: -38deg; }
-.enso-eco { stroke: var(--color-oro-claro); stroke-width: 0.9; stroke-linecap: round; stroke-dasharray: 56 100; rotate: 150deg; opacity: 0.45; }
-.enso-punto { fill: var(--color-oro-claro); }
-dialog.hoja:is([data-modo="foto"], [data-modo="mosaico"]) .enso { display: none; }
-dialog.hoja.panel-listo .enso-trazo { animation: enso 900ms 30ms var(--ease-salida) both; }
-dialog.hoja.panel-listo .enso-eco { animation: enso-eco 1100ms 140ms var(--ease-salida) both; }
-dialog.hoja.panel-listo .enso-punto { animation: punto-oro 520ms 560ms var(--ease-resorte) both; }
-@keyframes enso { from { stroke-dashoffset: 84; } to { stroke-dashoffset: 0; } }
-@keyframes enso-eco { from { stroke-dashoffset: 56; opacity: 0; } }
+/* El ensō de pincel, el aterrizaje y el botón «Agregar» viven en src/styles/detalle.css. */
 /* Al cerrar, el contenido se apaga antes de que la lámina regrese a la tarjeta. */
-dialog.hoja.recogiendo :is(#hoja-cuerpo, .hoja-barra, [data-cerrar], .asa, .enso) { opacity: 0 !important; transition: opacity 110ms ease-out; }
+dialog.hoja.recogiendo :is(#hoja-cuerpo, .hoja-barra, [data-cerrar], .asa, .enso, .hoja-sombra, .hoja-brillo, .hoja-chispas) { opacity: 0 !important; transition: opacity 110ms ease-out; }
 /* Al terminar el revelado aparece el panel: la barrita se estira, el botón cerrar entra. */
 dialog.hoja.panel-listo .asa > span { animation: asa-entra 520ms 60ms var(--ease-resorte) both; }
 dialog.hoja.panel-listo [data-cerrar] { animation: cerrar-entra 480ms 140ms var(--ease-resorte) both; }
@@ -239,7 +229,8 @@ html.cambia-idioma::view-transition-new(root) { animation: 320ms var(--ease-sali
 .isla[data-estado="oculta"] :is(.isla-pildora, .isla-lupa, .isla-lista) { opacity: 0; pointer-events: none; }
 .isla[data-estado="abierta"] :is(.isla-pildora, .isla-lupa, .isla-lista) { opacity: 0; pointer-events: none; transition-duration: 640ms, 640ms, 640ms, 120ms, 160ms; }
 .isla[data-lista="no"] .isla-lista { opacity: 0; pointer-events: none; }
-.isla-lista .contador { position: absolute; top: -3px; right: -3px; display: grid; place-items: center; min-width: 22px; height: 22px; padding: 0 5px; border-radius: 11px; background: #0a0a0a; color: var(--color-oro-claro); font-size: 12px; font-weight: 700; box-shadow: 0 0 0 2px var(--color-oro); }
+/* Contador: el texto real queda transparente; lo visible rueda en ::before/::after (detalle.css). */
+.isla-lista .contador { position: absolute; top: -3px; right: -3px; display: grid; place-items: center; min-width: 22px; height: 22px; padding: 0 5px; border-radius: 11px; background: #0a0a0a; color: transparent; font-size: 12px; font-weight: 700; box-shadow: 0 0 0 2px var(--color-oro); overflow: hidden; }
 .isla-filtros { scrollbar-width: none; }
 .filtro { flex: none; min-height: 44px; padding: 0 16px; border-radius: 999px; background: rgb(0 0 0 / 0.1); font-size: 14px; font-weight: 600; white-space: nowrap; }
 .filtro:hover { background: rgb(0 0 0 / 0.18); }
@@ -276,8 +267,6 @@ html.cambia-idioma::view-transition-new(root) { animation: 320ms var(--ease-sali
 /* ── Hoja: barra para agregar, sabores y cantidad ──────────────────────── */
 .hoja-barra { position: relative; z-index: 2; display: flex; align-items: center; gap: 10px; padding: 12px 16px max(12px, env(safe-area-inset-bottom)); border-top: 1px solid rgb(244 241 234 / 0.06); background: rgb(27 27 25 / 0.94); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
 dialog.hoja.panel-listo .hoja-barra { animation: aparece 420ms 120ms var(--ease-salida) both; }
-#hoja-agregar.agregado { animation: agregado 260ms var(--ease-salida); }
-@keyframes agregado { 40% { transform: scale(0.96); box-shadow: 0 0 0 6px rgb(210 178 106 / 0.35); } }
 .cantidad { display: inline-flex; flex: none; align-items: center; border-radius: 999px; background: rgb(5 5 5 / 0.55); box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.08); }
 .cantidad button { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 999px; color: var(--color-hueso); }
 .cantidad button:hover:not(:disabled) { background: rgb(244 241 234 / 0.08); }
@@ -343,11 +332,9 @@ dialog.lista.cerrando .lista-panel { animation: hoja-baja 220ms var(--ease-cajon
 /* ── Agregar con un toque (bebidas) y acceso en la barra superior ───────── */
 .agregar-rapido { flex: none; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 999px; background: rgb(174 139 61 / 0.14); color: var(--color-oro-claro); box-shadow: inset 0 0 0 1px rgb(174 139 61 / 0.5); }
 @media (hover: hover) and (pointer: fine) { .agregar-rapido:hover { background: var(--color-oro); color: #0a0a0a; } }
-.agregar-rapido.ok { animation: ok-pop 360ms var(--ease-resorte); }
-@keyframes ok-pop { 0% { transform: scale(1); } 40% { transform: scale(1.18); background: var(--color-oro); color: #0a0a0a; } 100% { transform: scale(1); } }
-.nav-lista { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; min-width: 44px; justify-content: center; padding: 0 12px; border-radius: 999px; border: 1px solid rgb(255 255 255 / 0.2); background: rgb(5 5 5 / 0.6); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); font-size: 14px; font-weight: 600; }
+.nav-lista { position: relative; display: inline-flex; align-items: center; gap: 8px; min-height: 44px; min-width: 44px; justify-content: center; padding: 0 12px; border-radius: 999px; border: 1px solid rgb(255 255 255 / 0.2); background: rgb(5 5 5 / 0.6); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); font-size: 14px; font-weight: 600; }
 .nav-lista:hover { border-color: var(--color-oro); }
-.nav-contador { display: inline-grid; place-items: center; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 11px; background: var(--color-oro); color: #0a0a0a; font-size: 12px; font-weight: 700; }
+.nav-contador { position: relative; display: inline-grid; place-items: center; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 11px; background: var(--color-oro); color: transparent; font-size: 12px; font-weight: 700; overflow: hidden; }
 .nav-contador[hidden] { display: none; }
 
 /* ── Computadora: índice lateral de categorías ─────────────────────────── */

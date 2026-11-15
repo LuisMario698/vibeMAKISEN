@@ -3,7 +3,9 @@
 // Capa 1 (.isla-liquido): manchas sólidas con filtro SVG "goo" → se funden como líquido.
 // Capa 2: botones y panel reales, encima y sin filtro (texto nítido y accesible).
 import Idioma from './Idioma.astro';
+import IconoBolsa from './IconoBolsa.astro';
 import { menu } from '../data/schema';
+import '../styles/detalle.css';
 import { iconoDe } from '../lib/iconos-categoria';
 
 const grupos = [
@@ -46,9 +48,10 @@ const miniatura = (c: (typeof menu.categorias)[number]) => c.platillos.find((p) 
     <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5" /><path d="m16 16 4 4" /></svg>
   </button>
 
-  <button type="button" class="isla-lista presionable" aria-label="Mi lista / My list">
-    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8h12l-1 12H7z" /><path d="M9 8a3 3 0 0 1 6 0" /></svg>
-    <span class="contador tabular-nums" aria-hidden="true">0</span>
+  <button type="button" class="isla-lista bolsa-boton presionable" aria-label="Mi pedido / My order">
+    <span class="bolsa-onda" aria-hidden="true"></span>
+    <IconoBolsa tam={24} grueso={2.1} />
+    <span class="contador tabular-nums" aria-hidden="true" data-vista="0" data-antes="0">0</span>
   </button>
 
   <div id="isla-panel" class="isla-panel" role="dialog" aria-modal="true" aria-label="Menú / Menu" inert>
@@ -102,4 +105,20 @@ const miniatura = (c: (typeof menu.categorias)[number]) => c.platillos.find((p) 
       <p class="isla-nota"><span lang="es">Picante y crudo: etiquetas por confirmar con cocina.</span><span lang="en">Spicy and raw labels: pending kitchen confirmation.</span></p>
     </div>
   </div>
+</div>
+
+<!-- Aviso al agregar: confirma qué se agregó y lleva a «Mi pedido» con un botón real. -->
+<div id="aviso-agregado" class="aviso-agregado" hidden>
+  <span class="aa-mini" aria-hidden="true"><img alt="" width="44" height="44" hidden /></span>
+  <p class="aa-texto">
+    <span class="aa-titulo">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.2 4.2L19 7" /></svg>
+      <span lang="es">Agregado</span><span lang="en">Added</span>
+    </span>
+    <span class="aa-nombre"></span>
+  </p>
+  <button type="button" class="aa-ver presionable">
+    <IconoBolsa tam={18} />
+    <span lang="es">Ver pedido</span><span lang="en">View order</span>
+  </button>
 </div>

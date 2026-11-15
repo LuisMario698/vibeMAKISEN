@@ -1,0 +1,18 @@
+---
+// Icono de «Mi pedido»: bolsa para llevar con el punto de oro del logo. La boca y el asa
+// (.bolsa-tapa) giran sobre la esquina izquierda para que la bolsa «abra» y «cierre» al
+// recibir un platillo (src/scripts/bolsa.ts). El mismo trazo se usa en la isla, la barra
+// superior y el botón «Agregar».
+interface Props { tam?: number; grueso?: number; class?: string }
+const { tam = 22, grueso = 2, class: clase = '' } = Astro.props;
+---
+<svg class:list={['bolsa-ico', clase]} viewBox="0 0 24 24" width={tam} height={tam} fill="none" stroke="currentColor" stroke-width={grueso} stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+  <g class="bolsa-cuerpo">
+    <path d="M5.3 9.6 6.1 19a2.2 2.2 0 0 0 2.2 2h7.4a2.2 2.2 0 0 0 2.2-2l.8-9.4" />
+    <circle cx="12" cy="15.2" r="1.25" fill="currentColor" stroke="none" />
+  </g>
+  <g class="bolsa-tapa">
+    <path d="M4.2 9.6h15.6" />
+    <path d="M9 9.6V8a3 3 0 0 1 6 0v1.6" />
+  </g>
+</svg>
