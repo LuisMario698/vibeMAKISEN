@@ -2,6 +2,7 @@
   "$comentario": "Fuente: cartilla oficial 'MENÚ-Makizen Sushi & Mariscos.pdf' (Canva, 10 págs.) enlazada en la historia destacada 'Menú' de @makizen.puertopenasco, revisada el 2026-11-08. Precios MXN con IVA. Las traducciones al inglés, las etiquetas de picante/crudo y 'favorito' son de la propuesta (ver docs/marca-actual.md §8).",
   "actualizado": "2026-11-08",
   "tipoCambioReferencia": 18.5,
+  "tipoCambioFecha": "2026-11-08",
   "negocio": {
     "nombre": "MAKIZEN",
     "subtitulo": "Sushi & Mariscos",
@@ -13,6 +14,7 @@
     "direccion": "Blvd. Freemont y Blvd. Josefa Ortiz, plaza de la gasolinera Las Conchas",
     "telefono": "+526381560660",
     "telefonoTexto": "(638) 156-0660",
+    "whatsapp": "526381560660",
     "telefonoFijo": "+526383882836",
     "telefonoFijoTexto": "(638) 388-2836",
     "instagram": "https://www.instagram.com/makizen.puertopenasco/",
@@ -148,7 +150,29 @@
             "es": "Sopa de fideo de arroz con pollo, brócoli, coliflor, zanahoria y cebolla, acompañada de arroz blanco.",
             "en": "Rice noodle soup with chicken, broccoli, cauliflower, carrot and onion, served with white rice."
           },
-          "precio": 160
+          "precio": 160,
+          "opciones": {
+            "titulo": {
+              "es": "Proteína",
+              "en": "Protein"
+            },
+            "valores": [
+              {
+                "id": "pollo",
+                "nombre": {
+                  "es": "Pollo",
+                  "en": "Chicken"
+                }
+              },
+              {
+                "id": "camaron",
+                "nombre": {
+                  "es": "Camarón",
+                  "en": "Shrimp"
+                }
+              }
+            ]
+          }
         },
         {
           "id": "curricanes",
@@ -681,9 +705,18 @@
           },
           "precio": 445,
           "incluye": [
-            "Chile especial",
-            "Chicken",
-            "Guamuchilito roll"
+            {
+              "es": "Chile especial",
+              "en": "Special pepper"
+            },
+            {
+              "es": "Chicken roll",
+              "en": "Chicken roll"
+            },
+            {
+              "es": "Guamuchilito roll",
+              "en": "Guamuchilito roll"
+            }
           ]
         },
         {
@@ -698,10 +731,22 @@
           },
           "precio": 900,
           "incluye": [
-            "Bomba especial",
-            "Tuna roca roll",
-            "Mazatleco roll",
-            "Peñasco roll"
+            {
+              "es": "Bomba especial",
+              "en": "Special rice bomb"
+            },
+            {
+              "es": "Tuna roca roll",
+              "en": "Tuna roca roll"
+            },
+            {
+              "es": "Mazatleco roll",
+              "en": "Mazatleco roll"
+            },
+            {
+              "es": "Peñasco roll",
+              "en": "Peñasco roll"
+            }
           ]
         },
         {
@@ -717,11 +762,26 @@
           "precio": 1100,
           "foto": "charola-premium",
           "incluye": [
-            "Teriyaki crispy",
-            "Especial roll",
-            "Avocado roll",
-            "Serrano roll",
-            "Makizen roll"
+            {
+              "es": "Teriyaki crispy",
+              "en": "Crispy teriyaki"
+            },
+            {
+              "es": "Especial roll",
+              "en": "Special roll"
+            },
+            {
+              "es": "Avocado roll",
+              "en": "Avocado roll"
+            },
+            {
+              "es": "Serrano roll",
+              "en": "Serrano roll"
+            },
+            {
+              "es": "Makizen roll",
+              "en": "Makizen roll"
+            }
           ]
         }
       ]
@@ -1071,7 +1131,43 @@
             "en": "Pineapple, peach, blackberry or plum."
           },
           "precio": 300,
-          "foto": "jun-ho"
+          "foto": "jun-ho",
+          "opciones": {
+            "titulo": {
+              "es": "Sabor",
+              "en": "Flavor"
+            },
+            "valores": [
+              {
+                "id": "pina",
+                "nombre": {
+                  "es": "Piña",
+                  "en": "Pineapple"
+                }
+              },
+              {
+                "id": "durazno",
+                "nombre": {
+                  "es": "Durazno",
+                  "en": "Peach"
+                }
+              },
+              {
+                "id": "zarzamora",
+                "nombre": {
+                  "es": "Zarzamora",
+                  "en": "Blackberry"
+                }
+              },
+              {
+                "id": "ciruela",
+                "nombre": {
+                  "es": "Ciruela china",
+                  "en": "Plum"
+                }
+              }
+            ]
+          }
         },
         {
           "id": "ramune",
@@ -1084,7 +1180,29 @@
             "en": "Strawberry or melon."
           },
           "precio": 95,
-          "foto": "ramune"
+          "foto": "ramune",
+          "opciones": {
+            "titulo": {
+              "es": "Sabor",
+              "en": "Flavor"
+            },
+            "valores": [
+              {
+                "id": "fresa",
+                "nombre": {
+                  "es": "Fresa",
+                  "en": "Strawberry"
+                }
+              },
+              {
+                "id": "melon",
+                "nombre": {
+                  "es": "Melón",
+                  "en": "Melon"
+                }
+              }
+            ]
+          }
         },
         {
           "id": "sapporo",
