@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { alzaArco, arcoEnso, azar, chispas, contadorVisible, etiquetaPedido, presion, rodillo, trazoEnso } from '../src/lib/detalle';
+import { curva, duracionVuelo, LLEGA, trayectoria } from '../src/scripts/morfo';
 
 describe('ensō de pincel', () => {
   it('es un contorno cerrado con números válidos', () => {
@@ -82,5 +83,69 @@ describe('bolsa de Mi pedido', () => {
     expect(alzaArco(-300, 600)).toBe(150);
     expect(alzaArco(100, 300)).toBeGreaterThan(56);
     expect(alzaArco(100, 300)).toBeLessThanOrEqual(150);
+  });
+});
+
+describe('vuelo a la bolsa', () => {
+  it('la curva cúbica respeta extremos, es monótona y coincide con valores conocidos', () => {
+    const f = curva(0.3, 0.3, 0.7, 0.75);
+    expect(f(0)).toBe(0);
+    expect(f(1)).toBe(1);
+    expect(f(-1)).toBe(0);
+    expect(f(2)).toBe(1);
+    let antes = 0;
+    for (let i = 1; i <= 100; i++) { const v = f(i / 100); expect(v).toBeGreaterThanOrEqual(antes - 1e-9); antes = v; }
+    // cubic-bezier(0.25, 0.1, 0.25, 1) es «ease»: en x = 0.5 vale ≈ 0.8024.
+    expect(curva(0.25, 0.1, 0.25, 1)(0.5)).toBeCloseTo(0.8024, 3);
+    // La lineal es la identidad.
+    expect(curva(0, 0, 1, 1)(0.37)).toBeCloseTo(0.37, 4);
+  });
+  it('sale del origen, sube por encima de ambos extremos y entra en la bolsa', () => {
+    const dx = -120, dy = -390, alza = 40;
+    const p = trayectoria(dx, dy, 4, alza);
+    const a = p[0]!, z = p[p.length - 1]!;
+    expect(a.t).toBe(0);
+    expect(a.x).toBeCloseTo(dx);
+    expect(a.y).toBeCloseTo(dy);
+    expect(a.k).toBeCloseTo(4);
+    expect(z.t).toBe(1);
+    expect(z.x).toBe(0);
+    expect(z.o).toBe(0);
+    // Llega a la boca (0, 0) con escala 1 justo en LLEGA.
+    const boca = p.find((q) => q.t === LLEGA)!;
+    expect(boca.x).toBeCloseTo(0);
+    expect(boca.y).toBeCloseTo(0);
+    expect(boca.k).toBeCloseTo(1);
+    // La cima queda alrededor de `alza` px por encima del extremo más alto.
+    const cima = Math.min(...p.map((q) => q.y));
+    expect(cima).toBeLessThan(Math.min(dy, 0) - alza * 0.9);
+    expect(cima).toBeGreaterThan(Math.min(dy, 0) - alza * 1.1);
+    // También si sale por debajo de la bolsa.
+    const abajo = trayectoria(80, 300, 1, 100);
+    expect(Math.min(...abajo.map((q) => q.y))).toBeCloseTo(-100, -1);
+  });
+  it('el tiempo crece y el horizontal avanza siempre hacia la bolsa (sin frenarse en la cima)', () => {
+    const p = trayectoria(300, -200, 2, 60).filter((q) => q.t <= LLEGA);
+    for (let i = 1; i < p.length; i++) {
+      expect(p[i]!.t).toBeGreaterThan(p[i - 1]!.t);
+      expect(p[i]!.x).toBeLessThan(p[i - 1]!.x);
+    }
+    // Ningún tramo se queda casi quieto: el paso más corto es al menos 1/4 del promedio.
+    const pasos = p.slice(1).map((q, i) => Math.hypot(q.x - p[i]!.x, q.y - p[i]!.y));
+    const media = pasos.reduce((s, v) => s + v, 0) / pasos.length;
+    expect(Math.min(...pasos)).toBeGreaterThan(media / 4);
+  });
+  it('la moneda nace con un fundido; el recorte sale opaco', () => {
+    expect(trayectoria(100, -100, 2, 40, 18, true)[0]!.o).toBe(0);
+    expect(trayectoria(100, -100, 2, 40)[0]!.o).toBe(1);
+  });
+  it('sin desplazamiento horizontal no gira', () => {
+    expect(trayectoria(0, -300, 2, 40).every((q) => q.r === 0)).toBe(true);
+  });
+  it('la duración depende de la distancia, con tope abajo y arriba', () => {
+    expect(duracionVuelo(0)).toBe(420);
+    expect(duracionVuelo(5000)).toBe(580);
+    expect(duracionVuelo(400)).toBeGreaterThan(420);
+    expect(duracionVuelo(400)).toBeLessThan(580);
   });
 });

@@ -5,8 +5,8 @@
 //    <dialog> real encima y la lámina desaparece en el mismo cuadro. Mientras crece, la
 //    tarjeta primero «se levanta», un filo dorado la bordea y una luz cruza el mármol.
 //  · Cerrar: lo mismo en reversa, hacia la tarjeta; el platillo regresa en arco.
-//  · Agregar: la foto del platillo vuela en arco hasta la bolsa de «Mi pedido» con una
-//    estela de polvo de oro.
+//  · Agregar: la miniatura del platillo vuela en arco (una parábola muestreada) hasta la
+//    bolsa de «Mi pedido» con una estela de polvo de oro; la orquesta bolsa.ts.
 //  · Aterrizar: chispas de hoja de oro alrededor del ensō (máx. 12).
 // Todo corre en el compositor o en pintura (clip-path); nada fuerza layout por cuadro.
 import { alzaArco, chispas } from '../lib/detalle';
@@ -171,78 +171,199 @@ export function crearMorfo() {
   return { crecer, recoger, volar, quitarVuelo, ocultar, veloSin };
 }
 
+/* ── Vuelo a la bolsa de «Mi pedido» ──────────────────────────────────────
+   Un solo trayecto (parábola de Bézier cuadrática) muestreado en cuadros clave con
+   interpolación lineal: la miniatura avanza parejo en horizontal, sube y cae sin
+   detenerse en la cima (con dos tramos con curvas distintas se frenaba arriba). La
+   estela recorre los mismos puntos un poco después. Todo es transform/opacity. */
+
+/** cubic-bezier(x1, y1, x2, y2) como función de t ∈ [0, 1] (Newton con respaldo de bisección). */
+export function curva(x1: number, y1: number, x2: number, y2: number) {
+  const bx = (t: number) => 3 * (1 - t) * (1 - t) * t * x1 + 3 * (1 - t) * t * t * x2 + t * t * t;
+  const by = (t: number) => 3 * (1 - t) * (1 - t) * t * y1 + 3 * (1 - t) * t * t * y2 + t * t * t;
+  const dx = (t: number) => 3 * (1 - t) * (1 - t) * x1 + 6 * (1 - t) * t * (x2 - x1) + 3 * t * t * (1 - x2);
+  return (x: number) => {
+    if (x <= 0) return 0;
+    if (x >= 1) return 1;
+    let t = x;
+    for (let i = 0; i < 6; i++) {
+      const e = bx(t) - x;
+      if (Math.abs(e) < 1e-5) return by(t);
+      const d = dx(t);
+      if (Math.abs(d) < 1e-6) break;
+      t -= e / d;
+    }
+    let lo = 0, hi = 1;
+    t = x;
+    for (let i = 0; i < 30; i++) { if (bx(t) < x) lo = t; else hi = t; t = (lo + hi) / 2; }
+    return by(t);
+  };
+}
+
+export type Punto = { t: number; x: number; y: number; k: number; r: number; o: number };
+/** Parte del tiempo en que la miniatura ya llegó a la boca de la bolsa; el resto es «entrar». */
+export const LLEGA = 0.86;
+// Avance casi lineal: con la parábola de Bézier eso es un tiro con gravedad real (horizontal
+// parejo, cae acelerando) y llega a la bolsa con velocidad. Con una curva de salida suave el
+// último 30 % del tiempo apenas recorría el 7 % del camino y la miniatura «se quedaba» junto a
+// la bolsa antes de que esta reaccionara.
+const AVANCE = curva(0.3, 0.3, 0.7, 0.75);
+
 /**
- * Al agregar: una miniatura del platillo sale de su foto y cae en arco dentro de la bolsa,
- * seguida por una estela de polvo de oro (las chispas recorren el mismo camino un poco
- * después). `desde` es el rectángulo visible de la imagen; `destino`, la caja de la bolsa.
- * `alAcercarse` corre a la mitad del vuelo (la bolsa abre la boca para recibirla).
+ * Trayecto de la miniatura hacia la bolsa, relativo al centro de la bolsa.
+ * `dx`, `dy`: centro de salida − centro de la bolsa (px). `s`: escala inicial (tamaño de salida /
+ * tamaño final). `alza`: cuánto sube la cima por encima del punto más alto de los extremos.
+ * Devuelve `n` + 2 puntos con su tiempo `t` ∈ [0, 1]: sale grande, se despega con un pequeño
+ * respiro de escala, viaja en arco y al final «entra» en la bolsa (baja 5 px, se encoge y se apaga).
+ * Con `nace` (moneda o icono, que no existen en la página) aparece con un fundido muy corto.
  */
-export async function aLaBolsa(src: string, a: number, desde: Caja, destino: Caja, redonda: boolean, alAcercarse?: () => void) {
-  const lado = 34;
-  const T: Caja = redonda
-    ? { x: destino.x + destino.w / 2 - lado / 2, y: destino.y + destino.h / 2 - lado / 2, w: lado, h: lado }
-    : rectImagen({ x: destino.x + destino.w / 2 - lado / 2, y: destino.y + destino.h / 2 - lado / 2, w: lado, h: lado }, a, 'contain');
-  // Para fotos a sangre se toma un cuadro centrado (se ve como una moneda que cae).
-  const lado0 = Math.min(desde.w, desde.h) * (redonda ? 0.62 : 1);
-  const D: Caja = redonda ? { x: desde.x + desde.w / 2 - lado0 / 2, y: desde.y + desde.h / 2 - lado0 / 2, w: lado0, h: lado0 } : desde;
+export function trayectoria(dx: number, dy: number, s: number, alza: number, n = 18, nace = false): Punto[] {
+  // Control de la Bézier para que la cima real (el mínimo de y) quede en M = min(dy, 0) − alza:
+  // el mínimo de (1−u)²·dy + 2u(1−u)·c es −c² / (dy − 2c)  →  c = M − √(M² − M·dy).
+  const M = Math.min(dy, 0) - Math.max(0, alza);
+  const cy = M - Math.sqrt(Math.max(0, M * M - M * dy));
+  const giro = Math.abs(dx) < 8 ? 0 : dx > 0 ? -9 : 9;
+  const s0 = Math.max(0.2, s);
+  const pts: Punto[] = [];
+  for (let i = 0; i <= n; i++) {
+    const t = (i / n) * LLEGA;
+    const u = AVANCE(i / n);
+    const a = (1 - u) * (1 - u), b = 2 * (1 - u) * u;
+    const respiro = 1 + 0.08 * Math.sin(Math.PI * Math.min(1, u / 0.3));
+    pts.push({
+      t,
+      x: a * dx + b * (dx / 2),
+      y: a * dy + b * cy,
+      k: Math.pow(s0, 1 - u) * (u < 0.3 ? respiro : 1),
+      r: giro * Math.sin(Math.PI * u),
+      o: nace ? Math.min(1, u / 0.08) : 1,
+    });
+  }
+  pts.push({ t: (LLEGA + 1) / 2, x: 0, y: 3, k: 0.8, r: 0, o: 0.85 });
+  pts.push({ t: 1, x: 0, y: 6, k: 0.45, r: 0, o: 0 });
+  return pts;
+}
+
+/** Duración del vuelo según la distancia: corto y ágil cerca, nunca lento lejos. */
+export const duracionVuelo = (d: number) => Math.round(Math.min(580, Math.max(420, 360 + d * 0.3)));
+
+/** 'recorte': el platillo recortado tal cual; 'moneda': foto en círculo con aro de oro;
+ *  'icono': el icono de la categoría en una moneda oscura (sobre la isla dorada no se perdería). */
+export type Forma_Vuelo = 'recorte' | 'moneda' | 'icono';
+export type Vuelo = { llego: Promise<void>; terminar: () => void; dur: number };
+const vuelos = new Set<Vuelo>();
+/** Máximo de miniaturas en el aire: al pasar el tope, la más antigua llega de inmediato. */
+const MAX_VUELOS = 3;
+/** Termina todos los vuelos en curso (llegan al instante, sin capas huérfanas). */
+export function aterrizarVuelos() { [...vuelos].forEach((v) => v.terminar()); }
+
+/**
+ * La miniatura del platillo viaja de `desde` (rectángulo visible en pantalla) a la bolsa
+ * (`destino`) con la `forma` de Forma_Vuelo. `llego` se resuelve al
+ * llegar a la boca de la bolsa, o al instante si el vuelo se termina antes (terminar()).
+ * `seguir` da la caja vigente de la bolsa (si se mueve, el trayecto se corrige); `listaEn`, en
+ * cuántos ms termina de formarse (la isla que aparece): el despegue espera lo justo.
+ */
+export function aLaBolsa(src: string, a: number, desde: Caja, destino: Caja, forma: Forma_Vuelo, o: { seguir?: (() => Caja | null) | undefined; listaEn?: number | undefined } = {}): Vuelo {
+  const { seguir, listaEn = 0 } = o;
+  if (vuelos.size >= MAX_VUELOS) [...vuelos][0]?.terminar();
+  const lado = forma === 'recorte' ? 36 : 30;
+  const cx = destino.x + destino.w / 2, cy = destino.y + destino.h / 2;
+  const T: Caja = forma !== 'recorte'
+    ? { x: cx - lado / 2, y: cy - lado / 2, w: lado, h: lado }
+    : rectImagen({ x: cx - lado / 2, y: cy - lado / 2, w: lado, h: lado }, a, 'contain');
+  const D: Caja = forma !== 'recorte'
+    // De una foto grande sale una moneda del centro (no un disco del tamaño de la foto).
+    ? (() => { const m = Math.min(desde.w, desde.h); const l = m > 80 ? Math.max(80, m * 0.5) : m; return { x: desde.x + desde.w / 2 - l / 2, y: desde.y + desde.h / 2 - l / 2, w: l, h: l }; })()
+    : desde;
   const s = D.w / T.w;
-  // Una sola capa con la miniatura y la estela. Como popover vive en la capa superior: se ve
-  // encima de la hoja aunque siga abierta.
+  const dx = D.x + D.w / 2 - cx, dy = D.y + D.h / 2 - cy;
+  // Si sale por encima de la bolsa (lo común), apenas brinca; si sale por debajo, sube más.
+  const alza = alzaArco(dx, dy) * (dy < 0 ? 0.35 : 1);
+  const pts = trayectoria(dx, dy, s, alza, 18, forma !== 'recorte');
+  const dur = duracionVuelo(Math.hypot(dx, dy));
+
+  // Una capa en la capa superior (popover): se ve encima de la hoja aunque siga abierta.
   const capa = document.createElement('div');
   capa.className = 'vuelo-capa';
-  const img = document.createElement('img');
-  img.src = src;
-  img.alt = '';
-  img.className = 'vuelo a-la-bolsa';
-  if (redonda) img.classList.add('redonda');
-  Object.assign(img.style, { left: px(T.x), top: px(T.y), width: px(T.w), height: px(T.h) });
-  const dx = D.x - T.x, dy = D.y - T.y;
-  // Punto alto del arco: la miniatura sube un poco antes de caer.
-  const ms = Math.max(1, s * 0.55);
-  const giro = dx > 0 ? -8 : 8;
-  const sube = 'cubic-bezier(0.2, 0.6, 0.35, 1)';
-  const cae = 'cubic-bezier(0.55, 0, 0.85, 0.36)';
-  type Paso = { tx: number; ty: number; k: number };
-  const pasos: [Paso, Paso, Paso] = [
-    { tx: dx, ty: dy, k: s },
-    { tx: dx * 0.45, ty: Math.min(dy, 0) * 0.55 - alzaArco(dx, dy), k: ms },
-    { tx: 0, ty: 0, k: 1 },
-  ];
-  const dur = 720;
-  const N = 8;
+  capa.setAttribute('aria-hidden', 'true');
+  const mini = document.createElement('div');
+  mini.className = `vuelo vuelo-mini ${forma}`;
+  // Cadena CSS entre comillas: solo se escapan comillas, barras y saltos (los data: URI ya vienen codificados).
+  mini.style.backgroundImage = `url("${src.replace(/["\\\n\r]/g, (c) => encodeURIComponent(c))}")`;
+  Object.assign(mini.style, { left: px(T.x), top: px(T.y), width: px(T.w), height: px(T.h) });
+  const N = 7;
   const estela = Array.from({ length: N }, (_, i) => {
     const e = document.createElement('i');
     e.className = 'estela';
-    const t = 9 - i * 0.75;
-    Object.assign(e.style, { left: px(T.x + T.w / 2 - t / 2), top: px(T.y + T.h / 2 - t / 2), width: px(t), height: px(t) });
+    const t = 8 - i * 0.7;
+    Object.assign(e.style, { left: px(cx - t / 2), top: px(cy - t / 2), width: px(t), height: px(t) });
     return e;
   });
-  capa.append(...estela, img);
+  // Capa de ajuste: si la bolsa se mueve durante el vuelo (la píldora cambia de ancho al cambiar
+  // de categoría), todo el trayecto se corrige poco a poco hacia su nuevo lugar.
+  const ajuste = document.createElement('div');
+  ajuste.className = 'vuelo-ajuste';
+  ajuste.append(...estela, mini);
+  capa.append(ajuste);
   document.body.append(capa);
-  if (typeof capa.showPopover === 'function') { capa.popover = 'manual'; capa.showPopover(); }
-  const anim = img.animate([
-    { transform: `translate(${px(pasos[0].tx)}, ${px(pasos[0].ty)}) scale(${s})`, opacity: 1, easing: sube },
-    { transform: `translate(${px(pasos[1].tx)}, ${px(pasos[1].ty)}) scale(${ms}) rotate(${giro}deg)`, opacity: 1, offset: 0.42, easing: cae },
-    { transform: 'translate(0px, 0px) scale(1) rotate(0deg)', opacity: 1, offset: 0.92 },
-    { transform: 'translate(0px, 4px) scale(0.6)', opacity: 0 },
-  ], { duration: dur, fill: 'forwards' });
-  // La estela sigue el centro de la miniatura: con el origen en la esquina, el centro está en
-  // translate + (k − 1)·(lado / 2) respecto al centro de reposo de cada chispa.
-  const [c0, c1, c2] = pasos.map((p) => ({ x: p.tx + (p.k - 1) * (T.w / 2), y: p.ty + (p.k - 1) * (T.h / 2) })) as [{ x: number; y: number }, { x: number; y: number }, { x: number; y: number }];
-  estela.forEach((e, i) => {
-    const brillo = 0.95 - i * 0.08;
-    e.animate([
-      { transform: `translate(${px(c0.x)}, ${px(c0.y)}) rotate(45deg) scale(0.4)`, opacity: 0, easing: sube },
-      { transform: `translate(${px(c1.x)}, ${px(c1.y)}) rotate(45deg) scale(1)`, opacity: brillo, offset: 0.42, easing: cae },
-      { transform: `translate(${px(c2.x)}, ${px(c2.y)}) rotate(45deg) scale(0.7)`, opacity: brillo * 0.6, offset: 0.92 },
-      { transform: `translate(${px(c2.x)}, ${px(c2.y)}) rotate(45deg) scale(0.2)`, opacity: 0 },
-    ], { duration: dur, delay: 30 + i * 22, fill: 'both' });
+  try { capa.popover = 'manual'; capa.showPopover(); } catch { /* sin popover: z-index alto */ }
+
+  // Dos tramos en el mismo reloj: el viaje hasta la boca de la bolsa (ahí «llega» y la bolsa
+  // reacciona en ese mismo cuadro) y el instante en que entra y se apaga dentro de ella.
+  const cuadro = (p: Punto, offset: number): Keyframe => ({
+    offset, opacity: p.o,
+    transform: `translate(${px(p.x)}, ${px(p.y)}) scale(${Math.round(p.k * 1000) / 1000}) rotate(${Math.round(p.r * 10) / 10}deg)`,
   });
-  const t = alAcercarse ? window.setTimeout(alAcercarse, dur * 0.5) : 0;
-  try { await anim.finished; } catch { clearTimeout(t); }
-  img.remove();
-  // La estela termina sola unos milisegundos después; luego se quita la capa completa.
-  window.setTimeout(() => capa.remove(), 40 + N * 22);
+  const viaje = pts.filter((p) => p.t <= LLEGA);
+  const durViaje = Math.round(dur * LLEGA);
+  const retraso = Math.round(Math.min(320, Math.max(0, listaEn - durViaje)));
+  const anim = mini.animate(viaje.map((p) => cuadro(p, p.t / LLEGA)), { duration: durViaje, delay: retraso, easing: 'linear', fill: 'both' });
+  // La estela: los mismos puntos, cada chispa un poco después y apagándose al llegar.
+  const chispasVuelo = estela.map((e, i) => e.animate(viaje.map((p, j, arr) => {
+    const q = j / (arr.length - 1);
+    const brillo = (0.9 - i * 0.09) * (q < 0.12 ? q / 0.12 : q > 0.8 ? Math.max(0, (1 - q) / 0.2) : 1);
+    return { offset: p.t / LLEGA, opacity: Math.round(brillo * 100) / 100, transform: `translate(${px(p.x)}, ${px(p.y)}) rotate(45deg) scale(${Math.round((1 - q * 0.45) * 100) / 100})` };
+  }), { duration: durViaje, delay: retraso + 26 + i * 24, easing: 'linear', fill: 'both' }));
+
+  // El tramo de entrar ya queda programado (empieza justo cuando termina el viaje): encadenarlo
+  // al terminar costaba uno o dos cuadros con la miniatura quieta sobre la bolsa.
+  const entra = pts.filter((p) => p.t >= LLEGA);
+  const fin = mini.animate(entra.map((p) => cuadro(p, (p.t - LLEGA) / (1 - LLEGA))), { duration: Math.max(60, dur - durViaje), delay: retraso + durViaje, easing: 'cubic-bezier(0.2, 0, 0.4, 1)', fill: 'forwards' });
+  // La capa se va cuando la miniatura entró y la estela terminó (o se canceló): nunca queda huérfana.
+  void Promise.allSettled([fin.finished, ...chispasVuelo.map((c) => c.finished)]).then(() => capa.remove());
+
+  let listo = false;
+  const vuelo: Vuelo = {
+    dur: retraso + durViaje,
+    llego: anim.finished.then(() => undefined, () => undefined).then(() => {
+      listo = true;
+      vuelos.delete(vuelo);
+    }),
+    terminar() {
+      if (listo) return;
+      chispasVuelo.forEach((c) => c.cancel());
+      fin.finish();
+      anim.finish();
+    },
+  };
+  vuelos.add(vuelo);
+  if (seguir) {
+    let ox = 0, oy = 0;
+    const paso = () => {
+      if (listo) return;
+      const d = seguir();
+      if (d) {
+        const p = Math.min(1, Math.max(0, Number(anim.currentTime ?? 0) - retraso) / durViaje);
+        ox += ((d.x + d.w / 2 - cx) * p - ox) * 0.4;
+        oy += ((d.y + d.h / 2 - cy) * p - oy) * 0.4;
+        if (Math.abs(ox) + Math.abs(oy) > 0.5) ajuste.style.transform = `translate(${px(ox)}, ${px(oy)})`;
+      }
+      requestAnimationFrame(paso);
+    };
+    requestAnimationFrame(paso);
+  }
+  return vuelo;
 }
 
 /**

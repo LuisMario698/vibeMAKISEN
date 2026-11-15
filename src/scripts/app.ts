@@ -4,13 +4,13 @@
 import { etiquetaPedido } from '../lib/detalle';
 import { precio } from '../lib/precios';
 import { normalizar } from '../lib/texto';
-import { abrirBolsa, avisarAgregado, esperar, ocultarAviso, ponerContador, prepararAviso, recibirBolsa, type Destino } from './bolsa';
+import { avisarAgregado, llevarALaBolsa, ocultarAviso, ponerContador, prepararAviso, reservar, type Destino } from './bolsa';
 import { $, $$, datos, guardar, html, reducir } from './comun';
 import { pintarEstado } from './estado';
 import { crearHoja } from './hoja';
 import { crearIsla } from './isla';
 import { crearLista } from './lista';
-import { aLaBolsa, cajaDe, proporcion, rectImagen } from './morfo';
+import { cajaDe, proporcion, rectImagen } from './morfo';
 
 /* ── Idioma ───────────────────────────────────────────────────────── */
 let objetivo = html.lang;
@@ -119,13 +119,14 @@ const lista = crearLista({
 // La isla aparece al llegar al menú, o siempre que el pedido tenga algo.
 new IntersectionObserver(([e]) => { enMenu = !!e && (e.isIntersecting || e.boundingClientRect.top < 0); visibilidad(); }, { rootMargin: '0px 0px -55% 0px' }).observe($('#menu')!);
 
-/** Bolsa a la que vuela lo agregado: la de la isla si está a la vista; si no, la de la barra superior. */
+/** Bolsa a la que vuela lo agregado: la de la isla si está (o va a estar) a la vista; si no
+ *  (isla abierta en su panel), la de la barra superior. Nunca un lugar donde no hay bolsa. */
 function destinoBolsa(): Destino | null {
   const c = isla.destinoBolsa();
-  if (c) return { caja: c, el: isla.bolsaEl() };
+  if (c) return { caja: c, el: isla.bolsaEl(), listaEn: isla.bolsaListaEn() };
   const b = $('#nav [data-abrir-lista]');
   const ico = b?.querySelector('.bolsa-ico')?.getBoundingClientRect();
-  if (!b || !ico || ico.width === 0 || ico.bottom < 0) return null;
+  if (!b || !ico || ico.width === 0 || ico.bottom < 0 || ico.top > innerHeight) return null;
   return { caja: { x: ico.left - 8, y: ico.top - 8, w: ico.width + 16, h: ico.height + 16 }, el: b };
 }
 /** Foto pequeña para el aviso «Agregado». */
@@ -134,13 +135,12 @@ function miniatura(id: string) {
   if (!p) return undefined;
   return p.foto ? `/menu/${p.foto}.webp` : datos.reales[p.id]?.src ?? datos.iconos[p.catId];
 }
-/** La bolsa recibió el platillo: cierra y rebota, el contador rueda y aparece el aviso. */
+/** La bolsa recibió el platillo (el contador ya rodó): rebota el líquido de la isla y aparece el aviso. */
 function llego(id: string, n: number, destino: Destino | null) {
   visibilidad();
   isla.rebotar(destino?.el === isla.bolsaEl());
-  recibirBolsa(destino?.el);
   const p = datos.platillos.find((x) => x.id === id);
-  if (p) avisarAgregado({ nombre: p.nombre, foto: miniatura(id), n, abrirPedido: () => { isla.cerrar(false); lista.abrir(); } });
+  if (p) avisarAgregado({ id, nombre: p.nombre, foto: miniatura(id), n, bolsa: destino?.el, abrirPedido: () => { isla.cerrar(false); lista.abrir(); } });
 }
 prepararAviso();
 
@@ -159,23 +159,27 @@ document.addEventListener('click', (ev) => {
   if (rapido) {
     ev.stopPropagation();
     const id = rapido.dataset.agregar!;
-    if (!reducir()) esperar();
-    if (lista.agregar({ id, n: 1 })) { recibirBolsa(null); return; }
-    navigator.vibrate?.(12);
-    // El «+» se vuelve palomita sobre oro y regresa solo.
+    // Lo visible del contador espera a que la bebida llegue a la bolsa.
+    const reserva = reservar();
+    if (lista.agregar({ id, n: 1 })) { reserva.cancelar(); return; }
+    const n = reserva.confirmar();
+    navigator.vibrate?.(10);
+    // 1 · El «+» se vuelve palomita sobre oro y regresa solo.
     rapido.classList.remove('hecho'); void rapido.offsetWidth; rapido.classList.add('hecho');
     clearTimeout(Number(rapido.dataset.t));
-    rapido.dataset.t = String(window.setTimeout(() => rapido.classList.remove('hecho'), 1400));
+    rapido.dataset.t = String(window.setTimeout(() => rapido.classList.remove('hecho'), 1200));
     visibilidad();
-    // La miniatura de la bebida cae en la bolsa de Mi pedido, con su estela de oro.
+    // 2 · La miniatura de la bebida viaja a la bolsa con su estela; 3 · la bolsa la recibe.
     const img = rapido.closest('article')?.querySelector<HTMLImageElement>('img[data-foto]');
     const destino = destinoBolsa();
-    if (img && destino && !reducir()) {
+    let origen = null;
+    if (img) {
       const cubre = img.classList.contains('object-cover');
       const a = proporcion(img);
-      const desde = cubre ? cajaDe(img) : rectImagen(cajaDe(img), a, 'contain');
-      void aLaBolsa(img.currentSrc || img.src, a, desde, destino.caja, cubre, () => abrirBolsa(destino.el)).then(() => llego(id, 1, destino));
-    } else requestAnimationFrame(() => llego(id, 1, destino));
+      const caja = cubre ? cajaDe(img) : rectImagen(cajaDe(img), a, 'contain');
+      if (caja.w > 4 && caja.h > 4) origen = { src: img.currentSrc || img.src, a, caja, forma: cubre ? 'moneda' as const : 'recorte' as const };
+    }
+    void llevarALaBolsa({ reserva, destino, origen, seguir: destinoBolsa, alLlegar: () => llego(id, n, destino) });
     return;
   }
   if (t.closest('[data-abrir-lista]')) { ocultarAviso(true); lista.abrir(); return; }

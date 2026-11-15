@@ -128,6 +128,7 @@ export function crearIsla(o: {
       isla.dataset.estado = 'pildora';
       if (o.reducir()) { pintar(); return; }
       // Fase 1: una sola gota sube. Fase 2: se estira y se divide.
+      tLista = Math.max(tLista, performance.now() + 300 + 320);
       const c: Caja = { l: (g.W - H) / 2, b: 0, w: H, h: H, r: H / 2 };
       poner(cuerpo, c); poner(boton, c);
       setTimeout(pintar, 300);
@@ -267,7 +268,12 @@ export function crearIsla(o: {
     ponerContador(contador, n);
     btnLista.setAttribute('aria-label', etiquetaPedido(n, total, es() ? 'es' : 'en'));
     if ((antes > 0) !== (n > 0)) pintar();
+    // La bolsa brota del botón de búsqueda: tarda un momento en llegar a su lugar.
+    if (antes === 0 && n > 0 && estado === 'pildora' && !o.reducir()) tLista = Math.max(tLista, performance.now() + 380);
   }
+  /** Cuándo termina de formarse la bolsa (la isla que aparece o la bolsa que brota). */
+  let tLista = 0;
+  const bolsaListaEn = () => Math.max(0, tLista - performance.now());
   /** Caja final (en pantalla) de la bolsa de Mi pedido, aunque aún esté en transición. */
   function destinoBolsa() {
     if (estado !== 'pildora' || piezas === 0) return null;
@@ -275,13 +281,18 @@ export function crearIsla(o: {
     const r = isla.getBoundingClientRect();
     return { x: r.left + g.l0 + g.cw + GAP + H + GAP, y: r.bottom - H, w: H, h: H };
   }
-  /** El líquido de la bolsa se hincha al recibir un platillo (la bolsa y el contador los anima bolsa.ts). */
+  /** El líquido de la bolsa se hincha al recibir un platillo (la bolsa y el contador los anima bolsa.ts).
+   *  Si llegan varios seguidos, cada rebote reemplaza al anterior (no se acumulan escalas). */
+  let rebotes: Animation[] = [];
   function rebotar(conLiquido = true) {
     if (estado === 'oculta') mostrar(true);
     if (o.reducir() || estado !== 'pildora' || !conLiquido) return;
-    const resorte = { duration: 460, easing: 'cubic-bezier(0.34, 1.4, 0.64, 1)' };
-    btnLista.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.12)', offset: 0.35 }, { transform: 'scale(1)' }], resorte);
-    bolsa.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.22)', offset: 0.35 }, { transform: 'scale(1)' }], resorte);
+    rebotes.forEach((a) => a.cancel());
+    const resorte = { duration: 380, easing: 'cubic-bezier(0.34, 1.4, 0.64, 1)' };
+    rebotes = [
+      btnLista.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.1)', offset: 0.3 }, { transform: 'scale(1)' }], resorte),
+      bolsa.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.2)', offset: 0.3 }, { transform: 'scale(1)' }], resorte),
+    ];
   }
 
   /* ── Eventos ── */
@@ -331,7 +342,7 @@ export function crearIsla(o: {
   if (o.reducir()) isla.classList.add('sin-movimiento');
   pintar();
   return {
-    mostrar, actualizar, pintar, cerrar, contar, rebotar, destinoBolsa, abrir,
+    mostrar, actualizar, pintar, cerrar, contar, rebotar, destinoBolsa, bolsaListaEn, abrir,
     get indice() { return idx; }, get estado() { return estado; }, pildora: () => pildora, bolsaEl: () => btnLista,
     /** Al cambiar de idioma: la etiqueta del botón del pedido. */
     idioma() { btnLista.setAttribute('aria-label', etiquetaPedido(piezas, totalTxt, es() ? 'es' : 'en')); },

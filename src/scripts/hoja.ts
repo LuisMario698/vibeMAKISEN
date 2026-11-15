@@ -8,8 +8,8 @@ import { escapar } from '../lib/texto';
 import { LIMITES, type ErrorAgregar } from '../lib/pedido';
 import { rodillo } from '../lib/detalle';
 import { $, anunciar, bi, datos, enPantalla, esEscritorio, espera, html, reducir, type PlatilloCliente } from './comun';
-import { abrirBolsa, esperar, recibirBolsa, type Destino } from './bolsa';
-import { aLaBolsa, anchoVista, cajaDe, chispear, crearMorfo, proporcion, radios, rectImagen, type Ajuste, type Caja, type Forma, type Radios } from './morfo';
+import { llevarALaBolsa, reservar, type Destino, type Origen } from './bolsa';
+import { anchoVista, cajaDe, chispear, crearMorfo, proporcion, radios, rectImagen, type Ajuste, type Caja, type Forma, type Radios } from './morfo';
 
 /** Precio que entra rodando: cada dígito da una vuelta completa y se asienta, de izquierda a derecha. */
 const COLUMNA = Array.from({ length: 20 }, (_, i) => `<span>${i % 10}</span>`).join('');
@@ -369,40 +369,84 @@ export function crearHoja(o: {
       return;
     }
     const item: Agregado = { id: actual.id, n, op, nota: $<HTMLInputElement>('#hoja-nota', cuerpo)?.value };
-    // Mientras el platillo vuela, el contador de la bolsa conserva el número anterior.
-    if (!reducir()) esperar();
-    const error = o.agregar(item);
-    if (error) { recibirBolsa(null); return; }
+    // Lo visible del contador conserva el número anterior hasta que el platillo llegue a la bolsa.
+    const reserva = reservar();
+    if (o.agregar(item)) { reserva.cancelar(); return; }
+    const piezas = reserva.confirmar();
     agregando = true;
-    navigator.vibrate?.(12);
+    navigator.vibrate?.(10);
     // 1 · El botón confirma: un relleno de oro claro nace del toque y se dibuja la palomita.
     const r = btnAgregar.getBoundingClientRect();
     const conPuntero = ev.detail > 0 && ev.clientX > 0;
     btnAgregar.style.setProperty('--tx', `${conPuntero ? ev.clientX - r.left : r.width / 2}px`);
     btnAgregar.style.setProperty('--ty', `${conPuntero ? ev.clientY - r.top : r.height / 2}px`);
     btnAgregar.classList.add('exito');
-    btnAgregar.disabled = true;
-    await espera(reducir() ? 0 : 380);
-    // 2 · La foto del platillo cae en la bolsa mientras la hoja baja. Sale solo de la parte que
-    // se ve (la hoja pudo desplazarse); si casi no se ve, sale del botón «Agregar».
+    btnAgregar.setAttribute('aria-disabled', 'true');
+    // 2 · En el mismo cuadro el platillo despega de donde se ve (la hoja pudo desplazarse; en la
+    // ventana la foto es la columna izquierda) y viaja a la bolsa, mientras la hoja baja.
     const destino = o.bolsa();
+    const origenVuelo = origenDelVuelo();
+    const volar = () => llevarALaBolsa({ reserva, destino, origen: origenVuelo, seguir: o.bolsa, alLlegar: () => o.agregado({ ...item, n: piezas }, destino) });
+    // Con popover la miniatura vuela encima de la hoja que baja (el recorte de la hoja se oculta:
+    // es él quien despega). Sin popover quedaría tapada por el diálogo: la hoja se va primero.
+    if (typeof HTMLElement.prototype.showPopover !== 'function') { await cerrarTrasAgregar(); await volar(); return; }
+    // El platillo (o su icono) es el que despega: el de la hoja se oculta. Las fotos a sangre se quedan.
+    if (origenVuelo.forma !== 'moneda' && origenVuelo.caja.w >= 48 && destino && !reducir()) hojaImg.style.visibility = 'hidden';
+    // La hoja empieza a irse primero (marca data-saliendo: el aviso ya puede mostrarse) y en el mismo cuadro despega el platillo.
+    const cierre = cerrarTrasAgregar();
+    await Promise.all([volar(), cierre]);
+  });
+
+  /** De dónde sale la miniatura: la parte visible de la foto; si casi no se ve, el botón. */
+  function origenDelVuelo(): Origen {
     const a = proporcion(hojaImg);
     const src = hojaImg.currentSrc || hojaImg.src;
     const base = cubre(modoActual) ? cajaDe(zonaFoto) : rectImagen(cajaDe(hojaImg), a, 'contain');
-    let desde = interseccion(interseccion(base, cajaDe(scroller)), cajaDe(panel));
-    if (desde.w < 24 || desde.h < 24) { const b = cajaDe(btnAgregar); desde = { x: b.x + 12, y: b.y + b.h / 2 - 20, w: 40, h: 40 }; }
-    const lanzar = () => (destino && !reducir() ? aLaBolsa(src, a, desde, destino.caja, cubre(modoActual), () => abrirBolsa(destino.el)) : Promise.resolve());
-    // Con popover la miniatura vuela encima de la hoja que baja; sin popover quedaría tapada
-    // por el diálogo (capa superior), así que primero se cierra y luego vuela.
-    const conPopover = typeof HTMLElement.prototype.showPopover === 'function';
-    let vuelo: Promise<void> = Promise.resolve();
-    if (conPopover) vuelo = lanzar();
-    await cerrar('rapido');
-    if (!conPopover) vuelo = lanzar();
-    await vuelo;
-    // 3 · La bolsa recibe el platillo (cierra, rebota, el contador rueda).
-    o.agregado(item, destino);
-  });
+    let caja = interseccion(base, cajaDe(panel));
+    if (!esEscritorio()) caja = interseccion(caja, cajaDe(scroller));
+    // Un recorte cortado por el borde se vería mutilado al volar: sale entero solo si se ve casi todo.
+    const completo = caja.w * caja.h >= base.w * base.h * 0.85;
+    const icono = !cubre(modoActual) && !actual?.foto;
+    if (caja.w >= 48 && caja.h >= 48 && (cubre(modoActual) || completo)) return { src, a, caja, forma: cubre(modoActual) ? 'moneda' : icono ? 'icono' : 'recorte' };
+    const ico = btnAgregar.querySelector('.bolsa-ico')?.getBoundingClientRect();
+    const bb = cajaDe(btnAgregar);
+    const b = ico && ico.width ? { x: ico.left + ico.width / 2, y: ico.top + ico.height / 2 } : { x: bb.x + 28, y: bb.y + bb.h / 2 };
+    return { src, a, caja: { x: b.x - 20, y: b.y - 20, w: 40, h: 40 }, forma: icono || !cubre(modoActual) ? 'icono' : 'moneda' };
+  }
+
+  /**
+   * Cierre tras agregar: la confirmación se lee un instante y la hoja baja (o la ventana se
+   * desvanece) con Web Animations, que mandan sobre las animaciones CSS de apertura (antes, al
+   * quitar .liquida se volvía a disparar la subida y la hoja «rebotaba» hacia arriba antes de
+   * desaparecer de golpe). Con movimiento reducido no se mueve: se ve «Agregado» y se cierra.
+   */
+  async function cerrarTrasAgregar() {
+    if (!hoja.open) return;
+    ocupado = true;
+    hoja.dataset.saliendo = '1';
+    limpiarAterrizaje();
+    let anim: Animation | null = null;
+    if (reducir()) {
+      anim = panel.animate([{ opacity: 1 }, { opacity: 1 }], { duration: 450 });
+    } else {
+      hoja.classList.add('sale-agregado');
+      anim = esEscritorio()
+        ? panel.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'scale(0.97)' }], { duration: 200, delay: 150, easing: 'ease-out', fill: 'forwards' })
+        : panel.animate([{ transform: 'translateY(0)' }, { transform: 'translateY(104%)' }], { duration: 300, delay: 130, easing: 'cubic-bezier(0.32, 0.72, 0, 1)', fill: 'forwards' });
+    }
+    await anim.finished.catch(() => undefined);
+    hoja.close();
+    anim.cancel();
+    delete hoja.dataset.saliendo;
+    hoja.classList.remove('sale-agregado', 'liquida', 'panel-listo', 'recogiendo', 'cerrando');
+    panel.style.transform = '';
+    hojaImg.style.visibility = '';
+    btnAgregar.classList.remove('exito');
+    btnAgregar.removeAttribute('aria-disabled');
+    ocupado = false;
+    if (!document.querySelector('dialog[open]')) html.classList.remove('bloqueo');
+    disparador?.focus({ preventScroll: true });
+  }
 
   /* ── Toque en una tarjeta: un destello de oro la cruza al presionarla ── */
   document.addEventListener('pointerdown', (ev) => {
