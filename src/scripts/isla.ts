@@ -2,9 +2,16 @@
 // cuando se acercan se funden y cuando se separan se estiran como un líquido.
 // Aquí solo se calcula la geometría de cada estado; el movimiento lo hace CSS.
 
+import { escapar, normalizar } from '../lib/texto';
+
 type Txt = { es: string; en: string };
 type Cat = { id: string; nombre: Txt };
-type Resultado = { id: string; nombre: Txt; cat: Txt; precio: string; foto?: string | undefined; icono: string; texto: string };
+type Resultado = {
+  id: string; nombre: Txt; cat: Txt; precio: string; foto?: string | undefined; icono: string; texto: string;
+  favorito: boolean; picante: number; crudo: boolean; comida: boolean; agotado: boolean;
+};
+type Filtro = 'favorito' | 'sinPicante' | 'cocido';
+const bi = (t: Txt) => `<span lang="es">${escapar(t.es)}</span><span lang="en">${escapar(t.en)}</span>`;
 type Caja = { l: number; b: number; w: number; h: number; r?: number };
 type Estado = 'oculta' | 'pildora' | 'abierta';
 
@@ -13,6 +20,7 @@ export function crearIsla(o: {
   platillos: Resultado[];
   ir: (id: string) => void;
   abrir: (id: string) => void;
+  abrirLista: () => void;
   reducir: () => boolean;
 }) {
   const $ = <T extends HTMLElement = HTMLElement>(s: string) => document.querySelector<T>(s)!;
@@ -20,6 +28,9 @@ export function crearIsla(o: {
   const velo = $('#isla-velo');
   const cuerpo = $('.mancha.cuerpo');
   const boton = $('.mancha.boton');
+  const bolsa = $('.mancha.bolsa');
+  const btnLista = $<HTMLButtonElement>('.isla-lista');
+  const contador = $('.isla-lista .contador');
   const gotas = [...isla.querySelectorAll<HTMLElement>('.mancha.gota')];
   const pildora = $<HTMLButtonElement>('.isla-pildora');
   const lupa = $<HTMLButtonElement>('.isla-lupa');
@@ -34,6 +45,8 @@ export function crearIsla(o: {
 
   let estado: Estado = 'oculta';
   let idx = -1;
+  let piezas = 0;
+  const filtros = new Set<Filtro>();
   const ctx = document.createElement('canvas').getContext('2d')!;
   const es = () => document.documentElement.lang !== 'en';
 
@@ -42,7 +55,7 @@ export function crearIsla(o: {
 
   const H = 54; // alto de la píldora y diámetro del botón
   const GAP = 8;
-  const ancho = () => Math.min(innerWidth - 24, 440);
+  const ancho = () => Math.min(innerWidth - 24, innerWidth >= 1024 ? 560 : innerWidth >= 640 ? 520 : 440);
   const altoPanel = () => Math.round(Math.min(innerHeight * 0.76, 620));
 
   function medir(t: string) {
@@ -66,9 +79,11 @@ export function crearIsla(o: {
   function geo() {
     const W = ancho();
     const nombre = idx >= 0 ? o.cats[idx]!.nombre[es() ? 'es' : 'en'] : '';
-    const cw = Math.max(168, Math.min(W - H - GAP, 9 + 36 + 10 + medir(nombre) + 10 + 20 + 16));
-    const l0 = (W - (cw + GAP + H)) / 2;
-    return { W, cw, l0, P: altoPanel() };
+    // Con algo en la lista aparece un tercer botón (Mi lista) a la derecha.
+    const extra = piezas > 0 ? H + GAP : 0;
+    const cw = Math.max(piezas > 0 ? 150 : 168, Math.min(W - H - GAP - extra, 9 + 36 + 10 + medir(nombre) + 10 + 20 + 16));
+    const l0 = (W - (cw + GAP + H + extra)) / 2;
+    return { W, cw, l0, P: altoPanel(), extra };
   }
 
   function pintar() {
@@ -78,21 +93,26 @@ export function crearIsla(o: {
     isla.style.setProperty('--alto-panel', `${g.P}px`);
     const pill: Caja = { l: g.l0, b: 0, w: g.cw, h: H, r: H / 2 };
     const btn: Caja = { l: g.l0 + g.cw + GAP, b: 0, w: H, h: H, r: H / 2 };
+    // Sin lista, la bolsa vive fundida dentro del botón de búsqueda.
+    const bol: Caja = piezas > 0 ? { l: btn.l + H + GAP, b: 0, w: H, h: H, r: H / 2 } : { ...btn, l: btn.l + 7, b: 7, w: H - 14, h: H - 14, r: (H - 14) / 2 };
     const centro = (d: number): Caja => ({ l: g.l0 + g.cw / 2 - d / 2, b: (H - d) / 2, w: d, h: d, r: d / 2 });
     if (estado === 'oculta') {
       const c: Caja = { l: (g.W - H) / 2, b: -120, w: H, h: H, r: H / 2 };
-      poner(cuerpo, c); poner(boton, c);
+      poner(cuerpo, c); poner(boton, c); poner(bolsa, c);
       gotas.forEach((d) => poner(d, { ...c, w: 16, h: 16, r: 8, l: c.l + 19 }));
     } else if (estado === 'pildora') {
-      poner(cuerpo, pill); poner(boton, btn);
+      poner(cuerpo, pill); poner(boton, btn); poner(bolsa, bol);
       gotas.forEach((d) => poner(d, centro(16)));
     } else {
       poner(cuerpo, { l: 0, b: 0, w: g.W, h: g.P, r: 32 });
-      // El botón se hunde en la esquina del panel: el líquido lo absorbe.
+      // Los botones se hunden en la esquina del panel: el líquido los absorbe.
       poner(boton, { l: g.W - 58, b: g.P - 58, w: 40, h: 40, r: 20 });
+      poner(bolsa, { l: g.W - 58, b: g.P - 58, w: 40, h: 40, r: 20 });
     }
     poner(pildora, pill);
     poner(lupa, btn);
+    poner(btnLista, piezas > 0 ? bol : btn);
+    isla.dataset.lista = piezas > 0 ? 'si' : 'no';
   }
 
   /* ── Mostrar / ocultar: cae una gota y se divide en píldora + botón ── */
@@ -119,10 +139,10 @@ export function crearIsla(o: {
     const antes = idx;
     idx = nuevo;
     const c = o.cats[idx]!;
-    actual.innerHTML = `<span lang="es">${c.nombre.es}</span><span lang="en">${c.nombre.en}</span>`;
+    actual.innerHTML = bi(c.nombre);
     num.textContent = String(idx + 1).padStart(2, '0');
     avance.style.strokeDashoffset = String(100 - ((idx + 1) / o.cats.length) * 100);
-    panel.querySelectorAll('[data-ir]').forEach((b) => b.setAttribute('aria-current', String((b as HTMLElement).dataset.ir === c.id)));
+    document.querySelectorAll('[data-ir]').forEach((b) => b.setAttribute('aria-current', String((b as HTMLElement).dataset.ir === c.id)));
     if (estado !== 'pildora') { pintar(); return; }
     pintar();
     if (antes < 0 || o.reducir()) return;
@@ -192,26 +212,64 @@ export function crearIsla(o: {
     if (devolverFoco) (foco ?? pildora).focus({ preventScroll: true });
   }
 
-  /* ── Búsqueda dentro de la isla ── */
-  const norm = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
-  input.addEventListener('input', () => {
-    const q = norm(input.value);
-    if (!q) { cats.hidden = false; resultados.hidden = true; vacio.hidden = true; return; }
-    const pal = q.split(/\s+/);
-    const hits = o.platillos.filter((p) => pal.every((w) => p.texto.includes(w))).slice(0, 40);
+  /* ── Búsqueda y filtros rápidos dentro de la isla ── */
+  function buscar() {
+    const q = normalizar(input.value);
+    if (!q && filtros.size === 0) { cats.hidden = false; resultados.hidden = true; vacio.hidden = true; return; }
+    const pal = q ? q.split(/\s+/) : [];
+    const hits = o.platillos.filter((p) =>
+      pal.every((w) => p.texto.includes(w)) &&
+      (!filtros.has('favorito') || p.favorito) &&
+      (!filtros.has('sinPicante') || (p.comida && p.picante === 0)) &&
+      (!filtros.has('cocido') || (p.comida && !p.crudo)),
+    ).slice(0, 60);
     cats.hidden = true;
     vacio.hidden = hits.length > 0;
     resultados.hidden = hits.length === 0;
     resultados.innerHTML = hits
       .map(
-        (p, k) => `<li style="--k:${k}"><button type="button" data-platillo="${p.id}" class="isla-res presionable">
-          <span class="miniatura">${p.foto ? `<img src="/menu/${p.foto}.webp" alt="" loading="lazy">` : `<img src="${p.icono}" alt="" class="icono">`}</span>
-          <span class="min-w-0 flex-1 text-left"><span class="block truncate text-[15px] font-semibold"><span lang="es">${p.nombre.es}</span><span lang="en">${p.nombre.en}</span></span>
-          <span class="block truncate text-[12px] text-noche/65"><span lang="es">${p.cat.es}</span><span lang="en">${p.cat.en}</span></span></span>
-          <span class="text-[15px] font-bold tabular-nums">${p.precio}</span></button></li>`,
+        (p, k) => `<li style="--k:${Math.min(k, 12)}"><button type="button" data-platillo="${escapar(p.id)}" class="isla-res presionable${p.agotado ? ' agotado' : ''}">
+          <span class="miniatura">${p.foto ? `<img src="/menu/${escapar(p.foto)}.webp" alt="" loading="lazy">` : `<img src="${escapar(p.icono)}" alt="" class="icono">`}</span>
+          <span class="min-w-0 flex-1 text-left"><span class="block truncate text-[15px] font-semibold">${bi(p.nombre)}</span>
+          <span class="block truncate text-[13px] text-noche/70">${bi(p.cat)}</span></span>
+          <span class="text-[15px] font-bold tabular-nums">${escapar(p.precio)}</span></button></li>`,
       )
       .join('');
-  });
+  }
+  input.addEventListener('input', buscar);
+  panel.querySelectorAll<HTMLButtonElement>('[data-filtro]').forEach((b) => b.addEventListener('click', () => {
+    const f = b.dataset.filtro as Filtro;
+    if (filtros.has(f)) filtros.delete(f); else filtros.add(f);
+    b.setAttribute('aria-pressed', String(filtros.has(f)));
+    buscar();
+  }));
+
+  /* ── Mi lista: contador y gota dorada que cae al agregar ── */
+  function contar(n: number, total: string) {
+    const antes = piezas;
+    piezas = n;
+    contador.textContent = n > 99 ? '99+' : String(n);
+    btnLista.setAttribute('aria-label', es() ? `Mi lista: ${n} ${n === 1 ? 'artículo' : 'artículos'}, ${total}` : `My list: ${n} ${n === 1 ? 'item' : 'items'}, ${total}`);
+    if ((antes > 0) !== (n > 0)) pintar();
+  }
+  function recibir() {
+    if (estado !== 'pildora') { if (estado === 'oculta') mostrar(true); }
+    if (o.reducir() || estado !== 'pildora') return;
+    const g = geo();
+    const d = gotas[2]!;
+    const x = g.l0 + g.cw + GAP + H + GAP + H / 2 - 9;
+    sinTransicion([d], () => poner(d, { l: x, b: H + 150, w: 18, h: 18, r: 9 }));
+    requestAnimationFrame(() => {
+      d.classList.add('cae');
+      poner(d, { l: x + 2, b: H / 2 - 7, w: 14, h: 14, r: 7 });
+      setTimeout(() => {
+        d.classList.remove('cae');
+        btnLista.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.14)' }, { transform: 'scale(1)' }], { duration: 360, easing: 'cubic-bezier(0.34, 1.4, 0.64, 1)' });
+        bolsa.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.16)' }, { transform: 'scale(1)' }], { duration: 360, easing: 'cubic-bezier(0.34, 1.4, 0.64, 1)' });
+        if (estado === 'pildora') poner(d, { l: g.l0 + g.cw / 2 - 8, b: (H - 16) / 2, w: 16, h: 16, r: 8 });
+      }, 420);
+    });
+  }
 
   /* ── Eventos ── */
   let x0 = 0; let arrastre = 0; let deslizo = false;
@@ -241,6 +299,7 @@ export function crearIsla(o: {
     }
   });
   lupa.addEventListener('click', () => abrir(true));
+  btnLista.addEventListener('click', () => o.abrirLista());
   velo.addEventListener('click', () => cerrar());
   panel.addEventListener('click', (e) => {
     const t = e.target as HTMLElement;
@@ -258,5 +317,5 @@ export function crearIsla(o: {
 
   if (o.reducir()) isla.classList.add('sin-movimiento');
   pintar();
-  return { mostrar, actualizar, pintar, cerrar, get indice() { return idx; } };
+  return { mostrar, actualizar, pintar, cerrar, contar, recibir, abrir, get indice() { return idx; }, get estado() { return estado; }, pildora: () => pildora };
 }

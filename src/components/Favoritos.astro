@@ -2,7 +2,7 @@
 // "Lo más pedido": mosaico con fotos reales; cada pieza se des-funde hacia el detalle.
 import { menu } from '../data/schema';
 import { favoritos, foto } from '../data/fotos-reales';
-import { precio } from '../lib/etiquetas';
+import { precio, usd } from '../lib/precios';
 
 const todos = menu.categorias.flatMap((c) => c.platillos.map((p) => ({ ...p, cat: c.nombre })));
 const items = favoritos.map((d) => ({ ...todos.find((p) => p.id === d.id)!, f: foto(d.foto), forma: d.forma, fotoId: d.foto }));
@@ -32,7 +32,7 @@ const forma = { alta: 'row-span-2 sm:row-span-2', normal: '', ancha: 'col-span-2
                 <span lang="es">{p.nombre.es}</span><span lang="en">{p.nombre.en}</span>
               </button>
             </h3>
-            <p class="mt-1 text-[15px] text-hueso/85 tabular-nums">{precio(p.precio)}</p>
+            <p class="mt-1 text-[15px] text-hueso/85 tabular-nums">{precio(p.precio)} <span class="text-[13px] text-niebla">{usd(p.precio, menu.tipoCambioReferencia)}</span></p>
           </div>
         </article>
       </li>

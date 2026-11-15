@@ -8,6 +8,8 @@
 // tarjeta, que vuelve a su tamaño.
 
 export type Caja = { x: number; y: number; w: number; h: number };
+/** 'columna': cae hacia abajo hasta la hoja (teléfono/tablet). 'directo': se abre hacia la ventana centrada (computadora). */
+export type Via = 'columna' | 'directo';
 export const cajaDe = (el: Element): Caja => { const r = el.getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height }; };
 
 const css = (c: Caja, radio: string, extra: Keyframe = {}): Keyframe => ({ left: `${c.x}px`, top: `${c.y}px`, width: `${c.w}px`, height: `${c.h}px`, borderRadius: radio, ...extra });
@@ -24,9 +26,6 @@ export function contenido(img: HTMLImageElement, caja = cajaDe(img)): Caja {
   const w = nw * s, h = nh * s;
   return { x: caja.x + (caja.w - w) / 2, y: caja.y + (caja.h - h) / 2, w, h };
 }
-
-/** Caja de un elemento si estuviera escalado desde su centro. */
-export const escalada = (c: Caja, s = ESCALA): Caja => ({ x: c.x - (c.w * (s - 1)) / 2, y: c.y - (c.h * (s - 1)) / 2, w: c.w * s, h: c.h * s });
 
 export function crearLiquido() {
   const velo = document.getElementById('velo-hoja')!;
@@ -68,9 +67,21 @@ export function crearLiquido() {
   }
 
   /** 2 · Líquido: columna que cae hacia abajo y luego se abre en la hoja. */
-  async function expandir(o: Caja, radio: number, d: Caja, dur = 760) {
+  async function expandir(o: Caja, radio: number, d: Caja, via: Via = 'columna', radioFinal = RADIO_HOJA, dur = 760) {
     preparar();
     const ro = `${radio}px`;
+    if (via === 'directo') {
+      // Computadora: la tarjeta se estira como líquido hacia la ventana, con una gota que la sigue.
+      const t = Math.max(18, o.w * 0.14);
+      const medio: Caja = { x: (o.x + d.x) / 2, y: (o.y + d.y) / 2, w: (o.w + d.w) / 2 * 0.9, h: (o.h + d.h) / 2 * 0.9 };
+      const op = { duration: dur * 0.8, easing: 'linear', fill: 'forwards' as const };
+      const a = cuerpo.animate([css(o, ro, { easing: CAE }), css(medio, '40px', { offset: 0.4, easing: ABRE }), css(d, radioFinal)], op);
+      const c = { x: o.x + o.w / 2 - t / 2, y: o.y + o.h / 2 - t / 2, w: t, h: t };
+      const b = gota1.animate([css(c, '50%'), css({ ...c, x: medio.x + medio.w * 0.15, y: medio.y + medio.h * 0.8 }, '50%', { offset: 0.5 }), css({ ...c, x: d.x + d.w * 0.3, y: d.y + d.h - t }, '50%')], op);
+      gota2.animate([{ opacity: 0 }, { opacity: 0 }], op);
+      await Promise.all([a.finished, b.finished]);
+      return;
+    }
     const fondo = innerHeight + 24;
     const columna: Caja = { x: o.x + o.w * 0.06, y: o.y, w: o.w * 0.88, h: fondo - o.y };
     const gx = o.x + o.w / 2;
@@ -80,7 +91,7 @@ export function crearLiquido() {
       css(o, ro, { easing: CAE }),
       css({ ...o, h: o.h * 1.08 }, `${ro} ${ro} ${o.w * 0.5}px ${o.w * 0.5}px`, { offset: 0.14, easing: CAE }),
       css(columna, `${ro} ${ro} ${o.w * 0.3}px ${o.w * 0.3}px`, { offset: 0.45, easing: ABRE }),
-      css(d, RADIO_HOJA),
+      css(d, radioFinal),
     ], op);
     // Dos gotas caen por delante de la columna y se funden con ella.
     const caer = (dx: number, retraso: number, t: number) => [
@@ -95,17 +106,27 @@ export function crearLiquido() {
   }
 
   /** Reversa: la hoja se recoge en columna, sube y se funde con la tarjeta. */
-  async function recoger(d: Caja, o: Caja, radio: number, dur = 720) {
+  async function recoger(d: Caja, o: Caja, radio: number, via: Via = 'columna', radioInicio = RADIO_HOJA, dur = 720) {
     preparar();
     veloSin(true);
     const ro = `${radio}px`;
+    if (via === 'directo') {
+      const op = { duration: dur * 0.75, easing: 'linear', fill: 'forwards' as const };
+      const medio: Caja = { x: (o.x + d.x) / 2, y: (o.y + d.y) / 2, w: (o.w + d.w) / 2 * 0.9, h: (o.h + d.h) / 2 * 0.9 };
+      const a = cuerpo.animate([css(d, radioInicio, { easing: 'cubic-bezier(0.6, 0, 0.4, 1)' }), css(medio, '40px', { offset: 0.5, easing: 'cubic-bezier(0.3, 0, 0.2, 1)' }), css(o, ro)], op);
+      gota1.animate([{ opacity: 0 }, { opacity: 0 }], op);
+      gota2.animate([{ opacity: 0 }, { opacity: 0 }], op);
+      requestAnimationFrame(() => velo.classList.remove('on'));
+      await a.finished;
+      return;
+    }
     const fondo = innerHeight + 24;
     const columna: Caja = { x: o.x + o.w * 0.06, y: o.y, w: o.w * 0.88, h: fondo - o.y };
     const gx = o.x + o.w / 2;
     const g = Math.max(18, o.w * 0.16);
     const op = { duration: dur, easing: 'linear', fill: 'forwards' as const };
     const a = cuerpo.animate([
-      css(d, RADIO_HOJA, { easing: 'cubic-bezier(0.6, 0, 0.4, 1)' }),
+      css(d, radioInicio, { easing: 'cubic-bezier(0.6, 0, 0.4, 1)' }),
       css(columna, `${ro} ${ro} ${o.w * 0.3}px ${o.w * 0.3}px`, { offset: 0.5, easing: 'cubic-bezier(0.3, 0, 0.2, 1)' }),
       css(o, ro),
     ], op);

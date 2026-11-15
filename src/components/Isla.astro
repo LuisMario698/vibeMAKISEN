@@ -27,6 +27,7 @@ const miniatura = (c: (typeof menu.categorias)[number]) => c.platillos.find((p) 
   <div class="isla-liquido" aria-hidden="true">
     <i class="mancha cuerpo"></i>
     <i class="mancha boton"></i>
+    <i class="mancha bolsa"></i>
     <i class="mancha gota g1"></i>
     <i class="mancha gota g2"></i>
     <i class="mancha gota g3"></i>
@@ -45,7 +46,12 @@ const miniatura = (c: (typeof menu.categorias)[number]) => c.platillos.find((p) 
     <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5" /><path d="m16 16 4 4" /></svg>
   </button>
 
-  <div id="isla-panel" class="isla-panel" role="dialog" aria-label="Menú" inert>
+  <button type="button" class="isla-lista presionable" aria-label="Mi lista / My list">
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8h12l-1 12H7z" /><path d="M9 8a3 3 0 0 1 6 0" /></svg>
+    <span class="contador tabular-nums" aria-hidden="true">0</span>
+  </button>
+
+  <div id="isla-panel" class="isla-panel" role="dialog" aria-modal="true" aria-label="Menú / Menu" inert>
     <div class="flex items-center gap-2 px-4 pt-4">
       <p class="rotulo flex-1 text-[15px]"><span lang="es">Menú</span><span lang="en">Menu</span></p>
       <Idioma sobreOro />
@@ -58,13 +64,18 @@ const miniatura = (c: (typeof menu.categorias)[number]) => c.platillos.find((p) 
       <input id="buscar" type="search" inputmode="search" autocomplete="off" enterkeyhint="search" aria-label="Buscar en el menú" placeholder="Buscar…"
         class="h-12 w-full rounded-full border-0 bg-noche/12 pr-4 pl-10 text-[16px] font-medium text-noche placeholder:text-noche/55 focus:bg-noche/18 focus:outline-2 focus:outline-noche" />
     </form>
+    <div class="isla-filtros mx-4 mt-2.5 flex gap-2 overflow-x-auto" role="group" aria-label="Filtros / Filters">
+      <button type="button" data-filtro="favorito" aria-pressed="false" class="filtro presionable"><span lang="es">Favoritos</span><span lang="en">Favorites</span></button>
+      <button type="button" data-filtro="sinPicante" aria-pressed="false" class="filtro presionable"><span lang="es">Sin picante</span><span lang="en">Not spicy</span></button>
+      <button type="button" data-filtro="cocido" aria-pressed="false" class="filtro presionable"><span lang="es">Cocido</span><span lang="en">Cooked</span></button>
+    </div>
 
     <div class="isla-scroll">
       <div class="isla-cats">
         {grupos.map((g) => (
           <section>
             <h3 class="isla-grupo"><span lang="es">{g.es}</span><span lang="en">{g.en}</span></h3>
-            <ul class="grid grid-cols-2 gap-2">
+            <ul class="grid grid-cols-2 gap-2 sm:grid-cols-3">
               {menu.categorias.filter((c) => c.grupo === g.id).map((c) => {
                 const m = miniatura(c);
                 return (
@@ -75,7 +86,7 @@ const miniatura = (c: (typeof menu.categorias)[number]) => c.platillos.find((p) 
                       </span>
                       <span class="min-w-0 text-left">
                         <span class="line-clamp-2 block text-[13.5px] leading-[1.2] font-semibold"><span lang="es">{c.nombre.es}</span><span lang="en">{c.nombre.en}</span></span>
-                        <span class="block text-[12px] text-noche/65">{c.platillos.length}</span>
+                        <span class="block text-[13px] text-noche/70">{c.platillos.length}</span>
                       </span>
                     </button>
                   </li>
@@ -86,7 +97,8 @@ const miniatura = (c: (typeof menu.categorias)[number]) => c.platillos.find((p) 
         ))}
       </div>
       <ul class="isla-resultados" hidden></ul>
-      <p class="isla-vacio" hidden><span lang="es">Sin resultados. Prueba otra palabra.</span><span lang="en">No matches. Try another word.</span></p>
+      <p class="isla-vacio" hidden><span lang="es">Sin resultados. Prueba otra palabra o quita un filtro.</span><span lang="en">No matches. Try another word or remove a filter.</span></p>
+      <p class="isla-nota"><span lang="es">Picante y crudo: etiquetas por confirmar con cocina.</span><span lang="en">Spicy and raw labels: pending kitchen confirmation.</span></p>
     </div>
   </div>
 </div>

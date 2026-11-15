@@ -4,7 +4,8 @@
 // cartilla, una foto real o, si no hay foto, la ilustración de su categoría.
 import type { Platillo } from '../data/schema';
 import { menu } from '../data/schema';
-import { etiquetaCorta, etiquetasHTML, precio, usd } from '../lib/etiquetas';
+import { etiquetaCorta, etiquetasHTML } from '../lib/etiquetas';
+import { precio, usd } from '../lib/precios';
 import { iconoDe } from '../lib/iconos-categoria';
 import fotos from '../data/fotos.json';
 import { foto, fotoTarjeta } from '../data/fotos-reales';
@@ -17,6 +18,8 @@ const recorte = p.foto && tam[p.foto] ? { src: `/menu/${p.foto}.webp`, w: tam[p.
 const real = !recorte && fotoTarjeta[p.id] ? foto(fotoTarjeta[p.id]!) : null;
 const modo = recorte ? 'recorte' : real ? 'foto' : 'icono';
 const corta = etiquetaCorta(p);
+// Bebidas en lista sin sabores a elegir: se agregan con un toque.
+const rapido = forma === 'fila' && !p.agotado && !p.opciones;
 ---
 {forma === 'tarjeta' ? (
   <li class="revela" style={`--i:${i}`}>
@@ -35,7 +38,7 @@ const corta = etiquetaCorta(p);
           </button>
         </h4>
         <div class="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1">
-          <p class:list={['text-[15px] font-semibold text-hueso/90 tabular-nums', p.agotado && 'line-through']}>{precio(p.precio)}<span class="ml-1.5 text-[12px] font-normal text-humo" lang="en">{usd(p.precio, tc)}</span></p>
+          <p class:list={['text-[15px] font-semibold text-hueso/90 tabular-nums', p.agotado && 'line-through']}>{precio(p.precio)}<span class="ml-1.5 text-[13px] font-normal text-humo">{usd(p.precio, tc)}</span></p>
           {corta && <span class="inline-flex items-center gap-1 text-[12px] text-niebla" set:html={corta} />}
         </div>
       </div>
@@ -56,11 +59,16 @@ const corta = etiquetaCorta(p);
               <span lang="es">{p.nombre.es}</span><span lang="en">{p.nombre.en}</span>
             </button>
           </h4>
-          <p class:list={['shrink-0 text-right text-[16px] font-semibold tabular-nums', p.agotado && 'line-through']}>{precio(p.precio)}</p>
+          <p class:list={['shrink-0 text-right text-[16px] font-semibold tabular-nums', p.agotado && 'line-through']}>{precio(p.precio)}<span class="block text-[13px] font-normal text-humo">{usd(p.precio, tc)}</span></p>
         </div>
         {p.descripcion && <p class="mt-0.5 line-clamp-1 text-[14px] text-niebla"><span lang="es">{p.descripcion.es}</span><span lang="en">{p.descripcion.en}</span></p>}
         <ul class="mt-1.5 flex flex-wrap gap-1.5 empty:hidden" set:html={etiquetasHTML(p)} />
       </div>
+      {rapido && (
+        <button type="button" data-agregar={p.id} class="agregar-rapido presionable relative z-10" aria-label={`Agregar ${p.nombre.es} a mi lista / Add ${p.nombre.en} to my list`}>
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 12h12M12 6v12" /></svg>
+        </button>
+      )}
     </article>
   </li>
 )}

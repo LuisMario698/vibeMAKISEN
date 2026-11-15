@@ -6,6 +6,13 @@ import Idioma from './Idioma.astro';
     <a href="#inicio" class="presionable flex items-center rounded-lg" aria-label="MAKIZEN Sushi & Mariscos — inicio">
       <img src="/brand/logo-horizontal.svg" width="891" height="349" alt="MAKIZEN Sushi & Mariscos" class="aparece h-10 w-auto" style="--d:0" />
     </a>
-    <Idioma class="aparece" />
+    <div class="flex items-center gap-2">
+      <button type="button" data-abrir-lista class="nav-lista presionable aparece" style="--d:80" aria-label="Mi lista / My list">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8h12l-1 12H7z" /><path d="M9 8a3 3 0 0 1 6 0" /></svg>
+        <span class="hidden sm:inline"><span lang="es">Mi lista</span><span lang="en">My list</span></span>
+        <span data-contador-lista class="nav-contador tabular-nums" hidden>0</span>
+      </button>
+      <Idioma class="aparece" />
+    </div>
   </div>
 </header>

@@ -1,0 +1,30 @@
+---
+// Se muestra sin conexión cuando la página pedida no está guardada. Sin JavaScript.
+import Base from '../layouts/Base.astro';
+import { menu } from '../data/schema';
+import { DIAS, h12 } from '../lib/horario';
+const n = menu.negocio;
+const orden = [1, 2, 3, 4, 5, 6, 0];
+---
+<Base idioma="es" titulo="Sin conexión · MAKIZEN" noindex>
+  <main class="contenedor grid min-h-[100svh] content-center justify-items-center gap-6 py-16 text-center">
+    <img src="/brand/logo-vertical.svg" width="702" height="803" alt="MAKIZEN Sushi & Mariscos" class="h-auto w-32" />
+    <h1 class="text-[28px] leading-tight font-semibold"><span lang="es">Sin conexión</span><span lang="en">You're offline</span></h1>
+    <p class="max-w-sm text-[16px] text-niebla"><span lang="es">Esta página no está guardada en tu teléfono. Revisa tu señal o llámanos.</span><span lang="en">This page isn't saved on your phone. Check your signal or give us a call.</span></p>
+    <div class="flex flex-wrap justify-center gap-2">
+      <a href="/" class="boton-oro presionable"><span lang="es">Reintentar</span><span lang="en">Try again</span></a>
+      <a href={`tel:${n.telefono}`} class="boton-linea presionable">{n.telefonoTexto}</a>
+    </div>
+    <ul class="grid w-full max-w-xs text-[15px]">
+      {orden.map((d) => {
+        const h = n.horario.find((x) => x.dia === d);
+        return (
+          <li class="flex justify-between border-b border-hueso/[0.06] py-2 last:border-0">
+            <span><span lang="es">{DIAS[d]!.es}</span><span lang="en">{DIAS[d]!.en}</span></span>
+            <span class="tabular-nums">{h ? `${h12(h.abre, true)} – ${h12(h.cierra, true)}` : <><span lang="es">Cerrado</span><span lang="en">Closed</span></>}</span>
+          </li>
+        );
+      })}
+    </ul>
+  </main>
+</Base>

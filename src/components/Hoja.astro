@@ -1,6 +1,8 @@
 ---
 // Detalle del platillo. Se abre "des-fundiéndose" desde la tarjeta (src/scripts/liquido.ts);
-// el contenido lo llena src/scripts/app.ts.
+// el contenido y la barra para agregar los maneja src/scripts/hoja.ts.
+import { menu } from '../data/schema';
+const n = menu.negocio;
 ---
 <svg class="absolute size-0" aria-hidden="true" focusable="false">
   <defs>
@@ -22,7 +24,20 @@
       <div class="hoja-foto relative grid h-[300px] shrink-0 place-items-center overflow-hidden bg-[radial-gradient(65%_60%_at_50%_58%,rgb(174_139_61/0.22),transparent_72%)]">
         <img id="hoja-img" alt="" class="hoja-foto-img" />
       </div>
-      <div id="hoja-cuerpo" class="hoja-escalonada px-5 pb-[max(1.75rem,env(safe-area-inset-bottom))]"></div>
+      <div id="hoja-cuerpo" class="hoja-escalonada px-5 pb-8 lg:px-8"></div>
+    </div>
+    <div id="hoja-barra" class="hoja-barra">
+      <div class="cantidad" role="group" aria-label="Cantidad / Quantity">
+        <button type="button" data-menos class="presionable" aria-label="Uno menos / One less"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 12h12" /></svg></button>
+        <output id="hoja-n" aria-live="polite" class="tabular-nums">1</output>
+        <button type="button" data-mas class="presionable" aria-label="Uno más / One more"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 12h12M12 6v12" /></svg></button>
+      </div>
+      <button type="button" id="hoja-agregar" class="boton-oro presionable min-w-0 flex-1 text-[16px]">
+        <svg class="bolsa-ico" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8h12l-1 12H7z" /><path d="M9 8a3 3 0 0 1 6 0" /></svg>
+        <span><span lang="es">Agregar</span><span lang="en">Add</span></span><span aria-hidden="true">·</span><span class="total tabular-nums"></span>
+      </button>
+      <p class="agotado-txt flex-1 text-[15px] text-niebla" hidden><span lang="es">Agotado hoy</span><span lang="en">Sold out today</span></p>
+      <a id="hoja-llamar" href={`tel:${n.telefonoFijo}`} class="boton-linea presionable text-[15px]" hidden><span lang="es">Llamar</span><span lang="en">Call</span></a>
     </div>
   </div>
 </dialog>

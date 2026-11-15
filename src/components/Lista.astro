@@ -1,0 +1,127 @@
+---
+// Mi lista: el pedido que el cliente arma y manda por WhatsApp.
+// Teléfono y tablet: hoja desde abajo. Computadora: cajón a la derecha.
+// La lógica vive en src/lib/pedido.ts y la interfaz en src/scripts/lista.ts.
+import { LIMITES } from '../lib/pedido';
+import { menu } from '../data/schema';
+const n = menu.negocio;
+const modos = [
+  { id: 'mesa', es: 'En la mesa', en: 'Dine-in', d: 'M4 10h16M6 10v9M18 10v9M8 6h8' },
+  { id: 'llevar', es: 'Para llevar', en: 'Pickup', d: 'M6 8h12l-1 12H7zM9 8a3 3 0 0 1 6 0' },
+  { id: 'domicilio', es: 'A domicilio', en: 'Delivery', d: 'M3 11 12 4l9 7M5 10v10h14V10M10 20v-6h4v6' },
+] as const;
+---
+<dialog id="lista" class="lista" aria-labelledby="lista-titulo">
+  <div class="lista-panel">
+    <header class="lista-cabeza">
+      <div class="min-w-0 flex-1">
+        <h2 id="lista-titulo" class="text-[24px] leading-tight font-semibold tracking-[-0.02em]"><span lang="es">Mi lista</span><span lang="en">My list</span></h2>
+        <p id="lista-resumen" class="mt-0.5 text-[14px] text-niebla"></p>
+      </div>
+      <button type="button" data-lista-cerrar class="presionable tap grid place-items-center rounded-full bg-hueso/[0.06] hover:bg-hueso/[0.12]" aria-label="Cerrar / Close">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
+      </button>
+    </header>
+
+    <div class="lista-scroll">
+      <div id="lista-avisos" class="grid gap-2 empty:hidden" role="status"></div>
+      <ul id="lista-lineas" class="grid"></ul>
+
+      <div id="lista-vacia" class="grid justify-items-center gap-3 px-4 py-10 text-center" hidden>
+        <img src="/brand/isotipo.svg" width="579" height="599" alt="" class="h-auto w-20 opacity-80" />
+        <p class="text-[18px] font-semibold"><span lang="es">Tu lista está vacía</span><span lang="en">Your list is empty</span></p>
+        <p class="max-w-xs text-[15px] text-niebla"><span lang="es">Abre un platillo y toca «Agregar». Aquí juntas tu pedido para mandarlo por WhatsApp.</span><span lang="en">Open a dish and tap “Add”. Build your order here and send it on WhatsApp.</span></p>
+        <button type="button" data-lista-cerrar class="boton-linea presionable mt-2 text-[15px]"><span lang="es">Ver el menú</span><span lang="en">Browse the menu</span></button>
+      </div>
+
+      <form id="lista-form" class="mt-6 grid gap-5" novalidate>
+        <fieldset>
+          <legend class="text-[15px] font-semibold"><span lang="es">¿Cómo lo quieres?</span><span lang="en">How would you like it?</span></legend>
+          <div class="modos mt-3">
+            {modos.map((m) => (
+              <label class="modo presionable">
+                <input type="radio" name="modo" value={m.id} class="sr-only" />
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d={m.d} /></svg>
+                <span><span lang="es">{m.es}</span><span lang="en">{m.en}</span></span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
+
+        <div data-campo="mesa" class="campo">
+          <label for="lista-mesa"><span lang="es">Número de mesa</span><span lang="en">Table number</span></label>
+          <input id="lista-mesa" type="number" inputmode="numeric" min="1" max="99" autocomplete="off" aria-describedby="err-mesa ayuda-mesa" />
+          <p id="ayuda-mesa" class="ayuda" hidden><span lang="es">Tomado del código QR de tu mesa.</span><span lang="en">Taken from your table's QR code.</span></p>
+          <p id="err-mesa" class="error" hidden></p>
+        </div>
+
+        <div data-campo="nombre" class="campo">
+          <label for="lista-nombre"><span lang="es">Tu nombre</span><span lang="en">Your name</span></label>
+          <input id="lista-nombre" type="text" maxlength={LIMITES.nombre} autocomplete="given-name" enterkeyhint="next" aria-describedby="err-nombre" />
+          <p id="err-nombre" class="error" hidden></p>
+        </div>
+
+        <div data-campo="hora" class="campo">
+          <label for="lista-hora"><span lang="es">¿A qué hora pasas?</span><span lang="en">Pickup time</span></label>
+          <select id="lista-hora" aria-describedby="err-hora lista-cerrado"></select>
+          <p id="err-hora" class="error" hidden></p>
+        </div>
+
+        <div data-campo="direccion" class="campo">
+          <label for="lista-direccion"><span lang="es">Dirección de entrega</span><span lang="en">Delivery address</span></label>
+          <textarea id="lista-direccion" rows="2" maxlength={LIMITES.direccion} autocomplete="street-address" aria-describedby="err-direccion" data-ph-es="Calle, número y colonia" data-ph-en="Street, number and neighborhood"></textarea>
+          <p id="err-direccion" class="error" hidden></p>
+          <label for="lista-referencias" class="mt-3"><span lang="es">Referencias</span><span lang="en">Landmarks</span> <span class="text-[13px] font-normal text-niebla"><span lang="es">(opcional)</span><span lang="en">(optional)</span></span></label>
+          <input id="lista-referencias" type="text" maxlength={LIMITES.referencias} autocomplete="off" data-ph-es="Ej. portón negro, frente a la escuela" data-ph-en="E.g. black gate, across from the school" />
+          <p class="ayuda"><span lang="es">El costo de envío te lo confirma el restaurante por WhatsApp.</span><span lang="en">The restaurant confirms the delivery fee on WhatsApp.</span></p>
+        </div>
+
+        <p id="lista-cerrado" class="rounded-2xl bg-hueso/[0.06] px-4 py-3 text-[14px]" hidden><span lang="es">Ahora estamos cerrados. Puedes mandar tu pedido y te contestamos al abrir.</span><span lang="en">We're closed right now. You can send your order and we'll reply when we open.</span></p>
+      </form>
+    </div>
+
+    <footer class="lista-pie">
+      <div class="flex items-baseline justify-between gap-3">
+        <p class="text-[15px] text-niebla"><span lang="es">Subtotal</span><span lang="en">Subtotal</span></p>
+        <p class="text-right"><strong id="lista-subtotal" class="text-[22px] font-semibold tabular-nums"></strong> <span class="text-[13px] text-niebla">MXN</span><span id="lista-usd" class="ml-2 text-[13px] text-humo tabular-nums"></span></p>
+      </div>
+      <p class="mt-1 text-[13px] text-niebla"><span lang="es">IVA incluido. Precio final lo confirma el restaurante.</span><span lang="en">Tax included. Final price confirmed by the restaurant.</span></p>
+      <div id="lista-errores" class="mt-3 rounded-2xl border border-[#e0795e]/50 bg-[#e0795e]/10 px-4 py-3 text-[14px]" role="alert" hidden></div>
+      <a id="lista-enviar" href="#" target="_blank" rel="noopener" class="boton-whatsapp presionable mt-3">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.7.8-.8 1-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.2-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.8 11.9 11.9 0 0 0 4.6 4c1.7.7 2.4.8 3.2.7a2.8 2.8 0 0 0 1.8-1.3 2.3 2.3 0 0 0 .2-1.3c-.1-.1-.3-.2-.5-.3z"/></svg>
+        <span><span lang="es">Enviar pedido por WhatsApp</span><span lang="en">Send order on WhatsApp</span></span>
+      </a>
+      <div id="lista-despues" class="mt-3 grid gap-2 rounded-2xl bg-hueso/[0.05] p-4 text-center" hidden>
+        <p class="text-[15px]"><span lang="es">¿Ya mandaste el mensaje en WhatsApp?</span><span lang="en">Did you send the message on WhatsApp?</span></p>
+        <div class="flex gap-2">
+          <button type="button" data-vaciar-ya class="boton-oro presionable min-h-11 flex-1 text-[15px]"><span lang="es">Sí, vaciar lista</span><span lang="en">Yes, clear list</span></button>
+          <button type="button" data-seguir class="boton-linea presionable min-h-11 flex-1 text-[15px]"><span lang="es">Seguir editando</span><span lang="en">Keep editing</span></button>
+        </div>
+      </div>
+      <div class="mt-2 flex flex-wrap items-center justify-between gap-x-3 text-[14px]">
+        <button type="button" id="lista-vaciar" class="presionable min-h-11 rounded-full px-2 whitespace-nowrap text-niebla underline-offset-4 hover:text-hueso hover:underline"><span lang="es">Vaciar lista</span><span lang="en">Clear list</span></button>
+        <a href={`tel:${n.telefonoFijo}`} class="presionable min-h-11 content-center rounded-full px-2 whitespace-nowrap text-niebla underline-offset-4 hover:text-hueso hover:underline"><span lang="es">Llamar</span><span lang="en">Call</span> <span class="tabular-nums">{n.telefonoFijoTexto}</span></a>
+      </div>
+    </footer>
+  </div>
+</dialog>
+
+<template id="tpl-linea">
+  <li class="linea-lista">
+    <div class="min-w-0 flex-1">
+      <p class="ll-nombre text-[16px] leading-snug font-semibold"></p>
+      <p class="ll-op mt-0.5 text-[14px] text-oro-claro" hidden></p>
+      <p class="ll-nota mt-0.5 text-[14px] text-niebla" hidden></p>
+      <p class="ll-estado mt-1 text-[13px] text-[#ffb4a3]" hidden></p>
+    </div>
+    <div class="grid justify-items-end gap-2">
+      <p class="ll-precio text-[16px] font-semibold tabular-nums"></p>
+      <div class="cantidad chica" role="group">
+        <button type="button" data-l="menos" class="presionable"></button>
+        <output class="tabular-nums"></output>
+        <button type="button" data-l="mas" class="presionable" aria-label="Uno más / One more"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 12h12M12 6v12" /></svg></button>
+      </div>
+    </div>
+  </li>
+</template>
+<div id="anuncio" class="sr-only" aria-live="polite"></div>

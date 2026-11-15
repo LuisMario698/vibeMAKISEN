@@ -1,0 +1,90 @@
+---
+// <head> común: título y descripción por idioma, vista previa al compartir,
+// canonical/hreflang, manifest de la PWA y registro del service worker.
+import '../styles/global.css';
+import { menu } from '../data/schema';
+import { jsonLd } from '../lib/seo';
+import { jsonSeguro } from '../lib/texto';
+
+interface Props {
+  idioma: 'es' | 'en';
+  /** Página del menú (con JSON-LD, hreflang y preload de la portada). */
+  menu?: boolean;
+  titulo?: string;
+  noindex?: boolean;
+}
+const { idioma, menu: esMenu = false, titulo, noindex = false } = Astro.props;
+const sitio = Astro.site?.href ?? 'http://localhost:4321/';
+const indexar = import.meta.env.PUBLIC_INDEXAR === 'true' && !noindex;
+const TITULO = {
+  es: 'MAKIZEN Sushi & Mariscos · Menú · Puerto Peñasco (Rocky Point)',
+  en: 'MAKIZEN Sushi & Seafood · Menu · Rocky Point (Puerto Peñasco)',
+};
+const DESC = {
+  es: 'Menú de MAKIZEN Sushi & Mariscos, estilo Sinaloa, en Puerto Peñasco, Sonora. Precios en pesos con IVA, en español e inglés. Arma tu pedido y mándalo por WhatsApp.',
+  en: 'Menu of MAKIZEN Sushi & Seafood, Sinaloa-style, in Rocky Point (Puerto Peñasco), Sonora. Prices in MXN, in English and Spanish. Build your order and send it on WhatsApp.',
+};
+const t = titulo ?? TITULO[idioma];
+const canonical = new URL(idioma === 'en' ? '/en/' : '/', sitio).href;
+const og = new URL('/og/makizen.jpg', sitio).href;
+---
+<!doctype html>
+<html lang={idioma === 'en' ? 'en' : 'es-MX'} data-ruta={esMenu ? idioma : 'otra'} data-titulo-es={esMenu ? TITULO.es : undefined} data-titulo-en={esMenu ? TITULO.en : undefined}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>{t}</title>
+    <meta name="description" content={DESC[idioma]} />
+    <meta name="theme-color" content="#050505" />
+    {indexar ? <meta name="robots" content="index, follow" /> : <meta name="robots" content="noindex, nofollow" />}
+    <link rel="icon" href="/brand/isotipo.svg" type="image/svg+xml" />
+    <link rel="icon" href="/brand/icon-192.png" type="image/png" sizes="192x192" />
+    <link rel="apple-touch-icon" href="/brand/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    {esMenu && (
+      <>
+        <link rel="canonical" href={canonical} />
+        <link rel="alternate" hreflang="es-MX" href={new URL('/', sitio).href} />
+        <link rel="alternate" hreflang="en" href={new URL('/en/', sitio).href} />
+        <link rel="alternate" hreflang="x-default" href={new URL('/', sitio).href} />
+        <meta property="og:type" content="restaurant.restaurant" />
+        <meta property="og:site_name" content="MAKIZEN Sushi & Mariscos" />
+        <meta property="og:title" content={t} />
+        <meta property="og:description" content={DESC[idioma]} />
+        <meta property="og:url" content={canonical} />
+        <meta property="og:image" content={og} />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta property="og:image:alt" content="MAKIZEN Sushi & Mariscos" />
+        <meta property="og:locale" content={idioma === 'en' ? 'en_US' : 'es_MX'} />
+        <meta property="og:locale:alternate" content={idioma === 'en' ? 'es_MX' : 'en_US'} />
+        <meta name="twitter:card" content="summary_large_image" />
+        <link rel="preload" as="image" href="/fotos/fachada-dia-1080.webp" imagesrcset="/fotos/fachada-dia-640.webp 640w, /fotos/fachada-dia-1080.webp 1080w, /fotos/fachada-dia-1600.webp 1600w" imagesizes="100vw" fetchpriority="high" />
+        <script type="application/ld+json" set:html={jsonSeguro(jsonLd(menu, sitio, idioma))} />
+      </>
+    )}
+    <script is:inline>
+      // Idioma antes de pintar: 1) el elegido, 2) la ruta (/en/), 3) llegada por QR con el teléfono en inglés, 4) español.
+      // La autodetección queda solo para el QR, para que los buscadores indexen / en español.
+      (function () {
+        var d = document.documentElement, l = null;
+        try { l = localStorage.getItem('makizen-idioma'); } catch (e) {}
+        if (!l) {
+          if (d.dataset.ruta === 'en') l = 'en';
+          else if (/[?&]src=qr-/.test(location.search) && (navigator.language || '').toLowerCase().indexOf('en') === 0) l = 'en';
+        }
+        if (l) d.lang = l === 'en' ? 'en' : 'es-MX';
+        if (d.dataset.tituloEn) document.title = d.lang === 'en' ? d.dataset.tituloEn : d.dataset.tituloEs;
+      })();
+    </script>
+    {import.meta.env.PROD && (
+      <script is:inline>
+        // Service worker propio (scripts/sw.mjs): el menú abre sin conexión después de la primera visita.
+        if ('serviceWorker' in navigator) addEventListener('load', function () { navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' }).catch(function () {}); });
+      </script>
+    )}
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>

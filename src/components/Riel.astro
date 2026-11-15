@@ -1,0 +1,27 @@
+---
+// Índice lateral de categorías: solo en computadora (≥1024 px). La categoría activa
+// la marca isla.ts con aria-current; el clic lo maneja app.ts.
+import { menu } from '../data/schema';
+const grupos = [
+  { id: 'comida', es: 'Comida', en: 'Food' },
+  { id: 'bebidas', es: 'Bebidas', en: 'Drinks' },
+] as const;
+---
+<nav class="riel" aria-label="Categorías / Categories">
+  {grupos.map((g) => (
+    <div class="riel-grupo">
+      <p class="riel-titulo"><span lang="es">{g.es}</span><span lang="en">{g.en}</span></p>
+      <ul>
+        {menu.categorias.map((c, i) => ({ c, i })).filter(({ c }) => c.grupo === g.id).map(({ c, i }) => (
+          <li>
+            <button type="button" data-ir={c.id} aria-current="false" class="riel-item presionable">
+              <span class="num tabular-nums" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
+              <span class="min-w-0 flex-1 truncate"><span lang="es">{c.nombre.es}</span><span lang="en">{c.nombre.en}</span></span>
+              <span class="cuenta tabular-nums">{c.platillos.length}</span>
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  ))}
+</nav>

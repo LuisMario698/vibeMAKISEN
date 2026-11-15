@@ -1,41 +1,27 @@
 // Interacción del menú. Sin librerías: Web Animations API, IntersectionObserver,
 // CSS scroll-driven y filtros SVG "goo" para la isla y el des-merge del detalle.
-import type { Platillo } from '../data/schema';
-import { etiquetasHTML, precio, usd } from '../lib/etiquetas';
+// Este archivo solo conecta los módulos: idioma, estado del local, isla, hoja y lista.
+import { precio } from '../lib/precios';
+import { normalizar } from '../lib/texto';
+import { $, $$, datos, guardar, html, reducir } from './comun';
+import { pintarEstado } from './estado';
+import { crearHoja } from './hoja';
 import { crearIsla } from './isla';
-import { cajaDe, contenido, crearLiquido, ESCALA, type Caja } from './liquido';
-
-type Txt = { es: string; en: string };
-type Foto = { src: string; srcset: string; w: number; h: number };
-type Modo = 'recorte' | 'foto' | 'icono' | 'fila' | 'mosaico';
-type Datos = {
-  tc: number;
-  horario: { dia: number; abre: string; cierra: string }[];
-  fotos: Record<string, [number, number]>;
-  reales: Record<string, Foto>;
-  cats: { id: string; nombre: Txt }[];
-  platillos: (Platillo & { cat: Txt; catId: string })[];
-  iconos: Record<string, string>;
-};
-
-const datos: Datos = JSON.parse(document.getElementById('datos-menu')!.textContent!);
-const html = document.documentElement;
-const $ = <T extends Element = HTMLElement>(s: string, r: ParentNode = document) => r.querySelector<T>(s);
-const $$ = <T extends Element = HTMLElement>(s: string, r: ParentNode = document) => [...r.querySelectorAll<T>(s)];
-const reducir = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
-const esIngles = () => html.lang === 'en';
-const espera = (ms: number) => new Promise((r) => setTimeout(r, ms));
-const enPantalla = (el: Element | null | undefined) => { if (!el) return false; const r = el.getBoundingClientRect(); return r.bottom > 40 && r.top < innerHeight - 40; };
-const normalizar = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+import { crearLista } from './lista';
 
 /* ── Idioma ───────────────────────────────────────────────────────── */
 let objetivo = html.lang;
+const enRutaMenu = () => location.pathname === '/' || location.pathname === '/en/' || location.pathname === '/en';
 function aplicarIdioma() {
-  const en = esIngles();
+  const en = html.lang === 'en';
   $$('[data-lang]').forEach((b) => b.setAttribute('aria-pressed', String((b.dataset.lang === 'en') === en)));
   const input = $<HTMLInputElement>('#buscar');
   if (input) { input.placeholder = en ? 'Search…' : 'Buscar…'; input.setAttribute('aria-label', en ? 'Search the menu' : 'Buscar en el menú'); }
-  estado();
+  const t = en ? html.dataset.tituloEn : html.dataset.tituloEs;
+  if (t) document.title = t;
+  pintarEstado();
+  hoja.idioma();
+  lista.pintar();
   requestAnimationFrame(() => { isla.pintar(); espiar(); });
 }
 document.addEventListener('click', (e) => {
@@ -44,50 +30,14 @@ document.addEventListener('click', (e) => {
   const nuevo = b.dataset.lang === 'en' ? 'en' : 'es-MX';
   if (objetivo === nuevo) return;
   objetivo = nuevo;
-  try { localStorage.setItem('makizen-idioma', nuevo === 'en' ? 'en' : 'es'); } catch {}
+  guardar.escribir('makizen-idioma', nuevo === 'en' ? 'en' : 'es');
+  // La dirección refleja el idioma (/ o /en/) para compartir el enlace correcto.
+  if (enRutaMenu()) history.replaceState(history.state, '', (nuevo === 'en' ? '/en/' : '/') + location.hash);
   const cambiar = () => { html.lang = objetivo; aplicarIdioma(); };
   if (!document.startViewTransition || reducir()) { cambiar(); return; }
   html.classList.add('cambia-idioma');
   document.startViewTransition(cambiar).finished.finally(() => html.classList.remove('cambia-idioma'));
 });
-
-/* ── Abierto / cerrado (hora de Sonora, sin horario de verano) ──────── */
-const DIAS = [
-  { es: 'el domingo', en: 'Sunday' }, { es: 'el lunes', en: 'Monday' }, { es: 'el martes', en: 'Tuesday' },
-  { es: 'el miércoles', en: 'Wednesday' }, { es: 'el jueves', en: 'Thursday' }, { es: 'el viernes', en: 'Friday' }, { es: 'el sábado', en: 'Saturday' },
-];
-const min = (t: string) => { const [h = 0, m = 0] = t.split(':').map(Number); return h * 60 + m; };
-const h12 = (t: string) => { const [h = 0, m = 0] = t.split(':').map(Number); return `${((h + 11) % 12) + 1}${m ? ':' + String(m).padStart(2, '0') : ''} ${h < 12 ? 'am' : 'pm'}`; };
-function ahoraSonora() {
-  const p = new Intl.DateTimeFormat('en-US', { timeZone: 'America/Hermosillo', weekday: 'short', hour: 'numeric', minute: 'numeric', hourCycle: 'h23' }).formatToParts(new Date());
-  const v = (k: string) => p.find((x) => x.type === k)?.value ?? '';
-  return { dia: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(v('weekday')), min: Number(v('hour')) * 60 + Number(v('minute')) };
-}
-function estado() {
-  const { dia, min: ahora } = ahoraSonora();
-  const hoy = datos.horario.find((h) => h.dia === dia);
-  let abierto = false; let es = ''; let en = '';
-  if (hoy && ahora >= min(hoy.abre) && ahora < min(hoy.cierra)) {
-    abierto = true; es = `Abierto ahora · cierra ${h12(hoy.cierra)}`; en = `Open now · closes ${h12(hoy.cierra)}`;
-  } else if (hoy && ahora < min(hoy.abre)) {
-    es = `Cerrado · abre hoy ${h12(hoy.abre)}`; en = `Closed · opens today ${h12(hoy.abre)}`;
-  } else {
-    for (let i = 1; i <= 7; i++) {
-      const d = (dia + i) % 7; const h = datos.horario.find((x) => x.dia === d);
-      if (!h) continue;
-      const cuando = i === 1 ? { es: 'mañana', en: 'tomorrow' } : DIAS[d]!;
-      es = `Cerrado · abre ${cuando.es} ${h12(h.abre)}`; en = `Closed · opens ${cuando.en} ${h12(h.abre)}`;
-      break;
-    }
-  }
-  $$('[data-estado-local]').forEach((el) => {
-    $('.punto', el)!.className = `punto relative size-2 rounded-full ${abierto ? 'punto-vivo text-abierto' : 'text-cerrado'}`;
-    $('.texto', el)!.innerHTML = `<span lang="es">${es}</span><span lang="en">${en}</span>`;
-  });
-  const hoyEl = $('[data-hoy]');
-  if (hoyEl) hoyEl.innerHTML = hoy ? `${h12(hoy.abre).replace(' pm', '')}–${h12(hoy.cierra)}` : '<span lang="es">Cerrado</span><span lang="en">Closed</span>';
-  $$('#horario [data-dia]').forEach((li) => li.classList.toggle('hoy', Number(li.dataset.dia) === dia));
-}
 
 /* ── Barra superior: sólida al salir de la portada ─────────────────── */
 const nav = $('#nav')!;
@@ -100,7 +50,7 @@ const revela = new IntersectionObserver(
 );
 $$('.revela, .cortina').forEach((el) => revela.observe(el));
 
-/* ── Isla dinámica + categoría activa ──────────────────────────────── */
+/* ── Categorías: isla, índice lateral y categoría activa ───────────── */
 const secciones = $$('[data-seccion]');
 let bloqueo = 0; let pendiente = false;
 function ir(id: string) {
@@ -112,20 +62,25 @@ function ir(id: string) {
   setTimeout(espiar, 1050);
   $$('.revela, .cortina', sec).forEach((el) => el.classList.add('visto'));
   sec.scrollIntoView({ behavior: reducir() ? 'auto' : 'smooth', block: 'start' });
-  history.replaceState(null, '', `#${id}`);
+  history.replaceState(history.state, '', `#${id}`);
   sec.classList.remove('llega'); void sec.offsetWidth; sec.classList.add('llega');
   setTimeout(() => sec.classList.remove('llega'), 1300);
 }
+
 const isla = crearIsla({
   cats: datos.cats,
   platillos: datos.platillos.map((p) => ({
     id: p.id, nombre: p.nombre, cat: p.cat, precio: precio(p.precio), foto: p.foto, icono: datos.iconos[p.catId] ?? '/brand/isotipo.svg',
     texto: normalizar([p.nombre.es, p.nombre.en, p.descripcion?.es ?? '', p.descripcion?.en ?? '', p.cat.es, p.cat.en].join(' ')),
+    favorito: p.etiquetas.includes('favorito'), picante: p.picante, crudo: p.crudo, agotado: p.agotado,
+    comida: datos.cats.findIndex((c) => c.id === p.catId) < datos.cats.findIndex((c) => c.id === 'mixologia'),
   })),
   ir,
-  abrir: (id) => abrir(id, null),
+  abrir: (id) => hoja.abrir(id, null),
+  abrirLista: () => { isla.cerrar(false); lista.abrir(); },
   reducir,
 });
+
 function espiar() {
   pendiente = false;
   if (Date.now() < bloqueo) return;
@@ -136,228 +91,50 @@ function espiar() {
   if (nuevo !== isla.indice) isla.actualizar(nuevo, nuevo > isla.indice ? 1 : -1);
 }
 addEventListener('scroll', () => { if (!pendiente) { pendiente = true; requestAnimationFrame(espiar); } }, { passive: true });
-// La isla aparece al llegar al menú.
-const inicioMenu = $('#menu')!;
-new IntersectionObserver(([e]) => isla.mostrar(!!e && (e.isIntersecting || e.boundingClientRect.top < 0)), { rootMargin: '0px 0px -55% 0px' }).observe(inicioMenu);
 
-/* ── Hoja de detalle: crecer → expandir como líquido → panel ───────── */
-const hoja = $<HTMLDialogElement>('#hoja')!;
-const panel = $('.hoja-panel', hoja)!;
-const scroller = $('.hoja-scroll', hoja)!;
-const hojaImg = $<HTMLImageElement>('#hoja-img')!;
-const cuerpo = $('#hoja-cuerpo')!;
-const liquido = crearLiquido();
-let origen: HTMLElement | null = null;
-let modoActual: Modo = 'icono';
-let disparador: HTMLElement | null = null;
-let ocupado = false;
+/* ── Mi lista ──────────────────────────────────────────────────────── */
+let enMenu = false;
+let piezasLista = 0;
+const visibilidad = () => isla.mostrar(enMenu || piezasLista > 0);
+const lista = crearLista({
+  alCambiar: (n, total) => {
+    piezasLista = n;
+    isla.contar(n, precio(total));
+    $$('[data-contador-lista]').forEach((el) => { el.textContent = String(n); el.hidden = n === 0; });
+    visibilidad();
+  },
+});
+// La isla aparece al llegar al menú, o siempre que la lista tenga algo.
+new IntersectionObserver(([e]) => { enMenu = !!e && (e.isIntersecting || e.boundingClientRect.top < 0); visibilidad(); }, { rootMargin: '0px 0px -55% 0px' }).observe($('#menu')!);
 
-const RADIO: Record<Modo, number> = { recorte: 22, foto: 22, icono: 22, fila: 16, mosaico: 24 };
-const ALTO_FOTO = 300;
-const altoMedio = () => Math.round(Math.min(innerHeight * 0.88, 780));
-const altoCompleto = () => innerHeight - 8;
-let altoHoja = 0;
+/* ── Detalle del platillo ──────────────────────────────────────────── */
+const hoja = crearHoja({
+  agregar: (item) => lista.agregar(item),
+  agregado: () => { visibilidad(); requestAnimationFrame(() => isla.recibir()); },
+  isla,
+});
 
-function cajaHoja(alto = altoMedio()): Caja {
-  const w = Math.min(innerWidth, 576);
-  altoHoja = alto;
-  hoja.style.setProperty('--alto-hoja', `${alto}px`);
-  return { x: (innerWidth - w) / 2, y: innerHeight - alto, w, h: alto };
-}
-/** Dónde queda la imagen principal dentro de la hoja. */
-function cajaImagenHoja(S: Caja, modo: Modo, img: HTMLImageElement): Caja {
-  if (modo === 'foto' || modo === 'mosaico') return { x: S.x, y: S.y, w: S.w, h: ALTO_FOTO };
-  if (modo === 'icono') return contenido(img, { x: S.x + S.w / 2 - 70, y: S.y + ALTO_FOTO / 2 - 70, w: 140, h: 140 });
-  return contenido(img, { x: S.x + S.w * 0.1, y: S.y + 30, w: S.w * 0.8, h: 240 });
-}
-
-function llenar(p: Datos['platillos'][number], modo: Modo, fotoOrigen?: string) {
-  const t = p.foto ? datos.fotos[p.foto] : undefined;
-  const real = datos.reales[p.id];
-  hojaImg.removeAttribute('srcset');
-  if ((modo === 'foto' || modo === 'mosaico') && fotoOrigen) {
-    hojaImg.src = fotoOrigen;
-    hojaImg.className = 'hoja-foto-img absolute inset-0 h-full w-full object-cover';
-  } else if (p.foto && t) {
-    hojaImg.src = `/menu/${p.foto}.webp`; hojaImg.width = t[0]; hojaImg.height = t[1];
-    hojaImg.className = 'hoja-foto-img relative max-h-[240px] w-auto max-w-[80%] object-contain drop-shadow-[0_26px_24px_rgb(0_0_0/0.85)]';
-  } else {
-    hojaImg.src = datos.iconos[p.catId] ?? '/brand/isotipo.svg'; hojaImg.width = 64; hojaImg.height = 64;
-    hojaImg.className = 'hoja-foto-img relative h-[140px] w-[140px] object-contain opacity-90';
-  }
-  const d = (n: number) => `style="--d:${n}"`;
-  const sinFoto = !p.foto && !real && modo !== 'foto' && modo !== 'mosaico';
-  cuerpo.innerHTML = `
-    <p ${d(0)} class="ceja mt-5"><span lang="es">${p.cat.es}</span><span lang="en">${p.cat.en}</span></p>
-    <h2 ${d(1)} id="hoja-titulo" class="mt-2 text-[30px] font-semibold leading-[1.08] tracking-[-0.025em]"><span lang="es">${p.nombre.es}</span><span lang="en">${p.nombre.en}</span></h2>
-    <p ${d(1)} class="mt-1 text-[14px] text-humo"><span lang="en">${p.nombre.es}</span><span lang="es">${p.nombre.en}</span></p>
-    <div ${d(2)} class="mt-5 flex items-end justify-between gap-4 rounded-2xl bg-noche/40 px-4 py-3 ring-1 ring-white/[0.05]">
-      <p class="text-[30px] font-semibold tabular-nums leading-none ${p.agotado ? 'line-through decoration-2' : ''}">${precio(p.precio)} <span class="text-[13px] font-normal text-niebla">MXN</span></p>
-      <p class="text-right text-[13px] leading-tight text-humo">${usd(p.precio, datos.tc)}<br><span lang="es">referencia</span><span lang="en">reference only</span></p>
-    </div>
-    ${p.agotado ? `<p ${d(3)} class="mt-4 rounded-2xl bg-hueso/[0.06] px-4 py-3 text-[15px]"><span lang="es">Hoy está agotado. Pregunta por una alternativa.</span><span lang="en">Sold out today. Ask us for an alternative.</span></p>` : ''}
-    ${p.descripcion ? `<p ${d(3)} class="mt-5 text-[17px] leading-relaxed text-hueso/85"><span lang="es">${p.descripcion.es}</span><span lang="en">${p.descripcion.en}</span></p>` : ''}
-    ${p.gramos ? `<p ${d(4)} class="mt-2 text-[14px] text-humo"><span lang="es">Porción</span><span lang="en">Portion</span>: ${p.gramos} g</p>` : ''}
-    ${p.incluye ? `<ul ${d(4)} class="mt-4 grid gap-2">${p.incluye.map((x) => `<li class="flex items-center gap-3 text-[16px]"><span class="size-1.5 rounded-full bg-oro"></span>${x}</li>`).join('')}</ul>` : ''}
-    <ul ${d(5)} class="visto mt-5 flex flex-wrap gap-2 empty:hidden">${etiquetasHTML(p)}</ul>
-    ${real && modo !== 'foto' && modo !== 'mosaico' ? `<figure ${d(6)} class="mt-6 overflow-hidden rounded-3xl ring-1 ring-white/[0.06]">
-      <img src="${real.src}" srcset="${real.srcset}" sizes="(min-width: 576px) 536px, 92vw" width="${real.w}" height="${real.h}" alt="" class="block max-h-[440px] w-full object-cover" loading="lazy">
-      <figcaption class="bg-noche/40 px-4 py-3 text-[13px] text-niebla"><span lang="es">Así llega a tu mesa · foto de @makizen.puertopenasco</span><span lang="en">How it's served · photo by @makizen.puertopenasco</span></figcaption>
-    </figure>` : ''}
-    ${sinFoto ? `<p ${d(6)} class="mt-5 text-[13px] text-humo"><span lang="es">Foto del platillo próximamente.</span><span lang="en">Dish photo coming soon.</span></p>` : ''}
-    <a ${d(7)} href="tel:+526383882836" class="boton-oro presionable mt-6 w-full text-[16px]">
-      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg>
-      <span lang="es">Llamar para pedir</span><span lang="en">Call to order</span>
-    </a>`;
-}
-
-/** 3 · Aparece el panel: barrita, cerrar y contenido escalonado. */
-function mostrarPanel() {
-  hoja.showModal();
-  scroller.scrollTop = 0;
-  html.classList.add('bloqueo');
-  hoja.classList.remove('panel-listo');
-  cuerpo.classList.remove('hoja-escalonada');
-  void cuerpo.offsetWidth;
-  hoja.classList.add('panel-listo');
-  cuerpo.classList.add('hoja-escalonada');
-}
-
-async function abrir(id: string, boton: HTMLElement | null) {
-  const p = datos.platillos.find((x) => x.id === id);
-  if (!p || ocupado) return;
-  disparador = boton ?? $('.isla-pildora');
-  origen = boton?.closest<HTMLElement>('article.producto') ?? null;
-  modoActual = (origen?.dataset.modo as Modo) ?? 'icono';
-  const imgOrigen = origen?.querySelector<HTMLImageElement>('img[data-foto]') ?? null;
-  const fotoOrigen = (modoActual === 'foto' || modoActual === 'mosaico') && imgOrigen ? imgOrigen.currentSrc || imgOrigen.src : undefined;
-  const S = cajaHoja();
-  llenar(p, modoActual, fotoOrigen);
-
-  if (!origen || !enPantalla(origen) || reducir()) {
-    hoja.classList.remove('liquida');
-    mostrarPanel();
-    return;
-  }
-  ocupado = true;
-  html.classList.add('bloqueo');
-  hoja.classList.add('liquida', 'esperando');
-  // En el mosaico se agranda la pieza completa (su contenedor recorta la tarjeta).
-  const pieza = modoActual === 'mosaico' ? (origen.parentElement as HTMLElement) : origen;
-  // 1 · crecer
-  await liquido.crecer(pieza);
-  // 2 · expandir como líquido (la foto vuela aparte)
-  const o = cajaDe(pieza);
-  const pasos: Promise<unknown>[] = [liquido.expandir(o, RADIO[modoActual] * 1.06, S)];
-  if (imgOrigen) {
-    const cubre = modoActual === 'foto' || modoActual === 'mosaico';
-    const desde = cubre ? cajaDe(imgOrigen) : contenido(imgOrigen);
-    pasos.push(liquido.volar(imgOrigen.currentSrc || imgOrigen.src, cubre ? 'cover' : 'contain', desde, cajaImagenHoja(S, modoActual, imgOrigen),
-      cubre ? [`${RADIO[modoActual]}px`, liquido.RADIO_HOJA] : ['0px', '0px']));
-  }
-  requestAnimationFrame(() => (pieza.style.visibility = 'hidden'));
-  await Promise.all(pasos);
-  // 3 · panel
-  mostrarPanel();
-  requestAnimationFrame(() => {
-    hoja.classList.remove('esperando');
-    liquido.limpiar();
-    liquido.veloSin(false);
-    pieza.getAnimations().forEach((a) => a.cancel());
-    pieza.style.visibility = ''; pieza.style.zIndex = ''; pieza.classList.remove('elevada');
-    ocupado = false;
-  });
-}
-
-async function cerrar(sinLiquido = false) {
-  if (!hoja.open || ocupado) return;
-  const vuelve = () => { html.classList.remove('bloqueo'); disparador?.focus({ preventScroll: true }); };
-  if (!sinLiquido && origen && enPantalla(origen) && !reducir()) {
-    ocupado = true;
-    const art = modoActual === 'mosaico' ? (origen.parentElement as HTMLElement) : origen;
-    const S = cajaDe(panel);
-    const imgOrigen = origen.querySelector<HTMLImageElement>('img[data-foto]');
-    const cubre = modoActual === 'foto' || modoActual === 'mosaico';
-    const desde = cubre ? cajaDe(hojaImg) : contenido(hojaImg);
-    const src = hojaImg.currentSrc || hojaImg.src;
-    // La tarjeta espera, agrandada e invisible, a que el líquido regrese.
-    art.style.zIndex = '69';
-    art.style.visibility = 'hidden';
-    art.animate([{ transform: `scale(${ESCALA})` }], { duration: 1, fill: 'forwards' });
-    const o = cajaDe(art);
-    hoja.close();
-    hoja.classList.remove('liquida', 'panel-listo');
-    const pasos: Promise<unknown>[] = [liquido.recoger(S, o, RADIO[modoActual] * 1.06)];
-    if (imgOrigen) {
-      const hasta = cubre ? cajaDe(imgOrigen) : contenido(imgOrigen);
-      pasos.push(liquido.volar(src, cubre ? 'cover' : 'contain', desde, hasta, cubre ? [liquido.RADIO_HOJA, `${RADIO[modoActual] * 1.06}px`] : ['0px', '0px'], 720));
-    }
-    await Promise.all(pasos);
-    // La tarjeta reaparece bajo el líquido y vuelve a su tamaño.
-    art.style.visibility = '';
-    await liquido.quitarCapa();
-    liquido.quitarVuelo();
-    await liquido.soltar(art);
-    ocupado = false;
-    vuelve();
-    return;
-  }
-  const fin = () => { hoja.close(); hoja.classList.remove('cerrando', 'liquida', 'panel-listo'); panel.style.transform = ''; vuelve(); };
-  if (sinLiquido || reducir()) { fin(); return; }
-  hoja.classList.remove('liquida');
-  hoja.classList.add('cerrando');
-  await espera(300);
-  fin();
-}
-
-// Toda la tarjeta abre el detalle: foto, nombre o precio.
+/* ── Clics: agregar directo, abrir la lista, índice lateral, tarjeta ── */
 document.addEventListener('click', (ev) => {
   const t = ev.target as HTMLElement;
+  const rapido = t.closest<HTMLButtonElement>('[data-agregar]');
+  if (rapido) {
+    ev.stopPropagation();
+    if (lista.agregar({ id: rapido.dataset.agregar!, n: 1 })) return;
+    rapido.classList.remove('ok'); void rapido.offsetWidth; rapido.classList.add('ok');
+    visibilidad();
+    requestAnimationFrame(() => isla.recibir());
+    return;
+  }
+  if (t.closest('[data-abrir-lista]')) { lista.abrir(); return; }
+  const riel = t.closest<HTMLElement>('.riel [data-ir]');
+  if (riel) { ir(riel.dataset.ir!); return; }
   if (t.closest('a[href]')) return;
   const art = t.closest<HTMLElement>('article.producto');
   const b = art?.querySelector<HTMLElement>('[data-abrir]') ?? t.closest<HTMLElement>('[data-abrir]');
-  if (b) abrir(b.dataset.abrir!, b);
-});
-$('[data-cerrar]', hoja)!.addEventListener('click', () => cerrar());
-hoja.addEventListener('cancel', (ev) => { ev.preventDefault(); cerrar(); });
-hoja.addEventListener('click', (ev) => { if (ev.target === hoja) cerrar(); });
-
-// Barrita: arrastrar hacia arriba la abre a pantalla completa; hacia abajo, la baja o la cierra.
-let y0 = 0; let dy = 0; let arrastrando = false; let altoInicial = 0;
-panel.addEventListener('pointerdown', (ev) => {
-  const enAsa = !!(ev.target as HTMLElement).closest('.asa');
-  if (!enAsa && (ev.pointerType === 'mouse' || scroller.scrollTop > 0)) return;
-  y0 = ev.clientY; dy = 0; arrastrando = true; altoInicial = altoHoja;
-  hoja.style.transition = 'none';
-});
-addEventListener('pointermove', (ev) => {
-  if (!arrastrando) return;
-  dy = ev.clientY - y0;
-  if (dy < 0) hoja.style.setProperty('--alto-hoja', `${Math.min(altoCompleto(), altoInicial - dy)}px`);
-  else if (dy > 4) { panel.style.transition = 'none'; panel.style.transform = `translateY(${dy}px)`; }
-});
-addEventListener('pointerup', async () => {
-  if (!arrastrando) return;
-  arrastrando = false;
-  hoja.style.transition = '';
-  const animarAlto = (alto: number) => {
-    hoja.animate([{ height: `${hoja.getBoundingClientRect().height}px` }, { height: `${alto}px` }], { duration: 380, easing: 'cubic-bezier(0.34, 1.3, 0.6, 1)' });
-    cajaHoja(alto);
-  };
-  if (dy < -40) { animarAlto(altoCompleto()); return; }
-  if (dy < 0) { animarAlto(altoInicial); return; }
-  if (dy > 110) {
-    panel.style.transition = '';
-    if (altoHoja > altoMedio() + 4) { panel.style.transform = ''; animarAlto(altoMedio()); return; }
-    if (origen && enPantalla(origen) && !reducir()) { await cerrar(); panel.style.transform = ''; }
-    else { await panel.animate([{ transform: `translateY(${dy}px)` }, { transform: 'translateY(105%)' }], { duration: 220, easing: 'ease-in' }).finished; cerrar(true); }
-  } else {
-    panel.style.transition = 'transform 320ms cubic-bezier(0.34, 1.4, 0.64, 1)';
-    panel.style.transform = '';
-    setTimeout(() => (panel.style.transition = ''), 340);
-  }
+  if (b) hoja.abrir(b.dataset.abrir!, b);
 });
 
 /* ── Inicio ─────────────────────────────────────────────────────────── */
 aplicarIdioma();
-setInterval(estado, 60_000);
+setInterval(pintarEstado, 60_000);

@@ -2,15 +2,11 @@
 // Visítanos: la fachada real al atardecer, dirección, horario y cómo llegar.
 import { menu } from '../data/schema';
 import { foto } from '../data/fotos-reales';
+import { DIAS as dias, h12 } from '../lib/horario';
 const n = menu.negocio;
 const fachada = foto('fachada-frente');
 const muro = foto('muro-logo');
 const noche = foto('interior');
-const dias = [
-  { es: 'Domingo', en: 'Sunday' }, { es: 'Lunes', en: 'Monday' }, { es: 'Martes', en: 'Tuesday' },
-  { es: 'Miércoles', en: 'Wednesday' }, { es: 'Jueves', en: 'Thursday' }, { es: 'Viernes', en: 'Friday' }, { es: 'Sábado', en: 'Saturday' },
-];
-const h12 = (t: string) => { const [h = 0, m = 0] = t.split(':').map(Number); return `${((h + 11) % 12) + 1}:${String(m).padStart(2, '0')} ${h < 12 ? 'am' : 'pm'}`; };
 const orden = [1, 2, 3, 4, 5, 6, 0];
 ---
 <section id="visita" class="pt-28" aria-labelledby="t-visita">
@@ -49,7 +45,7 @@ const orden = [1, 2, 3, 4, 5, 6, 0];
           return (
             <li data-dia={d} class="flex justify-between border-b border-hueso/[0.06] py-2.5 last:border-0 [&.hoy]:font-semibold [&.hoy]:text-oro-claro">
               <span><span lang="es">{dias[d]!.es}</span><span lang="en">{dias[d]!.en}</span></span>
-              <span class="tabular-nums">{h ? `${h12(h.abre)} – ${h12(h.cierra)}` : <><span lang="es">Cerrado</span><span lang="en">Closed</span></>}</span>
+              <span class="tabular-nums">{h ? `${h12(h.abre, true)} – ${h12(h.cierra, true)}` : <><span lang="es">Cerrado</span><span lang="en">Closed</span></>}</span>
             </li>
           );
         })}
