@@ -24,7 +24,7 @@ npx astro preview --port 4329 & npm run e2e   # pruebas en navegador a 390, 820 
 | Comando | Para qué |
 |---|---|
 | `npm run og` | Regenera `public/og/makizen.jpg` (vista previa al compartir). |
-| `SITE_URL=https://… npm run qr -- 12` | QR por mesa en `qr/` (SVG por mesa y `hoja.html` para imprimir). |
+| `npm run qr -- 12` | QR por mesa en `qr/` (SVG por mesa y `hoja.html` para imprimir). |
 
 ### Cambiar precios, agotados o platillos
 
@@ -34,11 +34,13 @@ Todo está en `src/data/menu.json`. `agotado: true` deja el platillo visible en 
 
 El sitio es 100 % estático y se publica con **Cloudflare Workers Static Assets** conectado a GitHub (cada push publica):
 
+Publicado en **https://vibemakisen.luismario698g.workers.dev** (Worker `vibemakisen`).
+
 1. Cloudflare → **Workers & Pages** → **Create** → **Import a repository** → `LuisMario698/vibeMAKISEN`.
-2. Nombre del proyecto: `makizen-menu` (igual que `wrangler.jsonc`).
+2. Nombre del proyecto: `vibemakisen` (igual que `name` en `wrangler.jsonc`; si no coinciden, el build falla).
 3. Build command: `npm run build` · Deploy command: `npx wrangler deploy`.
 4. Rama de producción: `claude/affectionate-hawking-ps3z4n`.
-5. Variables de build: `SITE_URL` = la URL que asigne Cloudflare (por ejemplo `https://makizen-menu.<cuenta>.workers.dev`). `PUBLIC_INDEXAR=true` solo cuando el restaurante apruebe que se indexe.
+5. Variables de build (opcionales): `SITE_URL` solo si cambia la dirección (por defecto `https://vibemakisen.luismario698g.workers.dev`, en `astro.config.mjs`). `PUBLIC_INDEXAR=true` solo cuando el restaurante apruebe que se indexe (y con dominio propio: `_headers` pone `noindex` en `*.workers.dev`).
 
 `public/_headers` define la caché (`immutable` para `/_astro/*`, `no-cache` para `sw.js`) y `noindex` en `*.workers.dev`. La versión anterior sigue en Vercel (`vercel.json`) hasta validar Cloudflare.
 

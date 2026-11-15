@@ -3,7 +3,7 @@
 import QRCode from 'qrcode';
 import { mkdirSync, writeFileSync } from 'node:fs';
 
-const sitio = (process.env.SITE_URL || 'http://localhost:4321').replace(/\/$/, '');
+const sitio = (process.env.SITE_URL || 'https://vibemakisen.luismario698g.workers.dev').replace(/\/$/, '');
 const mesas = Math.max(1, Math.min(99, Number(process.argv[2]) || 12));
 mkdirSync('qr', { recursive: true });
 const tarjetas = [];
