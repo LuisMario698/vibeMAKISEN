@@ -43,7 +43,7 @@ dialog.lista:is([data-paso="vacio"], [data-paso="seguimiento"]) .pd-pasos { disp
 dialog.lista:is([data-paso="vacio"], [data-paso="seguimiento"]) .lista-cabeza { padding-bottom: 12px; border-bottom: 1px solid rgb(244 241 234 / 0.07); }
 .pd-pasos ol { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .pd-paso { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 44px; border-radius: 12px; font-size: 14px; font-weight: 600; color: var(--color-niebla); transition: color 200ms ease; }
-.pd-paso:hover { color: var(--color-hueso); }
+@media (hover: hover) and (pointer: fine) { .pd-paso:hover { color: var(--color-hueso); } }
 .pd-paso-num { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; font-family: var(--font-alt); font-size: 13px; box-shadow: inset 0 0 0 1px rgb(244 241 234 / 0.28); transition: background-color 260ms ease, color 260ms ease, box-shadow 260ms ease; }
 .pd-paso[data-estado="actual"] { color: var(--color-hueso); }
 .pd-paso[data-estado="actual"] .pd-paso-num { background: var(--color-oro); color: #0a0a0a; box-shadow: 0 0 0 4px rgb(174 139 61 / 0.18); }
@@ -219,14 +219,17 @@ dialog.lista.entrando .linea-lista { animation: pd-linea-entra 480ms var(--ease-
 }
 
 /* ── A domicilio: mapa ── */
-.pd-mapa-marco { position: relative; isolation: isolate; margin-top: 10px; overflow: hidden; border-radius: 20px; box-shadow: 0 0 0 1px rgb(174 139 61 / 0.4), 0 16px 32px -20px #000; }
-.pd-mapa { height: 250px; background: radial-gradient(60% 60% at 50% 45%, rgb(174 139 61 / 0.12), transparent 70%), var(--marmol) center / cover no-repeat, #0c0c0b; }
-@media (min-width: 40rem) { .pd-mapa { height: 290px; } }
-.pd-mapa-cargando { display: grid; place-items: center; height: 100%; padding: 16px; font-size: 14px; color: var(--color-niebla); text-align: center; }
+/* translateZ(0): en Safari, sin capa propia el redondeo no recorta las teselas (que se mueven con translate3d). */
+.pd-mapa-marco { position: relative; isolation: isolate; margin-top: 10px; overflow: hidden; border-radius: 20px; box-shadow: 0 0 0 1px rgb(174 139 61 / 0.4), 0 16px 32px -20px #000; transform: translateZ(0); }
+/* Alto según la pantalla: en un teléfono bajo el mapa nunca llena el área con scroll (siempre queda
+   espacio arriba o abajo para desplazar el panel con el dedo sin mover el mapa). */
+.pd-mapa { height: clamp(150px, 34svh, 290px); background: radial-gradient(60% 60% at 50% 45%, rgb(174 139 61 / 0.12), transparent 70%), var(--marmol) center / cover no-repeat, #0c0c0b; }
+@media (min-width: 40rem) and (min-height: 46rem) { .pd-mapa { height: 290px; } }
+.pd-mapa-cargando { display: grid; place-items: center; align-content: center; gap: 12px; height: 100%; padding: 16px; font-size: 14px; color: var(--color-niebla); text-align: center; }
 .pd-mapa.leaflet-container { background: #0c0c0b; font-family: var(--font-sans); }
 .pd-mapa.leaflet-container .leaflet-bar { border: 0; border-radius: 14px; overflow: hidden; box-shadow: 0 6px 18px rgb(0 0 0 / 0.5); }
 .pd-mapa.leaflet-container .leaflet-bar a { width: 44px; height: 44px; line-height: 44px; font-size: 20px; background: rgb(12 12 11 / 0.92); color: var(--color-hueso); border-bottom-color: rgb(255 255 255 / 0.1); }
-.pd-mapa.leaflet-container .leaflet-bar a:hover { background: #1b1b19; color: var(--color-oro-claro); }
+@media (hover: hover) and (pointer: fine) { .pd-mapa.leaflet-container .leaflet-bar a:hover { background: #1b1b19; color: var(--color-oro-claro); } }
 .pd-mapa.leaflet-container .leaflet-control-attribution { padding: 2px 8px; border-radius: 10px 0 0 0; background: rgb(5 5 5 / 0.78); color: var(--color-niebla); font-size: 13px; }
 .pd-mapa.leaflet-container .leaflet-control-attribution a { color: var(--color-oro-claro); }
 .pd-icono-pin, .pd-icono-local { background: none; border: 0; }
@@ -339,3 +342,93 @@ dialog.lista.enviado .pd-etapa { animation: pd-linea-entra 460ms var(--ease-sali
 /* Teselas de respaldo (OpenStreetMap) oscurecidas para que combinen con el mármol. */
 .pd-mapa .pd-teselas-osm { filter: invert(1) hue-rotate(180deg) brightness(0.85) contrast(0.9) saturate(0.6); }
 .pd-mapa.leaflet-container { touch-action: none; }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Móvil: pantallas angostas, bajas, en horizontal y con el teclado abierto.
+   ───────────────────────────────────────────────────────────────────────── */
+
+/* Pie: «Subtotal $660 MXN» en un renglón y el total nunca se parte. */
+.pd-sumario { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 8px; }
+.pd-sumario > :last-child { flex-basis: 100%; }
+.pd-total { white-space: nowrap; }
+@media (max-width: 24rem) {
+  .pd-total { font-size: 24px; }
+  .pd-legal { max-width: 8.75rem; }
+  /* «Enviar pedido por WhatsApp» puede ir en dos renglones: que respiren dentro del botón. */
+  .boton-whatsapp { gap: 8px; padding-inline: 16px; font-size: 15px; line-height: 1.2; text-align: left; }
+}
+
+/* Tarjeta de una línea angosta (≤ 360 px): «Agregar nota» queda como icono (su texto se sigue
+   leyendo) para que el stepper no se salga de la tarjeta. */
+.linea-lista { container: linea / inline-size; }
+@container linea (max-width: 20.5rem) {
+  .ll-controles [data-l="nota"] { width: 44px; padding: 0; }
+  .ll-nota-rotulo { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+}
+/* Paso 3: «Cambiar» como icono en angosto (la entrega y la dirección necesitan el ancho). */
+.pd-resumen-entrega { container: entrega / inline-size; }
+@container entrega (max-width: 20.5rem) {
+  .pd-cambiar { width: 44px; padding: 0; }
+  .pd-cambiar > span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+}
+#pd-entrega-detalle { overflow-wrap: anywhere; }
+/* Seguimiento: en angosto la hora va debajo del texto (antes se encimaba con el título). */
+.pd-tiempo { container: tiempo / inline-size; }
+@container tiempo (max-width: 24rem) {
+  .pd-etapa { grid-template-columns: 28px minmax(0, 1fr); row-gap: 2px; }
+  .pd-etapa-h { grid-column: 2; padding-top: 0; text-align: left; white-space: normal; }
+}
+.pd-etapa-t { overflow-wrap: anywhere; }
+
+/* Los campos quedan con aire al desplazarse hacia ellos (errores, teclado). */
+.lista-scroll :is(.campo, .pd-bloque, fieldset) { scroll-margin-block: 16px; }
+
+/* Pantallas bajas (iPhone SE, Android chicos, barras del navegador visibles): cabecera y pie compactos. */
+@media (max-height: 46rem) {
+  .pd-asa { margin-top: 6px; }
+  .lista-cabeza { padding-top: 6px; }
+  .pd-titulo { font-size: 22px; }
+  .pd-resumen { font-size: 13px; }
+  .pd-pasos { margin-top: 4px; padding-bottom: 8px; }
+  .lista-scroll { padding-top: 14px; }
+  .lista-pie { padding-top: 10px; }
+  .pd-pie-botones { margin-top: 10px; }
+  .pd-boton-grande, .boton-whatsapp { min-height: 50px; }
+  .pd-atras { width: 50px; height: 50px; }
+}
+
+/* Teléfono en horizontal: título, pasos y cerrar en un renglón; el pie a dos columnas. */
+@media (max-height: 32rem) and (orientation: landscape) {
+  dialog.lista { height: calc(100dvh - 8px); }
+  .lista-panel > .pd-asa { display: none; }
+  .lista-cabeza { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; column-gap: 14px; padding: 8px 20px 0; }
+  .pd-cabeza-fila { display: contents; }
+  .pd-cabeza-titulo { grid-column: 1; grid-row: 1; }
+  .pd-cerrar { grid-column: 3; grid-row: 1; }
+  .pd-pasos { grid-column: 2; grid-row: 1; margin-top: 0; padding-bottom: 8px; }
+  .pd-titulo { font-size: 20px; }
+  .pd-resumen { margin-top: 0; font-size: 13px; }
+  .lista-scroll { padding-top: 12px; padding-bottom: 20px; }
+  .lista-pie { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); align-items: center; column-gap: 16px; padding-top: 10px; padding-bottom: max(10px, env(safe-area-inset-bottom)); }
+  .pd-pie-fila { flex-direction: column; align-items: flex-start; gap: 2px; }
+  .pd-legal { max-width: none; text-align: left; }
+  .lista-pie .pd-errores { grid-column: 1 / -1; grid-row: 2; }
+  .pd-pie-botones { margin-top: 0; }
+  .pd-boton-grande, .boton-whatsapp { min-height: 48px; }
+  .pd-atras { width: 48px; height: 48px; }
+  .modo { min-height: 0; padding-block: 12px; }
+}
+
+/* Teclado abierto (lo marca lista.ts con visualViewport): el panel ocupa solo el área visible
+   y queda lo esencial: título, pasos, el campo y el botón para seguir o enviar. */
+dialog.lista.teclado-vv { top: var(--vv-arriba, 0px); bottom: auto; height: var(--vv-alto, 100dvh); }
+dialog.lista.teclado-vv .lista-panel { border-radius: 0; }
+dialog.lista.teclado .pd-asa, dialog.lista.teclado .pd-resumen { display: none; }
+dialog.lista.teclado .lista-cabeza { padding-top: 6px; }
+dialog.lista.teclado .pd-titulo { font-size: 18px; line-height: 44px; }
+dialog.lista.teclado .pd-pasos { margin-top: 0; padding-bottom: 4px; }
+dialog.lista.teclado .lista-pie { padding-top: 8px; padding-bottom: 8px; }
+dialog.lista.teclado .lista-pie > .pd-pie-fila { display: none; }
+dialog.lista.teclado .pd-pie-botones { margin-top: 0; }
+dialog.lista.teclado :is(.pd-boton-grande, .boton-whatsapp) { min-height: 46px; }
+dialog.lista.teclado .pd-atras { width: 46px; height: 46px; }
