@@ -256,7 +256,7 @@ export function crearIsla(o: {
     buscar();
   }));
 
-  /* ── Mi lista: contador y gota dorada que cae al agregar ── */
+  /* ── Mi lista: contador y rebote de la bolsa al agregar ── */
   function contar(n: number, total: string) {
     const antes = piezas;
     piezas = n;
@@ -264,23 +264,21 @@ export function crearIsla(o: {
     btnLista.setAttribute('aria-label', es() ? `Mi lista: ${n} ${n === 1 ? 'artículo' : 'artículos'}, ${total}` : `My list: ${n} ${n === 1 ? 'item' : 'items'}, ${total}`);
     if ((antes > 0) !== (n > 0)) pintar();
   }
-  function recibir() {
-    if (estado !== 'pildora') { if (estado === 'oculta') mostrar(true); }
-    if (o.reducir() || estado !== 'pildora') return;
+  /** Caja final (en pantalla) de la bolsa de Mi lista, aunque aún esté en transición. */
+  function destinoBolsa() {
+    if (estado !== 'pildora' || piezas === 0) return null;
     const g = geo();
-    const d = gotas[2]!;
-    const x = g.l0 + g.cw + GAP + H + GAP + H / 2 - 9;
-    sinTransicion([d], () => poner(d, { l: x, b: H + 150, w: 18, h: 18, r: 9 }));
-    requestAnimationFrame(() => {
-      d.classList.add('cae');
-      poner(d, { l: x + 2, b: H / 2 - 7, w: 14, h: 14, r: 7 });
-      setTimeout(() => {
-        d.classList.remove('cae');
-        btnLista.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.14)' }, { transform: 'scale(1)' }], { duration: 360, easing: 'cubic-bezier(0.34, 1.4, 0.64, 1)' });
-        bolsa.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.16)' }, { transform: 'scale(1)' }], { duration: 360, easing: 'cubic-bezier(0.34, 1.4, 0.64, 1)' });
-        if (estado === 'pildora') poner(d, { l: g.l0 + g.cw / 2 - 8, b: (H - 16) / 2, w: 16, h: 16, r: 8 });
-      }, 420);
-    });
+    const r = isla.getBoundingClientRect();
+    return { x: r.left + g.l0 + g.cw + GAP + H + GAP, y: r.bottom - H, w: H, h: H };
+  }
+  /** La bolsa rebota al recibir un platillo. */
+  function rebotar() {
+    if (estado === 'oculta') mostrar(true);
+    if (o.reducir() || estado !== 'pildora') return;
+    const resorte = { duration: 380, easing: 'cubic-bezier(0.34, 1.4, 0.64, 1)' };
+    btnLista.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.16)' }, { transform: 'scale(1)' }], resorte);
+    bolsa.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.18)' }, { transform: 'scale(1)' }], resorte);
+    contador.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.3)' }, { transform: 'scale(1)' }], { ...resorte, delay: 60 });
   }
 
   /* ── Eventos ── */
@@ -329,5 +327,5 @@ export function crearIsla(o: {
 
   if (o.reducir()) isla.classList.add('sin-movimiento');
   pintar();
-  return { mostrar, actualizar, pintar, cerrar, contar, recibir, abrir, get indice() { return idx; }, get estado() { return estado; }, pildora: () => pildora };
+  return { mostrar, actualizar, pintar, cerrar, contar, rebotar, destinoBolsa, abrir, get indice() { return idx; }, get estado() { return estado; }, pildora: () => pildora };
 }

@@ -18,12 +18,12 @@ const portada = portadas[cat.id] ? foto(portadas[cat.id]!) : undefined;
   <header class="revela">
     <div class="flex items-baseline gap-3">
       <span class="font-alt text-[13px] font-medium text-oro-claro tabular-nums" aria-hidden="true">{String(n).padStart(2, '0')}</span>
-      <h3 id={`t-${cat.id}`} class="titulo-sec text-[27px] leading-tight font-semibold tracking-[-0.025em] sm:text-[34px]">
+      <h3 id={`t-${cat.id}`} class="titulo-sec text-[22px] leading-tight font-semibold tracking-[0.07em] uppercase sm:text-[28px]">
         <span lang="es">{cat.nombre.es}</span><span lang="en">{cat.nombre.en}</span>
       </h3>
       <span class="ml-auto text-[13px] text-humo tabular-nums">{cat.platillos.length}</span>
     </div>
-    <div class="trazo mt-3 h-px bg-gradient-to-r from-oro/70 via-hueso/10 to-transparent"></div>
+    <div class="filete mt-3" aria-hidden="true"><i></i><b class="trazo"></b></div>
     {cat.nota && <p class="mt-3 text-[15px] text-niebla"><span lang="es">{cat.nota.es}</span><span lang="en">{cat.nota.en}</span></p>}
   </header>
 

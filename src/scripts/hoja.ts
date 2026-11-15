@@ -1,13 +1,13 @@
 // Detalle del platillo. En teléfono y tablet es una hoja que sube desde abajo (se
-// arrastra); en computadora, una ventana centrada a dos columnas. Se abre
-// "des-fundiéndose" desde la tarjeta (liquido.ts) y abajo tiene la barra para agregar
+// arrastra); en computadora, una ventana centrada a dos columnas. Se abre con un
+// «revelado en mármol» desde la tarjeta (morfo.ts) y abajo tiene la barra para agregar
 // a Mi lista: cantidad, sabor (si aplica) y nota.
 import { etiquetasHTML } from '../lib/etiquetas';
 import { precio, usd } from '../lib/precios';
 import { escapar } from '../lib/texto';
 import { LIMITES, type ErrorAgregar } from '../lib/pedido';
 import { $, anunciar, bi, datos, enPantalla, esEscritorio, espera, html, reducir, type PlatilloCliente } from './comun';
-import { cajaDe, contenido, crearLiquido, ESCALA, type Caja, type Via } from './liquido';
+import { aLaBolsa, cajaDe, crearMorfo, proporcion, radios, rectImagen, type Ajuste, type Caja, type Forma, type Radios } from './morfo';
 
 type Modo = 'recorte' | 'foto' | 'icono' | 'fila' | 'mosaico';
 const RADIO: Record<Modo, number> = { recorte: 22, foto: 22, icono: 22, fila: 16, mosaico: 24 };
@@ -20,7 +20,7 @@ export function crearHoja(o: {
   agregar: (item: Agregado) => ErrorAgregar | undefined;
   /** Después de agregar y cerrar (la isla recibe la gota). */
   agregado: (item: Agregado) => void;
-  isla: { pildora: () => HTMLElement | null };
+  isla: { pildora: () => HTMLElement | null; destinoBolsa: () => Caja | null };
 }) {
   const hoja = $<HTMLDialogElement>('#hoja')!;
   const panel = $('.hoja-panel', hoja)!;
@@ -34,7 +34,8 @@ export function crearHoja(o: {
   const llamar = $<HTMLAnchorElement>('#hoja-llamar', barra)!;
   const menos = $<HTMLButtonElement>('[data-menos]', barra)!;
   const mas = $<HTMLButtonElement>('[data-mas]', barra)!;
-  const liquido = crearLiquido();
+  const zonaFoto = $('.hoja-foto', hoja)!;
+  const morfo = crearMorfo();
 
   let actual: PlatilloCliente | null = null;
   let origen: HTMLElement | null = null;
@@ -48,7 +49,10 @@ export function crearHoja(o: {
   let n = 1;
   let altoHoja = 0;
 
-  const via = (): Via => (esEscritorio() ? 'directo' : 'columna');
+  const forma = (): Forma => (esEscritorio() ? 'ventana' : 'hoja');
+  const radiosPanel = (): Radios => (esEscritorio() ? radios(28) : [28, 28, 0, 0]);
+  const radiosFoto = (): Radios => (esEscritorio() ? [28, 0, 0, 28] : [28, 28, 0, 0]);
+  const cubre = (m: Modo) => m === 'foto' || m === 'mosaico';
   const altoMedio = () => Math.round(Math.min(innerHeight * 0.88, 780));
   const altoCompleto = () => innerHeight - 8;
 
@@ -68,12 +72,25 @@ export function crearHoja(o: {
     hoja.style.setProperty('--alto-hoja', `${alto}px`);
     return { x: (innerWidth - w) / 2, y: innerHeight - alto, w, h: alto };
   }
-  /** Dónde queda la imagen principal dentro del panel. */
-  function cajaImagenHoja(S: Caja, modo: Modo, img: HTMLImageElement): Caja {
+  /** Dónde queda la imagen principal dentro del panel S (antes de abrirlo). */
+  function extremoHoja(S: Caja, modo: Modo): { caja: Caja; ajuste: Ajuste; radios: Radios } {
     const zona: Caja = esEscritorio() ? { x: S.x, y: S.y, w: S.w * COL_FOTO, h: S.h } : { x: S.x, y: S.y, w: S.w, h: ALTO_FOTO };
-    if (modo === 'foto' || modo === 'mosaico') return zona;
-    if (modo === 'icono') return contenido(img, { x: zona.x + zona.w / 2 - 70, y: zona.y + zona.h / 2 - 70, w: 140, h: 140 });
-    return contenido(img, { x: zona.x + zona.w * 0.1, y: zona.y + Math.max(30, (zona.h - 240) / 2), w: zona.w * 0.8, h: Math.min(zona.h - 60, esEscritorio() ? 420 : 240) });
+    if (cubre(modo)) return { caja: zona, ajuste: 'cover', radios: radiosFoto() };
+    if (modo === 'icono') return { caja: { x: zona.x + zona.w / 2 - 70, y: zona.y + zona.h / 2 - 70, w: 140, h: 140 }, ajuste: 'contain', radios: radios(0) };
+    const alto = esEscritorio() ? Math.min(zona.h - 60, 420) : 240;
+    return { caja: { x: zona.x + zona.w * 0.1, y: zona.y + (zona.h - alto) / 2, w: zona.w * 0.8, h: alto }, ajuste: 'contain', radios: radios(0) };
+  }
+  /** La pieza de la página de la que nace (y a la que vuelve) la lámina. */
+  function piezaDe(art: HTMLElement, modo: Modo) {
+    if (modo === 'mosaico') return art.parentElement as HTMLElement;
+    if (modo === 'fila') return art;
+    return art.querySelector<HTMLElement>('.producto-marco') ?? art;
+  }
+  /** Imagen de la tarjeta como extremo del vuelo. */
+  function extremoTarjeta(pieza: HTMLElement, img: HTMLImageElement, modo: Modo) {
+    return cubre(modo)
+      ? { caja: cajaDe(pieza), ajuste: 'cover' as const, radios: radios(RADIO[modo]) }
+      : { caja: cajaDe(img), ajuste: 'contain' as const, radios: radios(0) };
   }
 
   function pintarBarra() {
@@ -145,12 +162,12 @@ export function crearHoja(o: {
 
   function mostrarPanel() {
     // Si se giró la pantalla durante la apertura, el panel toma la forma vigente.
-    hoja.dataset.forma = esEscritorio() ? 'ventana' : 'hoja';
+    hoja.dataset.forma = forma();
     cajaHoja(esEscritorio() ? undefined : Math.min(altoHoja || altoMedio(), altoCompleto()));
+    hoja.classList.remove('recogiendo', 'panel-listo');
     hoja.showModal();
     scroller.scrollTop = 0;
     html.classList.add('bloqueo');
-    hoja.classList.remove('panel-listo');
     cuerpo.classList.remove('hoja-escalonada');
     void cuerpo.offsetWidth;
     hoja.classList.add('panel-listo');
@@ -164,9 +181,10 @@ export function crearHoja(o: {
     disparador = boton ?? o.isla.pildora();
     origen = boton?.closest<HTMLElement>('article.producto') ?? null;
     modoActual = (origen?.dataset.modo as Modo) ?? 'icono';
-    hoja.dataset.forma = esEscritorio() ? 'ventana' : 'hoja';
+    hoja.dataset.forma = forma();
+    hoja.dataset.modo = modoActual;
     const imgOrigen = origen?.querySelector<HTMLImageElement>('img[data-foto]') ?? null;
-    const fotoOrigen = (modoActual === 'foto' || modoActual === 'mosaico') && imgOrigen ? imgOrigen.currentSrc || imgOrigen.src : undefined;
+    const fotoOrigen = cubre(modoActual) && imgOrigen ? imgOrigen.currentSrc || imgOrigen.src : undefined;
     const S = cajaHoja();
     llenar(p, modoActual, fotoOrigen);
 
@@ -175,71 +193,72 @@ export function crearHoja(o: {
       mostrarPanel();
       return;
     }
+    // Revelado: la lámina de mármol crece desde la tarjeta y la foto vuela a su lugar.
     ocupado = true;
     html.classList.add('bloqueo');
-    hoja.classList.add('liquida', 'esperando');
-    const pieza = modoActual === 'mosaico' ? (origen.parentElement as HTMLElement) : origen;
-    await liquido.crecer(pieza);
-    const oc = cajaDe(pieza);
-    const radioFinal = esEscritorio() ? '28px' : liquido.RADIO_HOJA;
-    const pasos: Promise<unknown>[] = [liquido.expandir(oc, RADIO[modoActual] * 1.06, S, via(), radioFinal)];
+    hoja.classList.add('liquida');
+    const pieza = piezaDe(origen, modoActual);
+    const dur = esEscritorio() ? 480 : 560;
+    const pasos: Promise<unknown>[] = [morfo.crecer(cajaDe(pieza), radios(RADIO[modoActual]), S, radiosPanel(), forma(), dur)];
     if (imgOrigen) {
-      const cubre = modoActual === 'foto' || modoActual === 'mosaico';
-      const desde = cubre ? cajaDe(imgOrigen) : contenido(imgOrigen);
-      const radioImg = esEscritorio() ? '28px 0px 0px 28px' : liquido.RADIO_HOJA;
-      pasos.push(liquido.volar(imgOrigen.currentSrc || imgOrigen.src, cubre ? 'cover' : 'contain', desde, cajaImagenHoja(S, modoActual, imgOrigen),
-        cubre ? [`${RADIO[modoActual]}px`, radioImg] : ['0px', '0px']));
+      // Los recortes aterrizan con un pequeño rebote; las fotos a sangre, sin pasarse del marco.
+      pasos.push(morfo.volar(imgOrigen.currentSrc || imgOrigen.src, proporcion(imgOrigen), extremoTarjeta(pieza, imgOrigen, modoActual), extremoHoja(S, modoActual),
+        dur + 40, cubre(modoActual) ? 'cubic-bezier(0.32, 0.72, 0, 1)' : 'cubic-bezier(0.34, 1.22, 0.64, 1)'));
+      imgOrigen.style.visibility = 'hidden';
     }
-    requestAnimationFrame(() => (pieza.style.visibility = 'hidden'));
     await Promise.all(pasos);
+    // El diálogo real ocupa el lugar de la lámina en el mismo cuadro (sin parpadeo).
     mostrarPanel();
-    requestAnimationFrame(() => {
-      hoja.classList.remove('esperando');
-      liquido.limpiar();
-      liquido.veloSin(false);
-      pieza.getAnimations().forEach((a) => a.cancel());
-      pieza.style.visibility = ''; pieza.style.zIndex = ''; pieza.classList.remove('elevada');
-      ocupado = false;
-      if (cierrePendiente) { cierrePendiente = false; cerrar(); }
-    });
+    morfo.quitarVuelo();
+    morfo.ocultar();
+    morfo.veloSin(false);
+    if (imgOrigen) imgOrigen.style.visibility = '';
+    ocupado = false;
+    if (cierrePendiente) { cierrePendiente = false; cerrar(); }
   }
 
-  /** 'liquido': regresa fundiéndose a la tarjeta. 'rapido': baja en 260 ms (tras agregar). 'instantaneo': sin animación. */
-  async function cerrar(modo: 'liquido' | 'rapido' | 'instantaneo' = 'liquido') {
+  /** 'morfo': vuelve a la tarjeta en mármol. 'rapido': baja en 260 ms (tras agregar). 'instantaneo': sin animación. */
+  async function cerrar(modo: 'morfo' | 'rapido' | 'instantaneo' = 'morfo') {
     if (ocupado && hoja.open) { cierrePendiente = true; return; }
     if (!hoja.open || ocupado) return;
     const vuelve = () => { if (!document.querySelector('dialog[open]')) html.classList.remove('bloqueo'); disparador?.focus({ preventScroll: true }); };
-    if (modo === 'liquido' && origen && enPantalla(origen) && !reducir()) {
+    if (modo === 'morfo' && origen && enPantalla(origen) && !reducir()) {
       ocupado = true;
-      const art = modoActual === 'mosaico' ? (origen.parentElement as HTMLElement) : origen;
-      const S = cajaDe(panel);
+      const pieza = piezaDe(origen, modoActual);
       const imgOrigen = origen.querySelector<HTMLImageElement>('img[data-foto]');
-      const cubre = modoActual === 'foto' || modoActual === 'mosaico';
-      const desde = cubre ? cajaDe(hojaImg) : contenido(hojaImg);
+      // 1 · El contenido se apaga (y, ya invisible, el scroll vuelve arriba).
+      hoja.classList.add('recogiendo');
+      await espera(110);
+      scroller.scrollTop = 0;
+      const S = cajaDe(panel);
+      const rS: Radios = esEscritorio() ? radiosPanel() : [28, 28, 0, 0];
       const src = hojaImg.currentSrc || hojaImg.src;
-      art.style.zIndex = '69';
-      art.style.visibility = 'hidden';
-      art.animate([{ transform: `scale(${ESCALA})` }], { duration: 1, fill: 'forwards' });
-      const oc = cajaDe(art);
-      const radioInicio = esEscritorio() ? '28px' : liquido.RADIO_HOJA;
-      hoja.close();
-      hoja.classList.remove('liquida', 'panel-listo');
-      const pasos: Promise<unknown>[] = [liquido.recoger(S, oc, RADIO[modoActual] * 1.06, via(), radioInicio)];
+      const a = proporcion(hojaImg);
+      const desde = cubre(modoActual)
+        ? { caja: cajaDe(zonaFoto), ajuste: 'cover' as const, radios: radiosFoto() }
+        : { caja: cajaDe(hojaImg), ajuste: 'contain' as const, radios: radios(0) };
+      const dur = esEscritorio() ? 380 : 440;
+      // 2 · La lámina y la foto toman el lugar del diálogo y regresan a la tarjeta.
+      const lamina = morfo.recoger(S, rS, cajaDe(pieza), radios(RADIO[modoActual]), forma(), dur);
+      let vuelo: Promise<unknown> = Promise.resolve();
       if (imgOrigen) {
-        const hasta = cubre ? cajaDe(imgOrigen) : contenido(imgOrigen);
-        const radioImg = esEscritorio() ? '28px 0px 0px 28px' : liquido.RADIO_HOJA;
-        pasos.push(liquido.volar(src, cubre ? 'cover' : 'contain', desde, hasta, cubre ? [radioImg, `${RADIO[modoActual] * 1.06}px`] : ['0px', '0px'], 720));
+        imgOrigen.style.visibility = 'hidden';
+        vuelo = morfo.volar(src, a, desde, extremoTarjeta(pieza, imgOrigen, modoActual), dur).then(() => {
+          imgOrigen.style.visibility = '';
+          morfo.quitarVuelo();
+          // 3 · La tarjeta recibe la foto con un asentamiento leve.
+          pieza.animate([{ transform: 'scale(0.97)' }, { transform: 'scale(1)' }], { duration: 320, easing: 'cubic-bezier(0.34, 1.4, 0.64, 1)' });
+        });
       }
-      await Promise.all(pasos);
-      art.style.visibility = '';
-      await liquido.quitarCapa();
-      liquido.quitarVuelo();
-      await liquido.soltar(art);
+      hoja.close();
+      hoja.classList.remove('liquida', 'panel-listo', 'recogiendo');
+      panel.style.transform = '';
+      await Promise.all([lamina, vuelo]);
       ocupado = false;
       vuelve();
       return;
     }
-    const fin = () => { hoja.close(); hoja.classList.remove('cerrando', 'liquida', 'panel-listo'); panel.style.transform = ''; vuelve(); };
+    const fin = () => { hoja.close(); hoja.classList.remove('cerrando', 'liquida', 'panel-listo', 'recogiendo'); panel.style.transform = ''; vuelve(); };
     if (modo === 'instantaneo' || reducir()) { fin(); return; }
     hoja.classList.remove('liquida');
     hoja.classList.add('cerrando');
@@ -274,13 +293,27 @@ export function crearHoja(o: {
     agregando = true;
     btnAgregar.disabled = true;
     btnAgregar.classList.add('agregado');
-    await espera(reducir() ? 0 : 160);
+    await espera(reducir() ? 0 : 140);
     btnAgregar.classList.remove('agregado');
+    // La foto del platillo cae en la bolsa mientras la hoja baja.
+    const destino = o.isla.destinoBolsa();
+    let vuelo: Promise<void> = Promise.resolve();
+    if (destino && !reducir()) {
+      const a = proporcion(hojaImg);
+      const desde = cubre(modoActual) ? interseccion(cajaDe(zonaFoto), cajaDe(panel)) : rectImagen(cajaDe(hojaImg), a, 'contain');
+      if (desde.w > 0 && desde.h > 0) vuelo = aLaBolsa(hojaImg.currentSrc || hojaImg.src, a, desde, destino, cubre(modoActual));
+    }
     await cerrar('rapido');
+    await vuelo;
     o.agregado(item);
   });
 
-  // Durante la animación líquida el velo atrapa los toques (no llegan a la página de abajo);
+  const interseccion = (a: Caja, b: Caja): Caja => {
+    const x = Math.max(a.x, b.x), y = Math.max(a.y, b.y);
+    return { x, y, w: Math.max(0, Math.min(a.x + a.w, b.x + b.w) - x), h: Math.max(0, Math.min(a.y + a.h, b.y + b.h) - y) };
+  };
+
+  // Durante la transición el velo atrapa los toques (no llegan a la página de abajo);
   // un toque ahí pide cerrar en cuanto termine la apertura.
   $('#velo-hoja')!.addEventListener('click', () => { if (ocupado) cierrePendiente = true; });
 

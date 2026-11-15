@@ -9,7 +9,7 @@ const f = foto('fachada-dia');
 ---
 <section id="inicio" class="relative pt-[calc(4rem+env(safe-area-inset-top))]" aria-labelledby="t-inicio">
   <div class="contenedor pt-7 sm:pt-14">
-    <p data-estado-local class="aparece inline-flex min-h-10 items-center gap-2.5 rounded-full bg-pizarra px-4 text-[14px] ring-1 ring-white/[0.07]" style="--d:120" aria-live="polite">
+    <p data-estado-local class="aparece inline-flex min-h-10 items-center gap-2.5 rounded-full vidrio px-4 text-[14px] ring-1 ring-white/[0.07]" style="--d:120" aria-live="polite">
       <span class="punto relative size-2 rounded-full text-abierto" style="background:currentColor"></span>
       <span class="texto"><span lang="es">Lun, Mié, Jue 1–9 pm · Vie a Dom 1–10 pm</span><span lang="en">Mon, Wed, Thu 1–9 pm · Fri–Sun 1–10 pm</span></span>
     </p>
@@ -36,24 +36,25 @@ const f = foto('fachada-dia');
       <img src={f.src} srcset={f.srcset} sizes="100vw" width={f.w} height={f.h} alt="Fachada de MAKIZEN Sushi & Mariscos en Blvd. Freemont, Puerto Peñasco" fetchpriority="high" decoding="async" class="hero-foto absolute inset-0 h-full w-full object-cover object-[46%_55%]" />
       <div class="pointer-events-none absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-noche/70 to-transparent"></div>
       <p class="absolute bottom-4 left-5 font-alt text-[11px] tracking-[0.2em] text-hueso/85 uppercase sm:left-8">Blvd. Freemont · Las Conchas</p>
+      <p class="ichigo absolute top-5 right-4 sm:top-8 sm:right-8" lang="ja" title="一期一会 · Ichigo ichie" aria-hidden="true">一期一会</p>
     </div>
   </div>
 
   <ul class="contenedor mt-6 grid grid-cols-3 gap-2 sm:gap-3">
     <li class="revela" style="--i:0">
-      <a href="#visita" class="presionable flex h-full flex-col gap-1 rounded-2xl bg-pizarra p-3.5 ring-1 ring-white/[0.06] hover:ring-oro/50">
+      <a href="#visita" class="presionable flex h-full flex-col gap-1 rounded-2xl vidrio p-3.5 ring-1 ring-white/[0.06] hover:ring-oro/50">
         <span class="ceja !text-[10px] !tracking-[0.18em]"><span lang="es">Hoy</span><span lang="en">Today</span></span>
         <span data-hoy class="text-[14px] leading-snug font-semibold">—</span>
       </a>
     </li>
     <li class="revela" style="--i:1">
-      <a href={n.mapa} target="_blank" rel="noopener" class="presionable flex h-full flex-col gap-1 rounded-2xl bg-pizarra p-3.5 ring-1 ring-white/[0.06] hover:ring-oro/50">
+      <a href={n.mapa} target="_blank" rel="noopener" class="presionable flex h-full flex-col gap-1 rounded-2xl vidrio p-3.5 ring-1 ring-white/[0.06] hover:ring-oro/50">
         <span class="ceja !text-[10px] !tracking-[0.18em]"><span lang="es">Dónde</span><span lang="en">Where</span></span>
         <span class="text-[14px] leading-snug font-semibold">Las Conchas</span>
       </a>
     </li>
     <li class="revela" style="--i:2">
-      <a href={`tel:${n.telefonoFijo}`} class="presionable flex h-full flex-col gap-1 rounded-2xl bg-pizarra p-3.5 ring-1 ring-white/[0.06] hover:ring-oro/50">
+      <a href={`tel:${n.telefonoFijo}`} class="presionable flex h-full flex-col gap-1 rounded-2xl vidrio p-3.5 ring-1 ring-white/[0.06] hover:ring-oro/50">
         <span class="ceja !text-[10px] !tracking-[0.18em]"><span lang="es">A domicilio</span><span lang="en">Delivery</span></span>
         <span class="text-[14px] leading-snug font-semibold whitespace-nowrap">{n.telefonoFijoTexto.replace('(638) ', '')}</span>
       </a>

@@ -7,7 +7,7 @@
 import { generateSW } from 'workbox-build';
 import { readFileSync, writeFileSync } from 'node:fs';
 
-const VERSION = 'v3';
+const VERSION = 'v4';
 const { count, size, warnings } = await generateSW({
   globDirectory: 'dist',
   globPatterns: ['_astro/**/*.{js,css,woff2}', 'brand/{logo-horizontal,logo-vertical,isotipo}.svg', 'brand/icon-*.png', 'offline/index.html', 'manifest.webmanifest'],
@@ -44,7 +44,7 @@ const { count, size, warnings } = await generateSW({
       },
     },
     {
-      urlPattern: ({ url }) => /^\/(fotos|menu|brand|og)\//.test(url.pathname),
+      urlPattern: ({ url }) => /^\/(fotos|menu|brand|og|fondos)\//.test(url.pathname),
       handler: 'CacheFirst',
       options: { cacheName: `makizen-fotos-${VERSION}`, expiration: { maxEntries: 120, maxAgeSeconds: 30 * 24 * 3600 }, cacheableResponse: { statuses: [0, 200] } },
     },

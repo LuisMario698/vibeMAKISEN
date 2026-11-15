@@ -8,10 +8,11 @@ const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
 const fechaEs = `${d} ${MESES[m! - 1]} ${a}`;
 const fechaEn = `${MONTHS[m! - 1]} ${d}, ${a}`;
 ---
-<footer class="mt-28 border-t border-hueso/[0.07] pb-32">
+<footer class="mt-28 pb-32">
+  <div class="greca mx-auto max-w-md" aria-hidden="true"></div>
   <div class="contenedor revela flex flex-col items-center gap-6 pt-14 text-center">
     <img src="/brand/logo-vertical.svg" width="702" height="803" alt="MAKIZEN Sushi & Mariscos" loading="lazy" class="h-auto w-36" />
-    <p class="max-w-sm text-[15px] text-niebla">一期一会 · <span lang="es">Buena comida, buenos momentos, siempre aquí.</span><span lang="en">Good food, good times, always here.</span></p>
+    <p class="max-w-sm text-[15px] text-niebla"><span class="text-oro-claro" lang="ja">一期一会</span> · <span lang="es">Buena comida, buenos momentos, siempre aquí.</span><span lang="en">Good food, good times, always here.</span></p>
     <ul class="flex flex-wrap justify-center gap-2 text-[14px]">
       <li><a class="boton-linea presionable min-h-11" href={`tel:${n.telefono}`}>{n.telefonoTexto}</a></li>
       <li><a class="boton-linea presionable min-h-11" href={n.instagram} target="_blank" rel="noopener">Instagram</a></li>

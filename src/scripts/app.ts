@@ -1,5 +1,5 @@
 // Interacción del menú. Sin librerías: Web Animations API, IntersectionObserver,
-// CSS scroll-driven y filtros SVG "goo" para la isla y el des-merge del detalle.
+// CSS scroll-driven, filtro SVG "goo" para la isla y clip-path + FLIP para el detalle.
 // Este archivo solo conecta los módulos: idioma, estado del local, isla, hoja y lista.
 import { precio } from '../lib/precios';
 import { normalizar } from '../lib/texto';
@@ -8,6 +8,7 @@ import { pintarEstado } from './estado';
 import { crearHoja } from './hoja';
 import { crearIsla } from './isla';
 import { crearLista } from './lista';
+import { aLaBolsa, cajaDe, proporcion, rectImagen } from './morfo';
 
 /* ── Idioma ───────────────────────────────────────────────────────── */
 let objetivo = html.lang;
@@ -112,7 +113,7 @@ new IntersectionObserver(([e]) => { enMenu = !!e && (e.isIntersecting || e.bound
 /* ── Detalle del platillo ──────────────────────────────────────────── */
 const hoja = crearHoja({
   agregar: (item) => lista.agregar(item),
-  agregado: () => { visibilidad(); requestAnimationFrame(() => isla.recibir()); },
+  agregado: () => { visibilidad(); isla.rebotar(); },
   isla,
 });
 
@@ -125,7 +126,15 @@ document.addEventListener('click', (ev) => {
     if (lista.agregar({ id: rapido.dataset.agregar!, n: 1 })) return;
     rapido.classList.remove('ok'); void rapido.offsetWidth; rapido.classList.add('ok');
     visibilidad();
-    requestAnimationFrame(() => isla.recibir());
+    // La miniatura de la bebida cae en la bolsa de Mi lista.
+    const img = rapido.closest('article')?.querySelector<HTMLImageElement>('img[data-foto]');
+    const destino = isla.destinoBolsa();
+    if (img && destino && !reducir()) {
+      const cubre = img.classList.contains('object-cover');
+      const a = proporcion(img);
+      const desde = cubre ? cajaDe(img) : rectImagen(cajaDe(img), a, 'contain');
+      void aLaBolsa(img.currentSrc || img.src, a, desde, destino, cubre).then(() => isla.rebotar());
+    } else requestAnimationFrame(() => isla.rebotar());
     return;
   }
   if (t.closest('[data-abrir-lista]')) { lista.abrir(); return; }

@@ -40,7 +40,9 @@ const total = menu.categorias.reduce((n, c) => n + c.platillos.length, 0);
 <div id="centinela" class="h-px" aria-hidden="true"></div>
 <Favoritos />
 <main id="menu" class="scroll-mt-16 pt-28" aria-labelledby="t-menu">
-  <div class="contenedor revela">
+  <div class="contenedor revela relative">
+    <img src="/brand/isotipo.svg" width="579" height="599" alt="" aria-hidden="true" loading="lazy" class="marca-agua -top-10 right-0 w-40 sm:w-56" />
+    <div class="greca mb-8 max-w-xs" aria-hidden="true"></div>
     <p class="ceja"><span lang="es">Menú</span><span lang="en">Menu</span></p>
     <h2 id="t-menu" class="mt-2 text-[34px] leading-[1.05] font-semibold tracking-[-0.03em] sm:text-[48px]">
       <span lang="es">La carta completa</span><span lang="en">The full menu</span>

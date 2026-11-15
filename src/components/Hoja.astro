@@ -1,27 +1,25 @@
 ---
-// Detalle del platillo. Se abre "des-fundiéndose" desde la tarjeta (src/scripts/liquido.ts);
-// el contenido y la barra para agregar los maneja src/scripts/hoja.ts.
+// Detalle del platillo. Se abre con un «revelado en mármol» desde la tarjeta
+// (src/scripts/morfo.ts); el contenido y la barra para agregar los maneja src/scripts/hoja.ts.
+// #morfo es una réplica del panel sin contenido: es la lámina que crece y se recoge.
 import { menu } from '../data/schema';
 const n = menu.negocio;
 ---
-<svg class="absolute size-0" aria-hidden="true" focusable="false">
-  <defs>
-    <filter id="goo-hoja" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB">
-      <feGaussianBlur in="SourceGraphic" stdDeviation="15" result="d" />
-      <feColorMatrix in="d" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 30 -13" result="g" />
-      <feComposite in="SourceGraphic" in2="g" operator="atop" />
-    </filter>
-  </defs>
-</svg>
 <div id="velo-hoja" class="velo-hoja" aria-hidden="true"></div>
+<div id="morfo" class="morfo" aria-hidden="true" hidden><div class="morfo-panel marmol-panel"><div class="morfo-foto zona-marmol"></div></div></div>
 <dialog id="hoja" class="hoja" aria-labelledby="hoja-titulo">
-  <div class="hoja-panel relative flex h-full flex-col overflow-hidden rounded-t-[28px] bg-grafito ring-1 ring-white/[0.06]">
+  <div class="hoja-panel marmol-panel relative flex h-full flex-col overflow-hidden rounded-t-[28px] ring-1 ring-white/[0.06]">
     <div class="asa absolute inset-x-0 top-0 z-10 flex h-8 touch-none justify-center pt-2.5" aria-hidden="true"><span class="h-1.5 w-11 rounded-full bg-hueso/35"></span></div>
     <button type="button" data-cerrar class="presionable tap absolute top-3 right-3 z-20 grid place-items-center rounded-full bg-noche/60 text-hueso backdrop-blur-md hover:bg-noche/80" aria-label="Cerrar / Close">
       <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
     </button>
     <div class="hoja-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain">
-      <div class="hoja-foto relative grid h-[300px] shrink-0 place-items-center overflow-hidden bg-[radial-gradient(65%_60%_at_50%_58%,rgb(174_139_61/0.22),transparent_72%)]">
+      <div class="hoja-foto zona-marmol relative grid h-[300px] shrink-0 place-items-center overflow-hidden">
+        <svg class="enso" viewBox="0 0 200 200" aria-hidden="true" focusable="false">
+          <circle class="enso-trazo" cx="100" cy="100" r="86" pathLength="100" />
+          <circle class="enso-eco" cx="100" cy="100" r="80" pathLength="100" />
+          <circle class="enso-punto" cx="168" cy="47" r="5.5" />
+        </svg>
         <img id="hoja-img" alt="" class="hoja-foto-img" />
       </div>
       <div id="hoja-cuerpo" class="hoja-escalonada px-5 pb-8 lg:px-8"></div>

@@ -12,8 +12,8 @@
   --color-grafito: #1b1b19;
   --color-hueso: #f4f1ea;
   --color-niebla: #aaa69d;
-  /* 4.8:1 sobre las tres superficies oscuras (AA). */
-  --color-humo: #8a877f;
+  /* ≥ 4.5:1 incluso sobre las vetas más claras del mármol del fondo (AA). */
+  --color-humo: #9a968d;
   --color-oro: #ae8b3d;
   --color-oro-claro: #d2b26a;
   --color-oro-sombra: #786028;
@@ -31,6 +31,10 @@
   --ease-cajon: cubic-bezier(0.32, 0.72, 0, 1);
 }
 
+/* Mármol negro real: la portada de la cartilla del restaurante (scripts/marmol.mjs). */
+:root { --marmol: url(/fondos/marmol.webp); }
+@media (orientation: portrait) { :root { --marmol: url(/fondos/marmol-v.webp); } }
+
 @layer base {
   html {
     background: var(--color-noche);
@@ -44,7 +48,17 @@
     scrollbar-gutter: stable;
   }
   html.bloqueo { overflow: hidden; }
-  body { min-height: 100svh; font-size: 1rem; line-height: 1.55; -webkit-font-smoothing: antialiased; overflow-x: clip; }
+  body { min-height: 100svh; font-size: 1rem; line-height: 1.55; -webkit-font-smoothing: antialiased; overflow-x: clip; isolation: isolate; }
+  /* Fondo fijo de mármol (capa propia: no se repinta al hacer scroll). Las vetas se
+     atenúan para que todo el texto encima conserve contraste AA; los bordes se oscurecen. */
+  body::before {
+    content: ""; position: fixed; left: 0; top: 0; z-index: -1; width: 100%; height: 100lvh; pointer-events: none;
+    background:
+      radial-gradient(120% 75% at 50% 18%, transparent 40%, rgb(5 5 5 / 0.55) 100%),
+      linear-gradient(rgb(5 5 5 / 0.38), rgb(5 5 5 / 0.38)),
+      var(--marmol) center / cover no-repeat,
+      var(--color-noche);
+  }
   :focus-visible { outline: 2px solid var(--color-oro-claro); outline-offset: 3px; border-radius: 8px; }
   ::selection { background: var(--color-oro); color: #000; }
   img { -webkit-user-drag: none; }
@@ -67,7 +81,25 @@ html[lang^="es"] [data-ver="en"], html[lang="en"] [data-ver="es"] { display: non
   .boton-oro:hover { background: var(--color-oro-claro); }
   .boton-linea { display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; min-height: 48px; padding-inline: 1.3rem; border-radius: 999px; border: 1px solid rgb(244 241 234 / 0.18); color: var(--color-hueso); font-weight: 600; }
   .boton-linea:hover { border-color: var(--color-oro); }
+  /* Superficie translúcida sobre el mármol (sin desenfoque: el fondo fijo no se repinta). */
+  .vidrio { background: rgb(12 12 11 / 0.74); }
 }
+
+/* ═══════════════════════════  DETALLES DE LA MARCA  ═══════════════════════════ */
+/* Filete dorado con el punto del logo (la luna con su punto de oro), como en la cartilla. */
+.filete { display: flex; align-items: center; gap: 10px; }
+.filete > i { flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--color-oro-claro); box-shadow: 0 0 12px rgb(210 178 106 / 0.55); }
+.filete > b { flex: 1; height: 1px; background: linear-gradient(90deg, var(--color-oro), rgb(174 139 61 / 0.45) 35%, rgb(244 241 234 / 0.06) 75%, transparent); }
+.visto .filete > i, .visto.filete > i { animation: punto-oro 560ms 100ms var(--ease-resorte) both; }
+@keyframes punto-oro { from { opacity: 0; transform: scale(0.3); } }
+/* Greca dorada (los marcos de las historias destacadas de su Instagram). */
+.greca { height: 12px; opacity: 0.6; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M0 11.5H12M9.5 11.5V1.5H2.5V8.5H6.5V5' fill='none' stroke='%23ae8b3d' stroke-width='1'/%3E%3C/svg%3E") left center / 12px 12px repeat-x; -webkit-mask-image: linear-gradient(90deg, transparent, #000 18%, #000 82%, transparent); mask-image: linear-gradient(90deg, transparent, #000 18%, #000 82%, transparent); }
+/* 一期一会 en vertical, en oro, como en la portada de la cartilla. */
+.ichigo { writing-mode: vertical-rl; font-family: "Hiragino Mincho ProN", "Yu Mincho", "Noto Serif CJK JP", "Songti SC", serif; font-size: 22px; letter-spacing: 0.32em; color: var(--color-oro-claro); text-shadow: 0 2px 14px rgb(0 0 0 / 0.75); }
+/* Isotipo como marca de agua. */
+.marca-agua { position: absolute; pointer-events: none; opacity: 0.06; }
+/* Tarjetas de recorte: el platillo sobre mármol, como en las fotos de la cartilla. */
+.producto:is([data-modo="recorte"], [data-modo="icono"]) .producto-marco { background: var(--marmol) var(--mx, 50%) var(--my, 50%) / 360% auto no-repeat, var(--color-carbon); }
 
 /* ═══════════════════════════════  ANIMACIÓN  ═══════════════════════════════ */
 
@@ -123,11 +155,24 @@ html[lang^="es"] [data-ver="en"], html[lang="en"] [data-ver="es"] { display: non
 .visto .chile.on { animation: chile 600ms var(--ease-resorte) both; animation-delay: calc(500ms + var(--c) * 110ms); }
 @keyframes chile { from { transform: scale(0) rotate(-40deg); } }
 
-/* ── Selección de producto: la tarjeta se des-funde en líquido hacia la hoja ── */
-.liquido { position: fixed; inset: 0; z-index: 70; pointer-events: none; filter: url(#goo-hoja); }
-.liquido > i { position: absolute; display: block; will-change: left, top, width, height; }
-.vuelo { position: fixed; z-index: 71; pointer-events: none; object-fit: contain; will-change: transform; }
-.velo-hoja { position: fixed; inset: 0; z-index: 68; background: rgb(0 0 0 / 0.68); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); opacity: 0; pointer-events: none; transition: opacity 420ms ease; }
+/* ── Selección de producto: revelado en mármol (src/scripts/morfo.ts) ──────── */
+/* Toque: la tarjeta se hunde un poco al presionarla. */
+.producto-marco { transition: transform 160ms var(--ease-salida), box-shadow 300ms ease; }
+.producto:active .producto-marco, li:has(> .producto[data-modo="mosaico"]:active) { transform: scale(0.97); }
+li:has(> .producto[data-modo="mosaico"]) { transition: transform 160ms var(--ease-salida); }
+@media (hover: hover) and (pointer: fine) {
+  .producto:is([data-modo="recorte"], [data-modo="icono"]):hover .producto-marco { box-shadow: 0 22px 40px -18px rgb(0 0 0 / 0.9), 0 0 0 1px rgb(174 139 61 / 0.45); }
+}
+/* Lámina: réplica del panel que crece desde la tarjeta con clip-path. */
+.morfo { position: fixed; inset: 0; z-index: 70; pointer-events: none; will-change: clip-path; }
+.morfo[hidden] { display: none; }
+.morfo-panel { position: absolute; overflow: hidden; }
+.morfo-foto { position: absolute; left: 0; top: 0; width: 100%; height: 300px; }
+.morfo[data-forma="ventana"] .morfo-foto { width: 46%; height: 100%; }
+/* La foto viaja aparte: tamaño final fijo, solo transform y clip-path. */
+.vuelo { position: fixed; inset: auto; z-index: 71; margin: 0; padding: 0; border: 0; background: transparent; overflow: visible; max-width: none; pointer-events: none; object-fit: fill; transform-origin: 0 0; will-change: transform; }
+.vuelo.redonda { object-fit: cover; border-radius: 50%; box-shadow: 0 0 0 2px var(--color-oro), 0 8px 18px rgb(0 0 0 / 0.5); }
+.velo-hoja { position: fixed; inset: 0; z-index: 68; background: rgb(0 0 0 / 0.68); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); opacity: 0; pointer-events: none; transition: opacity 360ms ease; }
 .velo-hoja.on { opacity: 1; pointer-events: auto; }
 
 /* ── Hoja de detalle ───────────────────────────────────────────────────── */
@@ -141,18 +186,32 @@ dialog.hoja.liquida::backdrop { animation: none; }
 @keyframes hoja-sube { from { transform: translateY(100%); } to { transform: none; } }
 @keyframes hoja-baja { to { transform: translateY(105%); } }
 @keyframes velo { from { opacity: 0; } }
-.hoja-escalonada > * { opacity: 0; animation: aparece 700ms var(--ease-salida) forwards; animation-delay: calc(120ms + var(--d, 0) * 55ms); }
-.hoja-foto-img { opacity: 1; }
-/* 1 · La tarjeta elegida se levanta sobre el velo. */
-.elevada { position: relative; }
-.elevada .producto-marco, li.elevada { box-shadow: 0 34px 60px -12px rgb(0 0 0 / 0.85), 0 0 0 1px rgb(210 178 106 / 0.45); }
-/* 3 · Al terminar el líquido aparece el panel: la barrita se estira, el botón cerrar entra. */
+.hoja-escalonada > * { opacity: 0; animation: aparece 520ms var(--ease-salida) forwards; animation-delay: calc(40ms + var(--d, 0) * 45ms); }
+/* Panel y lámina comparten la misma superficie de mármol (el cambio no se nota). */
+.marmol-panel { background: linear-gradient(rgb(18 18 17 / 0.9), rgb(18 18 17 / 0.94)), var(--marmol) center / cover no-repeat, #121211; }
+/* Zona de la foto: el mármol a plena luz, como las fotos de la cartilla, con un halo dorado. */
+.zona-marmol { background: radial-gradient(58% 52% at 50% 56%, rgb(174 139 61 / 0.2), transparent 72%), linear-gradient(to bottom, transparent 62%, rgb(18 18 17 / 0.94)), var(--marmol) center / cover no-repeat, #0c0c0b; }
+:is(dialog.hoja, .morfo)[data-forma="ventana"] .zona-marmol { background: radial-gradient(58% 46% at 50% 50%, rgb(174 139 61 / 0.2), transparent 72%), linear-gradient(to right, transparent 70%, rgb(18 18 17 / 0.94)), var(--marmol) center / cover no-repeat, #0c0c0b; }
+/* Ensō dorado (la luna de pincel del logo) que se traza detrás del platillo al llegar. */
+.enso { position: absolute; left: 50%; top: 50%; width: min(272px, 88%); aspect-ratio: 1; translate: -50% -50%; overflow: visible; pointer-events: none; }
+dialog.hoja[data-forma="ventana"] .enso { width: min(400px, 84%); }
+.enso circle { fill: none; transform-box: fill-box; transform-origin: center; }
+.enso-trazo { stroke: var(--color-oro); stroke-width: 2.4; stroke-linecap: round; stroke-dasharray: 84 100; rotate: -38deg; }
+.enso-eco { stroke: var(--color-oro-claro); stroke-width: 0.9; stroke-linecap: round; stroke-dasharray: 56 100; rotate: 150deg; opacity: 0.45; }
+.enso-punto { fill: var(--color-oro-claro); }
+dialog.hoja:is([data-modo="foto"], [data-modo="mosaico"]) .enso { display: none; }
+dialog.hoja.panel-listo .enso-trazo { animation: enso 900ms 30ms var(--ease-salida) both; }
+dialog.hoja.panel-listo .enso-eco { animation: enso-eco 1100ms 140ms var(--ease-salida) both; }
+dialog.hoja.panel-listo .enso-punto { animation: punto-oro 520ms 560ms var(--ease-resorte) both; }
+@keyframes enso { from { stroke-dashoffset: 84; } to { stroke-dashoffset: 0; } }
+@keyframes enso-eco { from { stroke-dashoffset: 56; opacity: 0; } }
+/* Al cerrar, el contenido se apaga antes de que la lámina regrese a la tarjeta. */
+dialog.hoja.recogiendo :is(#hoja-cuerpo, .hoja-barra, [data-cerrar], .asa, .enso) { opacity: 0 !important; transition: opacity 110ms ease-out; }
+/* Al terminar el revelado aparece el panel: la barrita se estira, el botón cerrar entra. */
 dialog.hoja.panel-listo .asa > span { animation: asa-entra 520ms 60ms var(--ease-resorte) both; }
 dialog.hoja.panel-listo [data-cerrar] { animation: cerrar-entra 480ms 140ms var(--ease-resorte) both; }
 @keyframes asa-entra { from { transform: scaleX(0.2); opacity: 0; } }
 @keyframes cerrar-entra { from { transform: scale(0.4) rotate(-90deg); opacity: 0; } }
-.liquido > i { background: linear-gradient(180deg, #24241f 0%, var(--color-grafito) 38%); }
-.hoja.esperando .hoja-foto-img { opacity: 0; }
 
 html.cambia-idioma::view-transition-old(root) { animation: 220ms ease-in both salida-idioma; }
 html.cambia-idioma::view-transition-new(root) { animation: 320ms var(--ease-salida) both entrada-idioma; }
@@ -181,7 +240,6 @@ html.cambia-idioma::view-transition-new(root) { animation: 320ms var(--ease-sali
 .isla[data-estado="abierta"] :is(.isla-pildora, .isla-lupa, .isla-lista) { opacity: 0; pointer-events: none; transition-duration: 640ms, 640ms, 640ms, 120ms, 160ms; }
 .isla[data-lista="no"] .isla-lista { opacity: 0; pointer-events: none; }
 .isla-lista .contador { position: absolute; top: -3px; right: -3px; display: grid; place-items: center; min-width: 22px; height: 22px; padding: 0 5px; border-radius: 11px; background: #0a0a0a; color: var(--color-oro-claro); font-size: 12px; font-weight: 700; box-shadow: 0 0 0 2px var(--color-oro); }
-.mancha.gota.cae { transition: left 420ms cubic-bezier(0.55, 0, 0.8, 0.35), bottom 420ms cubic-bezier(0.55, 0, 0.8, 0.35), width 420ms, height 420ms; }
 .isla-filtros { scrollbar-width: none; }
 .filtro { flex: none; min-height: 44px; padding: 0 16px; border-radius: 999px; background: rgb(0 0 0 / 0.1); font-size: 14px; font-weight: 600; white-space: nowrap; }
 .filtro:hover { background: rgb(0 0 0 / 0.18); }
@@ -217,7 +275,6 @@ html.cambia-idioma::view-transition-new(root) { animation: 320ms var(--ease-sali
 
 /* ── Hoja: barra para agregar, sabores y cantidad ──────────────────────── */
 .hoja-barra { position: relative; z-index: 2; display: flex; align-items: center; gap: 10px; padding: 12px 16px max(12px, env(safe-area-inset-bottom)); border-top: 1px solid rgb(244 241 234 / 0.06); background: rgb(27 27 25 / 0.94); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
-dialog.hoja.esperando .hoja-barra { opacity: 0; }
 dialog.hoja.panel-listo .hoja-barra { animation: aparece 420ms 120ms var(--ease-salida) both; }
 #hoja-agregar.agregado { animation: agregado 260ms var(--ease-salida); }
 @keyframes agregado { 40% { transform: scale(0.96); box-shadow: 0 0 0 6px rgb(210 178 106 / 0.35); } }
@@ -248,7 +305,7 @@ dialog.lista { inset: auto 0 0 0; margin: 0 auto; width: min(100%, 36rem); heigh
 @media (min-width: 40rem) { dialog.lista { height: min(88dvh, 52rem); } }
 dialog.lista::backdrop { background: rgb(0 0 0 / 0.68); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); animation: velo 300ms ease-out; }
 dialog.lista.cerrando::backdrop { animation: velo 220ms ease-out reverse forwards; }
-.lista-panel { display: flex; flex-direction: column; height: 100%; overflow: hidden; border-radius: 28px 28px 0 0; background: var(--color-grafito); box-shadow: 0 -20px 60px rgb(0 0 0 / 0.5), inset 0 0 0 1px rgb(255 255 255 / 0.06); }
+.lista-panel { display: flex; flex-direction: column; height: 100%; overflow: hidden; border-radius: 28px 28px 0 0; background: linear-gradient(rgb(18 18 17 / 0.9), rgb(18 18 17 / 0.94)), var(--marmol) center / cover no-repeat, #121211; box-shadow: 0 -20px 60px rgb(0 0 0 / 0.5), inset 0 0 0 1px rgb(255 255 255 / 0.06); }
 dialog.lista[open] .lista-panel { animation: hoja-sube 360ms var(--ease-cajon); }
 dialog.lista.cerrando .lista-panel { animation: hoja-baja 220ms var(--ease-cajon) forwards; }
 @media (min-width: 64rem) and (min-height: 36rem) {
@@ -321,6 +378,7 @@ dialog.lista.cerrando .lista-panel { animation: hoja-baja 220ms var(--ease-cajon
   *, *::before, *::after { animation-duration: 1ms !important; animation-iteration-count: 1 !important; transition-duration: 1ms !important; animation-delay: 0ms !important; transition-delay: 0ms !important; scroll-behavior: auto !important; }
   .revela, .aparece, .hero-media { opacity: 1; transform: none; }
   .linea > span, .trazo, .cortina .cortina-img { transform: none; }
+  .producto:active .producto-marco { transform: none; }
   .cortina > :first-child { clip-path: none; }
   .hero-marco, .hero-foto, .paralaje { animation: none !important; }
   .mancha.gota { display: none; }

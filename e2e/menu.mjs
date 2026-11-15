@@ -37,12 +37,12 @@ for (const [nombre, w, h] of TAMANOS) {
   await page.locator('[data-mas]').click();
   await page.fill('#hoja-nota', 'sin cebolla');
   await page.locator('#hoja-agregar').click();
-  await page.waitForFunction(() => !document.querySelector('#hoja').open && !document.documentElement.classList.contains('bloqueo') && !document.querySelector('.liquido, .vuelo'), null, { timeout: 5000 });
+  await page.waitForFunction(() => !document.querySelector('#hoja').open && !document.documentElement.classList.contains('bloqueo') && !document.querySelector('#morfo:not([hidden]), .vuelo'), null, { timeout: 5000 });
   await page.waitForTimeout(500);
   const guardada = await page.evaluate(() => JSON.parse(localStorage.getItem('makizen-lista') ?? 'null'));
   ok(guardada?.v === 1 && guardada.lineas[0]?.n === 2 && guardada.lineas[0]?.op === 'camaron', 'lista guardada: 2 sopas de camarón');
   ok((await page.locator('.isla-lista .contador').textContent()) === '2', 'la isla cuenta 2');
-  ok((await page.locator('.liquido, .vuelo').count()) === 0, 'no quedan capas de animación');
+  ok((await page.locator('#morfo:not([hidden]), .vuelo').count()) === 0, 'no quedan capas de animación');
   ok(!(await page.evaluate(() => document.documentElement.classList.contains('bloqueo'))), 'la página no queda bloqueada');
 
   // Agotado: no se puede agregar.
@@ -51,7 +51,7 @@ for (const [nombre, w, h] of TAMANOS) {
   await page.waitForSelector('#hoja[open]');
   ok(await page.locator('#hoja-agregar').isHidden(), 'agotado: sin botón de agregar');
   await page.keyboard.press('Escape');
-  await page.waitForFunction(() => !document.querySelector('#hoja').open && !document.documentElement.classList.contains('bloqueo') && !document.querySelector('.liquido, .vuelo'), null, { timeout: 5000 });
+  await page.waitForFunction(() => !document.querySelector('#hoja').open && !document.documentElement.classList.contains('bloqueo') && !document.querySelector('#morfo:not([hidden]), .vuelo'), null, { timeout: 5000 });
   await page.waitForTimeout(400);
 
   // Agregar con un toque una bebida de la lista.
@@ -147,7 +147,7 @@ for (const [nombre, w, h] of TAMANOS) {
   await page.goto(BASE, { waitUntil: 'networkidle' });
   await page.locator('#entradas').scrollIntoViewIfNeeded();
   await page.locator('[data-abrir="camaron-roca"]').click();
-  ok(await page.locator('#hoja[open]').count() === 1 && (await page.locator('.liquido').count()) === 0, 'abre sin animación líquida');
+  ok(await page.locator('#hoja[open]').count() === 1 && (await page.locator('#morfo:not([hidden]), .vuelo').count()) === 0, 'abre sin animación de revelado');
   await ctx.close();
 }
 await browser.close();

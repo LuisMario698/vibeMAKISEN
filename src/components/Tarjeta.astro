@@ -20,11 +20,14 @@ const modo = recorte ? 'recorte' : real ? 'foto' : 'icono';
 const corta = etiquetaCorta(p);
 // Bebidas en lista sin sabores a elegir: se agregan con un toque.
 const rapido = forma === 'fila' && !p.agotado && !p.opciones;
+// Cada tarjeta muestra otra región del mármol (como piezas distintas de la misma losa).
+const semilla = [...p.id].reduce((h, c) => (h * 31 + c.charCodeAt(0)) % 9973, 7);
+const veta = `--mx:${semilla % 100}%;--my:${(semilla * 7) % 100}%`;
 ---
 {forma === 'tarjeta' ? (
   <li class="revela" style={`--i:${i}`}>
     <article class="producto group relative cursor-pointer" data-modo={modo} data-cat={cat}>
-      <div class:list={['producto-marco relative aspect-square overflow-hidden rounded-[22px] bg-pizarra ring-1 ring-white/[0.06] transition-[box-shadow] duration-300 group-hover:ring-oro/40', p.agotado && 'agotado-marco']}>
+      <div class:list={['producto-marco relative aspect-square overflow-hidden rounded-[22px] bg-pizarra ring-1 ring-white/[0.06]', p.agotado && 'agotado-marco']} style={veta}>
         {modo !== 'foto' && <div class="absolute inset-0 bg-[radial-gradient(70%_55%_at_50%_60%,rgb(174_139_61/0.17),transparent_72%)]"></div>}
         {recorte && <img src={recorte.src} width={recorte.w} height={recorte.h} alt="" loading="lazy" decoding="async" data-foto={p.id} class="producto-img absolute inset-0 m-auto h-[84%] w-[84%] object-contain drop-shadow-[0_18px_16px_rgb(0_0_0/0.75)]" />}
         {real && <img src={real.src} srcset={real.srcset} sizes="(min-width: 640px) 33vw, 50vw" width={real.w} height={real.h} alt="" loading="lazy" decoding="async" data-foto={p.id} class="producto-img absolute inset-0 h-full w-full object-cover" />}
@@ -46,8 +49,8 @@ const rapido = forma === 'fila' && !p.agotado && !p.opciones;
   </li>
 ) : (
   <li class="revela" style={`--i:${i}`}>
-    <article class="producto group relative flex cursor-pointer items-center gap-3.5 border-b border-hueso/[0.07] py-3" data-modo={modo} data-cat={cat}>
-      <div class:list={['producto-marco relative size-16 shrink-0 overflow-hidden rounded-2xl bg-pizarra ring-1 ring-white/[0.06]', p.agotado && 'agotado-marco']}>
+    <article class="producto group relative flex cursor-pointer items-center gap-3.5 border-b border-oro/[0.16] py-3" data-modo={modo} data-cat={cat}>
+      <div class:list={['producto-marco relative size-16 shrink-0 overflow-hidden rounded-2xl bg-pizarra ring-1 ring-white/[0.06]', p.agotado && 'agotado-marco']} style={veta}>
         {recorte && <img src={recorte.src} width={recorte.w} height={recorte.h} alt="" loading="lazy" decoding="async" data-foto={p.id} class="producto-img absolute inset-0 m-auto h-[86%] w-[86%] object-contain" />}
         {real && <img src={real.src} width={real.w} height={real.h} alt="" loading="lazy" decoding="async" data-foto={p.id} class="producto-img absolute inset-0 h-full w-full object-cover" />}
         {modo === 'icono' && <img src={iconoDe(cat)} width="64" height="64" alt="" loading="lazy" data-foto={p.id} class="producto-img absolute inset-0 m-auto h-[58%] w-[58%] object-contain opacity-80" />}
