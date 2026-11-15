@@ -10,6 +10,9 @@
 /menu/*
   Cache-Control: public, max-age=2592000
 
+/fondos/*
+  Cache-Control: public, max-age=2592000
+
 /brand/*
   Cache-Control: public, max-age=604800
 
