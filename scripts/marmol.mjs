@@ -11,8 +11,8 @@ const origen = process.argv[2];
 if (!origen) { console.error('Uso: node scripts/marmol.mjs portada.jpg'); process.exit(1); }
 await mkdir('public/fondos', { recursive: true });
 
-const RODILLA = 58; // a partir de aquí las vetas suben a la mitad de velocidad
-const TOPE = 104;
+const RODILLA = 50; // a partir de aquí las vetas suben a la mitad de velocidad
+const TOPE = 80;
 const curva = (v) => Math.min(TOPE, v < RODILLA ? v : RODILLA + (v - RODILLA) * 0.5);
 // Tinte cálido muy leve, como los neutros de la marca.
 const tinte = [1, 0.985, 0.95];

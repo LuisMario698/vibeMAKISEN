@@ -7,7 +7,7 @@ import { precio, usd } from '../lib/precios';
 import { escapar } from '../lib/texto';
 import { LIMITES, type ErrorAgregar } from '../lib/pedido';
 import { $, anunciar, bi, datos, enPantalla, esEscritorio, espera, html, reducir, type PlatilloCliente } from './comun';
-import { aLaBolsa, cajaDe, crearMorfo, proporcion, radios, rectImagen, type Ajuste, type Caja, type Forma, type Radios } from './morfo';
+import { aLaBolsa, anchoVista, cajaDe, crearMorfo, proporcion, radios, rectImagen, type Ajuste, type Caja, type Forma, type Radios } from './morfo';
 
 type Modo = 'recorte' | 'foto' | 'icono' | 'fila' | 'mosaico';
 const RADIO: Record<Modo, number> = { recorte: 22, foto: 22, icono: 22, fila: 16, mosaico: 24 };
@@ -42,6 +42,8 @@ export function crearHoja(o: {
   let modoActual: Modo = 'icono';
   let disparador: HTMLElement | null = null;
   let ocupado = false;
+  /** Solo durante la apertura animada: ahí un cierre se pospone; durante un cierre se ignora. */
+  let abriendo = false;
   /** Cierre pedido mientras terminaba la apertura: se ejecuta al terminar. */
   let cierrePendiente = false;
   /** Evita sumar dos veces con un doble toque en «Agregar». */
@@ -59,18 +61,20 @@ export function crearHoja(o: {
   /** Caja final del panel: hoja anclada abajo o ventana centrada. */
   function cajaHoja(alto = altoMedio()): Caja {
     if (esEscritorio()) {
-      const w = Math.min(innerWidth - 64, 980);
+      const vw = anchoVista();
+      const w = Math.min(vw - 64, 980);
       const h = Math.min(innerHeight - 64, 680);
       hoja.style.setProperty('--ancho-hoja', `${w}px`);
       hoja.style.setProperty('--alto-hoja', `${h}px`);
       altoHoja = h;
-      return { x: (innerWidth - w) / 2, y: (innerHeight - h) / 2, w, h };
+      return { x: (vw - w) / 2, y: (innerHeight - h) / 2, w, h };
     }
-    const w = Math.min(innerWidth, 576);
+    const vw = anchoVista();
+    const w = Math.min(vw, 576);
     altoHoja = alto;
     hoja.style.setProperty('--ancho-hoja', `${w}px`);
     hoja.style.setProperty('--alto-hoja', `${alto}px`);
-    return { x: (innerWidth - w) / 2, y: innerHeight - alto, w, h: alto };
+    return { x: (vw - w) / 2, y: innerHeight - alto, w, h: alto };
   }
   /** Dónde queda la imagen principal dentro del panel S (antes de abrirlo). */
   function extremoHoja(S: Caja, modo: Modo): { caja: Caja; ajuste: Ajuste; radios: Radios } {
@@ -177,6 +181,7 @@ export function crearHoja(o: {
   async function abrir(id: string, boton: HTMLElement | null) {
     const p = datos.platillos.find((x) => x.id === id);
     if (!p || ocupado || hoja.open) return;
+    cierrePendiente = false;
     actual = p;
     disparador = boton ?? o.isla.pildora();
     origen = boton?.closest<HTMLElement>('article.producto') ?? null;
@@ -195,6 +200,7 @@ export function crearHoja(o: {
     }
     // Revelado: la lámina de mármol crece desde la tarjeta y la foto vuela a su lugar.
     ocupado = true;
+    abriendo = true;
     html.classList.add('bloqueo');
     hoja.classList.add('liquida');
     const pieza = piezaDe(origen, modoActual);
@@ -214,14 +220,16 @@ export function crearHoja(o: {
     morfo.veloSin(false);
     if (imgOrigen) imgOrigen.style.visibility = '';
     ocupado = false;
+    abriendo = false;
     if (cierrePendiente) { cierrePendiente = false; cerrar(); }
   }
 
   /** 'morfo': vuelve a la tarjeta en mármol. 'rapido': baja en 260 ms (tras agregar). 'instantaneo': sin animación. */
   async function cerrar(modo: 'morfo' | 'rapido' | 'instantaneo' = 'morfo') {
-    if (ocupado && hoja.open) { cierrePendiente = true; return; }
-    if (!hoja.open || ocupado) return;
-    const vuelve = () => { if (!document.querySelector('dialog[open]')) html.classList.remove('bloqueo'); disparador?.focus({ preventScroll: true }); };
+    // Durante la apertura, el cierre espera a que termine; durante otro cierre, se ignora.
+    if (ocupado) { if (abriendo) cierrePendiente = true; return; }
+    if (!hoja.open) return;
+    const vuelve = () => { cierrePendiente = false; if (!document.querySelector('dialog[open]')) html.classList.remove('bloqueo'); disparador?.focus({ preventScroll: true }); };
     if (modo === 'morfo' && origen && enPantalla(origen) && !reducir()) {
       ocupado = true;
       const pieza = piezaDe(origen, modoActual);
@@ -229,6 +237,15 @@ export function crearHoja(o: {
       // 1 · El contenido se apaga (y, ya invisible, el scroll vuelve arriba).
       hoja.classList.add('recogiendo');
       await espera(110);
+      // Si el navegador cerró el diálogo por su cuenta (Escape repetido, gesto atrás), no hay
+      // panel que medir: solo se limpia.
+      if (!hoja.open) {
+        hoja.classList.remove('liquida', 'panel-listo', 'recogiendo');
+        panel.style.transform = '';
+        ocupado = false;
+        vuelve();
+        return;
+      }
       scroller.scrollTop = 0;
       const S = cajaDe(panel);
       const rS: Radios = esEscritorio() ? radiosPanel() : [28, 28, 0, 0];
@@ -258,8 +275,9 @@ export function crearHoja(o: {
       vuelve();
       return;
     }
-    const fin = () => { hoja.close(); hoja.classList.remove('cerrando', 'liquida', 'panel-listo', 'recogiendo'); panel.style.transform = ''; vuelve(); };
+    const fin = () => { hoja.close(); hoja.classList.remove('cerrando', 'liquida', 'panel-listo', 'recogiendo'); panel.style.transform = ''; ocupado = false; vuelve(); };
     if (modo === 'instantaneo' || reducir()) { fin(); return; }
+    ocupado = true;
     hoja.classList.remove('liquida');
     hoja.classList.add('cerrando');
     await espera(260);
@@ -295,15 +313,22 @@ export function crearHoja(o: {
     btnAgregar.classList.add('agregado');
     await espera(reducir() ? 0 : 140);
     btnAgregar.classList.remove('agregado');
-    // La foto del platillo cae en la bolsa mientras la hoja baja.
+    // La foto del platillo cae en la bolsa mientras la hoja baja. Sale solo de la parte que
+    // se ve (la hoja pudo desplazarse); si casi no se ve, sale del botón «Agregar».
     const destino = o.isla.destinoBolsa();
+    const a = proporcion(hojaImg);
+    const src = hojaImg.currentSrc || hojaImg.src;
+    const base = cubre(modoActual) ? cajaDe(zonaFoto) : rectImagen(cajaDe(hojaImg), a, 'contain');
+    let desde = interseccion(interseccion(base, cajaDe(scroller)), cajaDe(panel));
+    if (desde.w < 24 || desde.h < 24) { const b = cajaDe(btnAgregar); desde = { x: b.x + 12, y: b.y + b.h / 2 - 20, w: 40, h: 40 }; }
+    const lanzar = () => (destino && !reducir() ? aLaBolsa(src, a, desde, destino, cubre(modoActual)) : Promise.resolve());
+    // Con popover la miniatura vuela encima de la hoja que baja; sin popover quedaría tapada
+    // por el diálogo (capa superior), así que primero se cierra y luego vuela.
+    const conPopover = typeof HTMLElement.prototype.showPopover === 'function';
     let vuelo: Promise<void> = Promise.resolve();
-    if (destino && !reducir()) {
-      const a = proporcion(hojaImg);
-      const desde = cubre(modoActual) ? interseccion(cajaDe(zonaFoto), cajaDe(panel)) : rectImagen(cajaDe(hojaImg), a, 'contain');
-      if (desde.w > 0 && desde.h > 0) vuelo = aLaBolsa(hojaImg.currentSrc || hojaImg.src, a, desde, destino, cubre(modoActual));
-    }
+    if (conPopover) vuelo = lanzar();
     await cerrar('rapido');
+    if (!conPopover) vuelo = lanzar();
     await vuelo;
     o.agregado(item);
   });
@@ -315,7 +340,7 @@ export function crearHoja(o: {
 
   // Durante la transición el velo atrapa los toques (no llegan a la página de abajo);
   // un toque ahí pide cerrar en cuanto termine la apertura.
-  $('#velo-hoja')!.addEventListener('click', () => { if (ocupado) cierrePendiente = true; });
+  $('#velo-hoja')!.addEventListener('click', () => { if (abriendo) cierrePendiente = true; });
 
   /* ── Cerrar ── */
   $('[data-cerrar]', hoja)!.addEventListener('click', () => cerrar());

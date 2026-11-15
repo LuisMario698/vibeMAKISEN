@@ -13,6 +13,9 @@ export type Radios = [number, number, number, number];
 export type Ajuste = 'contain' | 'cover';
 export type Forma = 'hoja' | 'ventana';
 
+/** Ancho útil de la vista (sin la barra de desplazamiento clásica): el mismo que usan
+ *  el <dialog> modal y las capas fijas. innerWidth sí la incluye. */
+export const anchoVista = () => document.documentElement.getBoundingClientRect().width || innerWidth;
 export const cajaDe = (el: Element): Caja => { const r = el.getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height }; };
 export const radios = (r: number): Radios => [r, r, r, r];
 /** Curva de cajón (tipo iOS): arranca rápido y se asienta suave. */
@@ -29,7 +32,7 @@ export const proporcion = (img: HTMLImageElement, caja = cajaDe(img)) => (img.na
 const px = (n: number) => `${Math.round(n * 100) / 100}px`;
 const redondeo = (r: Radios, s = 1) => r.map((v) => px(Math.max(0, v / s))).join(' ');
 /** clip-path en coordenadas de pantalla para una capa fija a pantalla completa. */
-const recortePantalla = (c: Caja, r: Radios) => `inset(${px(c.y)} ${px(innerWidth - c.x - c.w)} ${px(innerHeight - c.y - c.h)} ${px(c.x)} round ${redondeo(r)})`;
+const recortePantalla = (c: Caja, r: Radios) => `inset(${px(c.y)} ${px(anchoVista() - c.x - c.w)} ${px(innerHeight - c.y - c.h)} ${px(c.x)} round ${redondeo(r)})`;
 /** clip-path local de un elemento escalado `s` cuya caja en pantalla es R, para dejar ver solo `vis`. */
 const recorteLocal = (vis: Caja, R: Caja, s: number, r: Radios) => {
   const t = Math.max(0, (vis.y - R.y) / s), l = Math.max(0, (vis.x - R.x) / s);

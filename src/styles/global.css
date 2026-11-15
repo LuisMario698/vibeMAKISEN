@@ -13,7 +13,7 @@
   --color-hueso: #f4f1ea;
   --color-niebla: #aaa69d;
   /* ≥ 4.5:1 incluso sobre las vetas más claras del mármol del fondo (AA). */
-  --color-humo: #9a968d;
+  --color-humo: #a4a097;
   --color-oro: #ae8b3d;
   --color-oro-claro: #d2b26a;
   --color-oro-sombra: #786028;
@@ -55,7 +55,7 @@
     content: ""; position: fixed; left: 0; top: 0; z-index: -1; width: 100%; height: 100lvh; pointer-events: none;
     background:
       radial-gradient(120% 75% at 50% 18%, transparent 40%, rgb(5 5 5 / 0.55) 100%),
-      linear-gradient(rgb(5 5 5 / 0.38), rgb(5 5 5 / 0.38)),
+      linear-gradient(rgb(5 5 5 / 0.48), rgb(5 5 5 / 0.48)),
       var(--marmol) center / cover no-repeat,
       var(--color-noche);
   }
