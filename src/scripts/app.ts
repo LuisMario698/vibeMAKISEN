@@ -45,8 +45,20 @@ document.addEventListener('click', (e) => {
 });
 
 /* ── Barra superior: sólida al salir de la portada ─────────────────── */
+// Un centinela a 24 px del inicio en lugar de leer scrollY en cada evento de scroll.
 const nav = $('#nav')!;
-addEventListener('scroll', () => nav.classList.toggle('solida', scrollY > 24), { passive: true });
+const tope = document.createElement('div');
+tope.setAttribute('aria-hidden', 'true');
+tope.style.cssText = 'position:absolute;top:24px;left:0;width:1px;height:1px;pointer-events:none';
+document.body.prepend(tope);
+new IntersectionObserver(([e]) => { if (e) nav.classList.toggle('solida', !e.isIntersecting && e.boundingClientRect.top < 0); }).observe(tope);
+
+/* ── Movimiento sin fin solo cuando se ve ──────────────────────────── */
+// La cinta, la ola, el destello del logo y el punto «abierto» se pausan fuera de pantalla
+// (data-pausa, ver src/styles/intro.css) y con la pestaña oculta.
+const vigia = new IntersectionObserver((es) => es.forEach((e) => e.target.toggleAttribute('data-pausa', !e.isIntersecting)), { rootMargin: '120px 0px' });
+$$('#inicio, [data-estado-local]').forEach((el) => vigia.observe(el));
+document.addEventListener('visibilitychange', () => html.toggleAttribute('data-pausa', document.hidden));
 
 /* ── Aparición al hacer scroll ─────────────────────────────────────── */
 const revela = new IntersectionObserver(
@@ -57,7 +69,7 @@ $$('.revela, .cortina').forEach((el) => revela.observe(el));
 
 /* ── Categorías: isla, índice lateral y categoría activa ───────────── */
 const secciones = $$('[data-seccion]');
-let bloqueo = 0; let pendiente = false;
+let bloqueo = 0;
 function ir(id: string) {
   const sec = document.getElementById(id);
   if (!sec) return;
@@ -86,8 +98,10 @@ const isla = crearIsla({
   reducir,
 });
 
+// Categoría activa: la última sección cuyo borde superior ya cruzó la línea del 40 % de la pantalla.
+// Se calcula solo cuando una sección cruza esa línea (IntersectionObserver) o al terminar un
+// scroll; antes se leía el layout de todas las secciones en cada cuadro del scroll.
 function espiar() {
-  pendiente = false;
   if (Date.now() < bloqueo) return;
   const linea = innerHeight * 0.4;
   let i = -1;
@@ -95,7 +109,10 @@ function espiar() {
   const nuevo = Math.max(0, i);
   if (nuevo !== isla.indice) isla.actualizar(nuevo, nuevo > isla.indice ? 1 : -1);
 }
-addEventListener('scroll', () => { if (!pendiente) { pendiente = true; requestAnimationFrame(espiar); } }, { passive: true });
+const cruce = new IntersectionObserver(() => espiar(), { rootMargin: '0px 0px -60% 0px' });
+secciones.forEach((s) => cruce.observe(s));
+// Saltos largos (enlace a la portada, teclado): ninguna sección cruza la línea a la vista.
+addEventListener('scrollend', () => espiar(), { passive: true });
 
 /* ── Mi pedido ─────────────────────────────────────────────────────── */
 let enMenu = false;

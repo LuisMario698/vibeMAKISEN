@@ -17,14 +17,19 @@ html.intro .intro-capa {
   --cy: 42%;
   --r: calc(var(--S) * 0.405 * var(--a) * var(--s));
   display: block; position: fixed; inset: 0; z-index: 120; overflow: hidden; contain: strict;
+  animation: intro-iris 700ms 1660ms both, intro-funde 700ms 1660ms both, intro-seguro 1ms 3200ms forwards;
+  -webkit-user-select: none; user-select: none;
+}
+/* El fondo (mármol + degradados) va en su propia capa compuesta: el iris cambia el clip-path
+   de la capa en cada cuadro y así solo se recalcula el recorte, sin volver a pintar el mármol. */
+html.intro .intro-capa::before {
+  content: ""; position: absolute; inset: 0; z-index: -1; will-change: transform;
   background:
     radial-gradient(calc(var(--S) * 1.1) calc(var(--S) * 1.1) at var(--cx) var(--cy), rgb(174 139 61 / 0.13), transparent 70%),
     radial-gradient(120% 80% at 50% 42%, transparent 35%, rgb(0 0 0 / 0.72) 100%),
     linear-gradient(rgb(5 5 5 / 0.62), rgb(5 5 5 / 0.62)),
     var(--marmol) center / cover no-repeat,
     var(--color-noche);
-  animation: intro-iris 700ms 1660ms both, intro-funde 700ms 1660ms both, intro-seguro 1ms 3200ms forwards;
-  -webkit-user-select: none; user-select: none;
 }
 @keyframes intro-iris {
   0% { --a: 0; --s: 1; animation-timing-function: cubic-bezier(0.5, 0, 0.9, 0.55); }
@@ -185,11 +190,19 @@ html.intro-espera #inicio .revela.visto { opacity: 0; transform: translateY(22px
   -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent;
   clip-path: inset(-0.2em 100% -0.2em -0.1em);
   transform: translateY(18%);
-  animation: oro-pinta 1150ms var(--ease-salida) forwards, oro-destello 7s linear infinite;
-  animation-delay: calc(var(--base, 0) * 1ms + var(--k) * 24ms + 40ms), calc(var(--base, 0) * 1ms + 2600ms);
+  animation: oro-pinta 1150ms var(--ease-salida) forwards;
+  animation-delay: calc(var(--base, 0) * 1ms + var(--k) * 24ms + 40ms);
+}
+/* El destello va por clase (src/scripts/intro.ts la pone cada 7 s, solo si la portada se ve).
+   Antes era una animación infinita de 7 s quieta el 76 % del tiempo: background-position no va
+   al compositor, así que aun quieta obligaba a recalcular estilo y pintar cada cuadro.
+   Mismo nombre y lugar para oro-pinta: no se reinicia al agregar la segunda animación. */
+#inicio .oro.destella {
+  animation: oro-pinta 1150ms var(--ease-salida) forwards, oro-destello 1680ms linear;
+  animation-delay: calc(var(--base, 0) * 1ms + var(--k) * 24ms + 40ms), 0ms;
 }
 @keyframes oro-pinta { to { clip-path: inset(-0.2em -0.2em -0.2em -0.1em); transform: none; } }
-@keyframes oro-destello { 0%, 76% { background-position: 130% 0, 0 0; } 100% { background-position: -30% 0, 0 0; } }
+@keyframes oro-destello { from { background-position: 130% 0, 0 0; } to { background-position: -30% 0, 0 0; } }
 
 /* Ola de pincel bajo «Sinaloa.»: el Mar de Cortés. Dos trazos que corren en sentidos
    opuestos dentro de una máscara con forma de pincelada (gruesa al inicio, afilada al final). */
@@ -240,13 +253,12 @@ html.intro-espera #inicio .revela.visto { opacity: 0; transform: translateY(22px
 .cinta-pausa .i-seguir, .cinta-pausa[aria-pressed="true"] .i-pausa { display: none; }
 .cinta-pausa[aria-pressed="true"] .i-seguir { display: block; }
 #inicio[data-quieta] :is(.cinta-pista, .ola-a, .ola-b) { animation-play-state: paused; }
-/* «Sinaloa.» termina de pintarse; solo se detiene el destello (segunda animación). */
-#inicio[data-quieta] .oro { animation-play-state: running, paused; }
+/* «Sinaloa.» termina de pintarse; el destello no se vuelve a poner (src/scripts/intro.ts). */
 @media (hover: hover) and (pointer: fine) { .cinta:hover .cinta-pista { animation-play-state: paused; } }
 
 /* ── Movimiento reducido: todo quieto y legible ───────────────────────── */
 @media (prefers-reduced-motion: reduce) {
-  #inicio .letra, #inicio .oro, #inicio .ola { animation: none; transform: none; clip-path: none; }
+  #inicio .letra, #inicio .oro, #inicio .oro.destella, #inicio .ola { animation: none; transform: none; clip-path: none; }
   #inicio .ola-a, #inicio .ola-b, .cinta-pista { animation: none; }
   .cinta-pista { width: auto; justify-content: center; }
   .cinta-grupo { flex-wrap: wrap; justify-content: center; padding-inline: 1rem; }
@@ -263,16 +275,30 @@ html.intro-espera #inicio .revela.visto { opacity: 0; transform: translateY(22px
 @media (min-width: 40rem) { .marca-hero { width: 460px; } }
 @media (min-width: 64rem) { .marca-hero { width: 520px; } }
 .marca-hero-img { display: block; width: 100%; height: auto; filter: drop-shadow(0 10px 30px rgb(0 0 0 / 0.65)); }
-/* Destello dorado que recorre solo el dibujo del logo (máscara con el mismo SVG). */
+/* Destello dorado que recorre solo el dibujo del logo (máscara con el mismo SVG).
+   La franja es un hijo que se desplaza con transform (va en el compositor): animar
+   background-position repintaba el logo y la página entera en cada cuadro. */
 .marca-brillo {
-  position: absolute; inset: 0; pointer-events: none;
+  position: absolute; inset: 0; pointer-events: none; overflow: hidden;
   -webkit-mask: url(/brand/logo-horizontal.svg) center / 100% 100% no-repeat; mask: url(/brand/logo-horizontal.svg) center / 100% 100% no-repeat;
-  background: linear-gradient(105deg, transparent 38%, rgb(210 178 106 / 0.95) 48%, rgb(255 240 200 / 1) 50%, rgb(210 178 106 / 0.95) 52%, transparent 62%) 160% 0 / 250% 100% no-repeat;
+}
+.marca-brillo::before {
+  content: ""; position: absolute; top: 0; bottom: 0; left: 0; width: 250%;
+  background: linear-gradient(105deg, transparent 38%, rgb(210 178 106 / 0.95) 48%, rgb(255 240 200 / 1) 50%, rgb(210 178 106 / 0.95) 52%, transparent 62%);
+  transform: translateX(-96%);
   animation: marca-brillo 1400ms 900ms var(--ease-salida) both, marca-brillo 1400ms 7s var(--ease-salida) infinite;
 }
-@keyframes marca-brillo { from { background-position: 160% 0; } to { background-position: -60% 0; } }
-html.intro-espera #inicio .marca-brillo { animation-play-state: paused; }
-#inicio[data-quieta] .marca-brillo { animation-play-state: paused; }
+/* Equivale a background-position 160% → -60% con un fondo de 250 % de ancho. */
+@keyframes marca-brillo { from { transform: translateX(-96%); } to { transform: translateX(36%); } }
+html.intro-espera #inicio .marca-brillo::before { animation-play-state: paused; }
+#inicio[data-quieta] .marca-brillo::before { animation-play-state: paused; }
+
+/* Movimiento sin fin pausado cuando no se ve: la portada fuera de pantalla o la pestaña
+   oculta (data-pausa lo pone src/scripts/app.ts). Así no consume CPU ni batería al recorrer el menú. */
+[data-pausa] .cinta-pista,
+:is(#inicio[data-pausa], html[data-pausa] #inicio) :is(.ola-a, .ola-b),
+[data-pausa] .marca-brillo::before,
+[data-pausa] .punto-vivo::after { animation-play-state: paused; }
 /* El logo pequeño de la barra aparece solo al dejar la portada (no se repite arriba). */
 .logo-nav { transition: opacity 300ms ease, transform 400ms var(--ease-salida); }
 #nav:not(.solida) .logo-nav { opacity: 0; transform: translateY(-6px); }

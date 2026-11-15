@@ -61,3 +61,18 @@ if (pausa && inicio) {
     try { if (quieta) localStorage.setItem(CLAVE, '1'); else localStorage.removeItem(CLAVE); } catch { /* nada que guardar */ }
   });
 }
+
+/* ── Destello de «Sinaloa.» cada 7 s ──
+   Va por clase y no como animación infinita: background-position no corre en el compositor,
+   y una animación así obliga al hilo principal a trabajar en cada cuadro aunque esté quieta.
+   No se pone con la portada fuera de pantalla o pausada, la pestaña oculta ni la intro encima. */
+const oros = inicio ? [...inicio.querySelectorAll<HTMLElement>('.oro')] : [];
+if (inicio && oros.length && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+  const destellar = () => {
+    if (inicio.hasAttribute('data-quieta') || inicio.hasAttribute('data-pausa') || html.hasAttribute('data-pausa') || html.classList.contains('intro-espera')) return;
+    oros.forEach((o) => { if (o.offsetParent) o.classList.add('destella'); });
+  };
+  oros.forEach((o) => o.addEventListener('animationend', (e) => { if (e.animationName === 'oro-destello') o.classList.remove('destella'); }));
+  // El primero cae donde caía antes (≈ 8.2 s tras cargar); luego cada 7 s.
+  setTimeout(() => { destellar(); setInterval(destellar, 7000); }, 8200);
+}

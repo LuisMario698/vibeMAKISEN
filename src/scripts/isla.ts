@@ -236,7 +236,7 @@ export function crearIsla(o: {
     resultados.innerHTML = hits
       .map(
         (p, k) => `<li style="--k:${Math.min(k, 12)}"><button type="button" data-platillo="${escapar(p.id)}" class="isla-res presionable${p.agotado ? ' agotado' : ''}">
-          <span class="miniatura">${p.foto ? `<img src="/menu/${escapar(p.foto)}.webp" alt="" loading="lazy">` : `<img src="${escapar(p.icono)}" alt="" class="icono">`}</span>
+          <span class="miniatura">${p.foto ? `<img src="/menu/${escapar(p.foto)}.webp" alt="" width="40" height="40" loading="lazy" decoding="async">` : `<img src="${escapar(p.icono)}" alt="" width="30" height="30" decoding="async" class="icono">`}</span>
           <span class="min-w-0 flex-1 text-left"><span class="block truncate text-[15px] font-semibold">${bi(p.nombre)}</span>
           <span class="block truncate text-[13px] text-noche/85">${bi(p.cat)}</span></span>
           <span class="text-[15px] font-bold tabular-nums">${escapar(p.precio)}</span></button></li>`,
@@ -337,7 +337,18 @@ export function crearIsla(o: {
   document.addEventListener('focusin', (e) => {
     if (estado === 'abierta' && !panel.contains(e.target as Node) && !(e.target as HTMLElement).closest('dialog')) input.focus({ preventScroll: true });
   });
-  addEventListener('resize', () => pintar());
+  // En el teléfono, la barra del navegador que entra y sale al hacer scroll dispara resize
+  // muchas veces seguidas: se repinta una vez por cuadro y solo si cambió el tamaño.
+  let tamAntes = '';
+  let cuadroResize = 0;
+  addEventListener('resize', () => {
+    if (cuadroResize) return;
+    cuadroResize = requestAnimationFrame(() => {
+      cuadroResize = 0;
+      const tam = `${ancho()}x${altoPanel()}`;
+      if (tam !== tamAntes) { tamAntes = tam; pintar(); }
+    });
+  }, { passive: true });
 
   if (o.reducir()) isla.classList.add('sin-movimiento');
   pintar();

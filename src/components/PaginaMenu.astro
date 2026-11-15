@@ -57,7 +57,7 @@ const total = menu.categorias.reduce((n, c) => n + c.platillos.length, 0);
   <figure class="contenedor cortina mt-8" aria-hidden="true">
     <div class="relative aspect-[16/10] overflow-hidden rounded-3xl bg-pizarra sm:aspect-[21/9]">
       <div class="paralaje absolute -inset-y-[8%] inset-x-0">
-        <img src={mesa.src} srcset={mesa.srcset} sizes="(min-width: 1152px) 1120px, 100vw" width={mesa.w} height={mesa.h} alt="" loading="lazy" decoding="async" class="cortina-img h-full w-full object-cover" />
+        <img src={mesa.src} srcset={mesa.srcset} sizes="(min-width: 72rem) 1120px, calc(100vw - 2rem)" width={mesa.w} height={mesa.h} alt="" loading="lazy" decoding="async" class="cortina-img h-full w-full object-cover" />
       </div>
     </div>
   </figure>
