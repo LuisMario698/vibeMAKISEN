@@ -2,6 +2,9 @@
 
 Responde siempre en español.
 
+## Forma de trabajo (memoria)
+- **Siempre usar las mejores skills disponibles** para cada tarea, antes de empezar a diseñar o programar: p. ej. `frontend-design`, `emil-design-eng` y `apple-design` para interfaz y movimiento; `web-design-guidelines` y `design:accessibility-review` para auditar; `writing-guidelines` / `design:ux-copy` para textos; `engineering:testing-strategy` para pruebas. Si hay una skill más específica para la tarea, preferirla.
+
 ## Objetivo
 Construir una **demo navegable** del menú digital (web móvil / PWA) de **MAKIZEN Sushi & Mariscos** (Puerto Peñasco, Sonora) para presentarla al restaurante como propuesta.
 - Debe sentirse **moderna y llamativa**, con **animación en todo el menú** (entrada de la página, cambio de categoría, tarjetas al hacer scroll, apertura del detalle del platillo, micro-interacciones), fiel a la estética real del lugar.
@@ -30,6 +33,11 @@ No inventar identidad: todo lo visual sale de lo que tienen. Si algo no existe, 
 - "Mi lista": platillo, opción (sabor), cantidad 1–20, nota ≤ 80; máx. 30 líneas. Estado en localStorage (`makizen-lista`, versión `v:1`, caduca a las 12 h) siempre en try/catch; se sanea contra el menú vigente (agotados fuera del total, precios actualizados, platillos inexistentes fuera).
 - Tres modalidades: **en mesa** (mesa 1–99 desde `?src=qr-mesa-N`, guardada en sessionStorage y quitada de la URL), **para llevar** (nombre + hora) y **a domicilio** (nombre + dirección + referencias; envío lo confirma el restaurante).
 - Mensaje en ES o EN según el idioma, con el nombre del platillo siempre en español, subtotal en MXN con IVA y "Precio final lo confirma el restaurante". La lógica pura vive en `src/lib/pedido.ts` con pruebas.
+- Pago: **efectivo o tarjeta** (se paga en el local o al recibir; nunca en línea). En efectivo se puede indicar con cuánto se paga para llevar cambio.
+- Cada pedido lleva un **folio** corto (p. ej. `MZ-4F7K`) dentro del mensaje. Tras enviarlo se muestra el **seguimiento** guardado en el teléfono (localStorage): el primer paso (enviado) es real; los siguientes son orientativos y el estado real lo confirma el restaurante por WhatsApp. El seguimiento en vivo llega con el panel del dueño (fase 2).
+- En mesa: se elige la mesa en un **plano visto desde arriba** (`src/data/mesas.json`). El plano y la disponibilidad son **ilustrativos y por confirmar con el restaurante** (se dice en pantalla); la disponibilidad en vivo es de la fase 2. El QR de mesa la preselecciona.
+- Para llevar: hora del **mismo día** en un selector de ranuras de 15 min dentro del horario (o "lo antes posible").
+- A domicilio: además de dirección y referencias, se puede marcar la ubicación en un **mapa** (Leaflet, carga diferida solo al elegir domicilio) o con **"usar mi ubicación"** (geolocalización del navegador, con permiso). El mensaje incluye el enlace de Google Maps con las coordenadas.
 
 ## Lo que ya sabemos (verificado el 8 nov 2026)
 - Nombre en IG: "MAKIZEN SUSHI & MARISCOS", @makizen.puertopenasco, 680 seguidores, 17 posts.
