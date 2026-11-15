@@ -1,0 +1,96 @@
+---
+// Animación de inicio (una vez por sesión). Es una capa encima de la portada, que ya se
+// pinta debajo: el ensō de pincel del isotipo se traza en oro, aparece el betta con un
+// brillo, el punto de oro salta desde el final del trazo, sube MAKIZEN y, al salir, el
+// ensō se abre como un iris que deja ver la portada.
+//
+// Todo el movimiento es CSS (transform, opacity y clip-path). El guion de una línea de
+// abajo decide antes de pintar si se muestra; src/scripts/intro.ts solo la salta y la quita.
+// Sin JavaScript no se muestra; si el JS falla a medias, la animación se oculta sola.
+import '../styles/intro.css';
+
+/* Geometría del isotipo (public/brand/isotipo.svg, 579 × 599), medida sobre el dibujo:
+   centro del ensō (299, 299), radio interior ≈ 241–263, exterior ≈ 293; el pez queda
+   dentro de r ≈ 238; punto de oro en (473, 181) con r ≈ 20. */
+const CX = (299 / 579) * 100;
+const CY = (299 / 599) * 100;
+const AR = 579 / 599;
+const r = (v: number, d = 2) => Number(v.toFixed(d));
+const rad = (g: number) => (g * Math.PI) / 180;
+
+/* Trazo del ensō: una cuña (polígono) que barre desde el inicio del pincel (arriba, a la
+   derecha) en sentido antihorario hasta el final seco del trazo (abajo, a la derecha).
+   Mismo número de vértices en cada cuadro clave, para que se interpole sin saltos. */
+const A0 = 296;
+const BARRIDO = 302;
+const CUADROS = 16;
+const VERTICES = 26;
+const curva = (t: number) => Math.pow(Math.sin((t * Math.PI) / 2), 1.35);
+let trazo = '';
+let punta = '';
+for (let i = 0; i <= CUADROS; i++) {
+  const t = i / CUADROS;
+  const fin = A0 - BARRIDO * curva(t);
+  const pts = [`${r(CX)}% ${r(CY)}%`];
+  for (let j = 0; j <= VERTICES; j++) {
+    const a = rad(A0 - ((A0 - fin) * j) / VERTICES);
+    pts.push(`${r(CX + 92 * Math.cos(a))}% ${r(CY + 92 * Math.sin(a) * AR)}%`);
+  }
+  const o = r(t * 100);
+  trazo += `${o}%{clip-path:polygon(${pts.join(',')})}`;
+  punta += `${o}%{transform:rotate(${r(fin, 1)}deg)}`;
+}
+
+/* Iris de salida: la capa se recorta con un hueco circular (polygon evenodd) centrado en el
+   ensō, de radio --r. --r sale de dos propiedades registradas que anima intro.css: --a abre
+   el hueco dentro del anillo y --s escala a la vez el hueco y el anillo (siempre en su borde). */
+const PUNTOS = 40;
+const hueco: string[] = [];
+for (let j = 0; j <= PUNTOS; j++) {
+  const a = (j / PUNTOS) * Math.PI * 2;
+  hueco.push(`calc(var(--cx) + var(--r) * ${r(Math.cos(a), 4)}) calc(var(--cy) + var(--r) * ${r(Math.sin(a), 4)})`);
+}
+const iris = `html.intro .intro-capa{clip-path:polygon(evenodd,0 0,100% 0,100% 100%,0 100%,0 0,${hueco.join(',')})}`;
+
+const css = `@keyframes intro-trazo{${trazo}}@keyframes intro-punta{${punta}}${iris}`;
+const letras = [...'MAKIZEN'];
+---
+<script is:inline>
+  // Antes de pintar: ¿se muestra la intro? Una vez por sesión, nunca con movimiento reducido
+  // ni en pruebas automáticas (salvo ?intro=1). Sin sessionStorage, no se muestra.
+  (function () {
+    var d = document.documentElement, ver = false;
+    try {
+      var auto = navigator.webdriver && !/[?&]intro=1(&|$)/.test(location.search);
+      ver = !auto && !matchMedia('(prefers-reduced-motion: reduce)').matches && !sessionStorage.getItem('makizen-intro');
+      if (ver) sessionStorage.setItem('makizen-intro', '1');
+    } catch (e) { ver = false; }
+    if (!ver) return;
+    d.classList.add('intro', 'intro-espera');
+    // El titular de la portada arranca cuando el iris empieza a abrirse; la capa se va al terminar.
+    var arranca = function () { d.classList.remove('intro-espera'); };
+    document.addEventListener('animationstart', function (e) { if (e.animationName === 'intro-iris') arranca(); });
+    document.addEventListener('animationend', function (e) { if (e.animationName === 'intro-iris' || e.animationName === 'intro-seguro') d.classList.remove('intro', 'intro-espera'); });
+    setTimeout(arranca, 2600);
+    // El isotipo (máscara del ensō y del pez) se pide ya, junto a la foto de la portada.
+    var l = document.createElement('link');
+    l.rel = 'preload'; l.as = 'image'; l.href = '/brand/isotipo.svg'; l.crossOrigin = 'anonymous';
+    document.head.appendChild(l);
+  })();
+</script>
+<style is:inline set:html={css}></style>
+<div id="intro" class="intro-capa" aria-hidden="true">
+  <div class="intro-logo">
+    <div class="intro-enso"></div>
+    <div class="intro-punta"><i></i></div>
+    <div class="intro-pez"><i class="intro-brillo"></i></div>
+    <div class="intro-salto"><div class="intro-punto"></div></div>
+    <div class="intro-onda"></div>
+  </div>
+  <div class="intro-texto">
+    <p class="intro-nombre">{letras.map((c, i) => <span style={`--k:${i - (letras.length - 1) / 2}`}>{c}</span>)}</p>
+    <p class="intro-sub"><b></b><span>Sushi &amp; Mariscos</span><b></b></p>
+  </div>
+  <p class="intro-ichigo" lang="ja">一期一会</p>
+</div>
+<script src="../scripts/intro.ts"></script>

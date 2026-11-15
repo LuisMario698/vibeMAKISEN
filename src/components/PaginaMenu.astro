@@ -1,5 +1,6 @@
 ---
 // Cuerpo del menú, compartido por / (español) y /en/ (inglés).
+import Intro from './Intro.astro';
 import Nav from './Nav.astro';
 import Hero from './Hero.astro';
 import Favoritos from './Favoritos.astro';
@@ -32,6 +33,7 @@ const datos = {
 const mesa = foto('mesa-madera');
 const total = menu.categorias.reduce((n, c) => n + c.platillos.length, 0);
 ---
+<Intro />
 <a href="#menu" class="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:rounded-full focus:bg-oro focus:px-4 focus:py-2 focus:text-noche">
   <span lang="es">Ir al menú</span><span lang="en">Skip to menu</span>
 </a>
