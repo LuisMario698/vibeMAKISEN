@@ -30,7 +30,7 @@ const portada = portadas[cat.id] ? foto(portadas[cat.id]!) : undefined;
   {portada && (
     <figure class="cortina relative mt-6 aspect-[16/10] overflow-hidden rounded-3xl bg-pizarra sm:aspect-[21/8]" aria-hidden="true">
       <div class="paralaje absolute -inset-y-[8%] inset-x-0">
-        <img src={portada.src} srcset={portada.srcset} sizes="(min-width: 1152px) 1120px, 100vw" width={portada.w} height={portada.h} alt="" loading="lazy" decoding="async" class="cortina-img h-full w-full object-cover" />
+        <img src={portada.src} srcset={portada.srcset} sizes="(min-width: 86rem) 1056px, (min-width: 64rem) calc(100vw - 20rem), calc(100vw - 2rem)" width={portada.w} height={portada.h} alt="" loading="lazy" decoding="async" class="cortina-img h-full w-full object-cover" />
       </div>
     </figure>
   )}

@@ -211,6 +211,15 @@ html.cambia-idioma::view-transition-new(root) { animation: 320ms var(--ease-sali
 /* ── Isla dinámica de oro líquido ──────────────────────────────────────── */
 .isla { position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom) + 14px); z-index: 45; translate: -50% 0; pointer-events: none; color: #0a0a0a; }
 .isla-liquido { position: absolute; inset: 0; filter: url(#goo) drop-shadow(0 16px 26px rgb(0 0 0 / 0.6)); will-change: filter; }
+/* El filtro goo (desenfoque + matriz, en CPU) se calcula sobre toda la caja del líquido.
+   Fuera del panel abierto basta la franja de la píldora y sus gotas: la caja pasa de
+   ~76 % de la pantalla a 220 px (las manchas se anclan abajo, no cambian de lugar).
+   Al abrir crece al instante; al cerrar espera a que el panel escurra (640–720 ms) para no recortarlo. */
+.isla-liquido { transition: top 0s; }
+.isla:not([data-estado="abierta"]) .isla-liquido { top: calc(100% - 220px); transition-delay: 760ms; }
+/* Gama baja o ahorro de datos (html.ligero): sin goo; píldora y botones sólidos con su sombra. */
+html.ligero .isla-liquido { filter: drop-shadow(0 16px 26px rgb(0 0 0 / 0.6)); }
+html.ligero .mancha.gota { display: none; }
 .mancha {
   position: absolute; display: block; background: var(--color-oro);
   transition: left 640ms var(--ease-liquido), bottom 640ms var(--ease-liquido), width 640ms var(--ease-liquido), height 640ms var(--ease-liquido), border-radius 640ms var(--ease-liquido), transform 420ms var(--ease-resorte);
@@ -321,6 +330,17 @@ dialog.hoja[data-forma="ventana"].cerrando .hoja-panel { animation: ventana-sale
 .aviso-flotante { position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom) + 84px); z-index: 90; translate: -50% 0; width: max-content; max-width: min(92vw, 28rem); padding: 12px 18px; border-radius: 16px; background: var(--color-hueso); color: #0a0a0a; font-size: 15px; font-weight: 600; text-align: center; box-shadow: 0 18px 40px rgb(0 0 0 / 0.5); animation: aviso-entra 220ms var(--ease-salida); }
 .aviso-flotante.sale { opacity: 0; transform: translateY(8px); transition: opacity 180ms ease-out, transform 180ms ease-out; }
 @keyframes aviso-entra { from { opacity: 0; transform: translateY(10px) scale(0.98); } }
+
+/* ── Teléfonos y tabletas (puntero táctil): sin desenfoque de fondo ──────── */
+/* backdrop-filter vuelve a desenfocar lo de atrás en cada cuadro del scroll (y el mármol fijo
+   ocupa toda la pantalla): en móvil es de lo que más cuesta. Un fondo algo más opaco se ve igual. */
+@media (pointer: coarse) {
+  .nav.solida { background: rgb(5 5 5 / 0.92); backdrop-filter: none; }
+  .nav-lista { background: rgb(5 5 5 / 0.8); backdrop-filter: none; }
+  .velo-hoja, dialog.hoja::backdrop { background: rgb(0 0 0 / 0.76); backdrop-filter: none; }
+  .isla-velo { background: rgb(0 0 0 / 0.72); backdrop-filter: none; }
+  .hoja-barra { background: rgb(27 27 25 / 0.98); backdrop-filter: none; }
+}
 
 /* ── Reducir movimiento ────────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
