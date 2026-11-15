@@ -256,3 +256,24 @@ html.intro-espera #inicio .revela.visto { opacity: 0; transform: translateY(22px
   .cinta { -webkit-mask-image: none; mask-image: none; }
   .cinta-pausa { display: none; }
 }
+
+
+/* ── Logotipo de la portada ─────────────────────────────────────────────── */
+.marca-hero { position: relative; display: inline-block; width: min(80vw, 360px); }
+@media (min-width: 40rem) { .marca-hero { width: 460px; } }
+@media (min-width: 64rem) { .marca-hero { width: 520px; } }
+.marca-hero-img { display: block; width: 100%; height: auto; filter: drop-shadow(0 10px 30px rgb(0 0 0 / 0.65)); }
+/* Destello dorado que recorre solo el dibujo del logo (máscara con el mismo SVG). */
+.marca-brillo {
+  position: absolute; inset: 0; pointer-events: none;
+  -webkit-mask: url(/brand/logo-horizontal.svg) center / 100% 100% no-repeat; mask: url(/brand/logo-horizontal.svg) center / 100% 100% no-repeat;
+  background: linear-gradient(105deg, transparent 38%, rgb(210 178 106 / 0.95) 48%, rgb(255 240 200 / 1) 50%, rgb(210 178 106 / 0.95) 52%, transparent 62%) 160% 0 / 250% 100% no-repeat;
+  animation: marca-brillo 1400ms 900ms var(--ease-salida) both, marca-brillo 1400ms 7s var(--ease-salida) infinite;
+}
+@keyframes marca-brillo { from { background-position: 160% 0; } to { background-position: -60% 0; } }
+html.intro-espera #inicio .marca-brillo { animation-play-state: paused; }
+#inicio[data-quieta] .marca-brillo { animation-play-state: paused; }
+/* El logo pequeño de la barra aparece solo al dejar la portada (no se repite arriba). */
+.logo-nav { transition: opacity 300ms ease, transform 400ms var(--ease-salida); }
+#nav:not(.solida) .logo-nav { opacity: 0; transform: translateY(-6px); }
+@media (prefers-reduced-motion: reduce) { .marca-brillo { display: none; } }

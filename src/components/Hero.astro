@@ -56,7 +56,13 @@ const olaB = ola(13, 45, 15.5, 2.4);
 ---
 <section id="inicio" class="relative pt-[calc(4rem+env(safe-area-inset-top))]" aria-labelledby="t-inicio">
   <div class="contenedor pt-7 sm:pt-14">
-    <p data-estado-local class="aparece inline-flex min-h-10 items-center gap-2.5 rounded-full vidrio px-4 text-[14px] ring-1 ring-white/[0.07]" style="--d:120" aria-live="polite">
+    <!-- Logotipo completo en grande: que se sepa de inmediato qué restaurante es. -->
+    <div class="marca-hero aparece" style="--d:40">
+      <img src="/brand/logo-horizontal.svg" width="891" height="349" alt="MAKIZEN Sushi & Mariscos" fetchpriority="high" decoding="async" class="marca-hero-img" />
+      <span class="marca-brillo" aria-hidden="true"></span>
+    </div>
+    <p class="aparece ceja mt-3 !text-[11px] !tracking-[0.32em] text-hueso/70" style="--d:90">Puerto Peñasco · Sonora</p>
+    <p data-estado-local class="aparece mt-6 inline-flex min-h-10 items-center gap-2.5 rounded-full vidrio px-4 text-[14px] ring-1 ring-white/[0.07]" style="--d:120" aria-live="polite">
       <span class="punto relative size-2 rounded-full text-abierto" style="background:currentColor"></span>
       <span class="texto"><span lang="es">Lun, Mié, Jue 1–9 pm · Vie a Dom 1–10 pm</span><span lang="en">Mon, Wed, Thu 1–9 pm · Fri–Sun 1–10 pm</span></span>
     </p>
