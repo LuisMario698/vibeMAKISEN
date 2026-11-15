@@ -1,106 +1,338 @@
 ---
-// Mi lista: el pedido que el cliente arma y manda por WhatsApp.
+// "Mi pedido": el carrito y la comanda por WhatsApp, en tres pasos claros
+// (1 Tu pedido → 2 Entrega → 3 Pago) y una vista de seguimiento al enviar.
 // Teléfono y tablet: hoja desde abajo. Computadora: cajón a la derecha.
-// La lógica vive en src/lib/pedido.ts y la interfaz en src/scripts/lista.ts.
+// Lógica pura en src/lib/ (pedido, pago, plano, ubicacion, seguimiento); interfaz en src/scripts/lista.ts.
+import '../styles/pedido.css';
+import PedidoPlano from './PedidoPlano.astro';
 import { LIMITES } from '../lib/pedido';
-import { menu } from '../data/schema';
+import { menu, plano } from '../data/schema';
 const n = menu.negocio;
+const r = plano.restaurante;
+
+const ICONO = {
+  mesa: 'M5 11h14M7 11v8M17 11v8M9 7.5h6M12 7.5V11M4 21h4M16 21h4',
+  llevar: 'M5.5 8.5h13l-1 11.5h-11zM9 8.5V7a3 3 0 0 1 6 0v1.5M9.5 13.5h5',
+  domicilio: 'M6 18.5a2.2 2.2 0 1 0 0-.1M17.5 18.5a2.2 2.2 0 1 0 0-.1M8.2 18.5h7.1l2.1-5.5h-4.6l-1.6 3.4H4.4M16.3 13l-1.1-4h-2.4M3 8.5h6V13H3z',
+};
 const modos = [
-  { id: 'mesa', es: 'En la mesa', en: 'Dine-in', d: 'M4 10h16M6 10v9M18 10v9M8 6h8' },
-  { id: 'llevar', es: 'Para llevar', en: 'Pickup', d: 'M6 8h12l-1 12H7zM9 8a3 3 0 0 1 6 0' },
-  { id: 'domicilio', es: 'A domicilio', en: 'Delivery', d: 'M3 11 12 4l9 7M5 10v10h14V10M10 20v-6h4v6' },
+  { id: 'mesa', es: 'En mesa', en: 'Dine-in', sub: { es: 'Te lo llevamos a tu mesa', en: 'We bring it to your table' } },
+  { id: 'llevar', es: 'Para llevar', en: 'Pickup', sub: { es: 'Pasas por él hoy', en: 'Pick it up today' } },
+  { id: 'domicilio', es: 'A domicilio', en: 'Delivery', sub: { es: 'Te lo llevamos', en: 'We deliver it' } },
 ] as const;
+const pasos = [
+  { n: 1, es: 'Pedido', en: 'Order' },
+  { n: 2, es: 'Entrega', en: 'Delivery' },
+  { n: 3, es: 'Pago', en: 'Payment' },
+];
+const WA = 'M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.7.8-.8 1-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.2-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.8 11.9 11.9 0 0 0 4.6 4c1.7.7 2.4.8 3.2.7a2.8 2.8 0 0 0 1.8-1.3 2.3 2.3 0 0 0 .2-1.3c-.1-.1-.3-.2-.5-.3z';
 ---
-<dialog id="lista" class="lista" aria-labelledby="lista-titulo">
+<dialog id="lista" class="lista" aria-labelledby="lista-titulo" data-paso="1">
   <div class="lista-panel">
+    <span class="pd-asa" aria-hidden="true"></span>
     <header class="lista-cabeza">
-      <div class="min-w-0 flex-1">
-        <h2 id="lista-titulo" tabindex="-1" class="text-[24px] leading-tight font-semibold tracking-[-0.02em] focus:outline-none"><span lang="es">Mi lista</span><span lang="en">My list</span></h2>
-        <p id="lista-resumen" class="mt-0.5 text-[14px] text-niebla"></p>
+      <div class="flex items-start gap-3">
+        <div class="min-w-0 flex-1">
+          <h2 id="lista-titulo" tabindex="-1" class="pd-titulo">
+            <span data-titulo="pedido"><span lang="es">Mi pedido</span><span lang="en">My order</span></span>
+            <span data-titulo="enviado" hidden><span lang="es">Pedido enviado</span><span lang="en">Order sent</span></span>
+          </h2>
+          <p id="lista-resumen" class="pd-resumen" aria-live="polite"></p>
+        </div>
+        <button type="button" data-lista-cerrar class="pd-icono-boton presionable" aria-label="Cerrar / Close">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
+        </button>
       </div>
-      <button type="button" data-lista-cerrar class="presionable tap grid place-items-center rounded-full bg-hueso/[0.06] hover:bg-hueso/[0.12]" aria-label="Cerrar / Close">
-        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
-      </button>
+      <nav class="pd-pasos" aria-label="Pasos del pedido / Order steps">
+        <span class="pd-pasos-filete" aria-hidden="true"><span class="pd-pasos-relleno"></span><span class="pd-pasos-punto"></span></span>
+        <ol>
+          {pasos.map((p) => (
+            <li>
+              <button type="button" class="pd-paso" data-ir-paso={p.n}>
+                <span class="pd-paso-num" aria-hidden="true">{p.n}</span>
+                <span><span lang="es">{p.es}</span><span lang="en">{p.en}</span></span>
+              </button>
+            </li>
+          ))}
+        </ol>
+      </nav>
     </header>
 
     <div class="lista-scroll">
-      <div id="lista-avisos" class="grid gap-2 empty:hidden" role="status"></div>
-      <ul id="lista-lineas" class="grid"></ul>
+      <!-- Pedido enviado antes (sigue vivo 12 h) -->
+      <button type="button" id="pd-hay-enviado" class="pd-enviado-banda presionable" hidden>
+        <span class="pd-enviado-ping" aria-hidden="true"></span>
+        <span class="min-w-0 flex-1 text-left">
+          <span class="block text-[14px] font-semibold"><span lang="es">Pedido</span><span lang="en">Order</span> <span data-folio class="tabular-nums"></span> <span lang="es">enviado</span><span lang="en">sent</span></span>
+          <span class="block text-[13px] text-niebla"><span lang="es">Ver seguimiento</span><span lang="en">See progress</span></span>
+        </span>
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m9 6 6 6-6 6" /></svg>
+      </button>
 
-      <div id="lista-vacia" class="grid justify-items-center gap-3 px-4 py-10 text-center" hidden>
-        <img src="/brand/isotipo.svg" width="579" height="599" alt="" class="h-auto w-20 opacity-80" />
-        <p class="text-[18px] font-semibold"><span lang="es">Tu lista está vacía</span><span lang="en">Your list is empty</span></p>
-        <p class="max-w-xs text-[15px] text-niebla"><span lang="es">Abre un platillo y toca «Agregar». Aquí juntas tu pedido para mandarlo por WhatsApp.</span><span lang="en">Open a dish and tap “Add”. Build your order here and send it on WhatsApp.</span></p>
-        <button type="button" data-lista-cerrar class="boton-linea presionable mt-2 text-[15px]"><span lang="es">Ver el menú</span><span lang="en">Browse the menu</span></button>
-      </div>
+      <!-- Paso 1 · Tu pedido -->
+      <section class="pd-vista" data-vista="1" aria-labelledby="t-paso1-h">
+        <h3 id="t-paso1-h" tabindex="-1" class="sr-only"><span lang="es">Paso 1 de 3: tu pedido</span><span lang="en">Step 1 of 3: your order</span></h3>
+        <div id="lista-avisos" class="grid gap-2 empty:hidden" role="status"></div>
+        <ul id="lista-lineas" class="pd-lineas"></ul>
+        <div id="lista-vacia" class="pd-vacia" hidden>
+          <span class="pd-vacia-enso" aria-hidden="true"><img src="/brand/isotipo.svg" width="579" height="599" alt="" /></span>
+          <p class="text-[20px] font-semibold tracking-[-0.01em]"><span lang="es">Tu pedido está vacío</span><span lang="en">Your order is empty</span></p>
+          <p class="max-w-xs text-[15px] text-niebla"><span lang="es">Abre un platillo y toca «Agregar». Aquí armas tu pedido y lo mandas por WhatsApp.</span><span lang="en">Open a dish and tap “Add”. Build your order here and send it on WhatsApp.</span></p>
+          <button type="button" data-lista-cerrar class="pd-boton pd-boton-oro presionable mt-2">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10" /></svg>
+            <span><span lang="es">Ver el menú</span><span lang="en">Browse the menu</span></span>
+          </button>
+        </div>
+        <div class="pd-acciones-lista" data-con-lineas>
+          <button type="button" id="lista-vaciar" class="pd-boton pd-boton-sutil presionable">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 7h14M10 11v6M14 11v6M7 7l1 12h8l1-12M9 7V5h6v2" /></svg>
+            <span><span lang="es">Vaciar pedido</span><span lang="en">Clear order</span></span>
+          </button>
+          <button type="button" data-lista-cerrar class="pd-boton pd-boton-sutil presionable">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+            <span><span lang="es">Agregar más</span><span lang="en">Add more</span></span>
+          </button>
+        </div>
+      </section>
 
-      <form id="lista-form" class="mt-6 grid gap-5" novalidate>
-        <fieldset>
-          <legend class="text-[15px] font-semibold"><span lang="es">¿Cómo lo quieres?</span><span lang="en">How would you like it?</span></legend>
-          <div class="modos mt-3">
-            {modos.map((m) => (
-              <label class="modo presionable">
-                <input type="radio" name="modo" value={m.id} class="sr-only" />
-                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d={m.d} /></svg>
-                <span><span lang="es">{m.es}</span><span lang="en">{m.en}</span></span>
-              </label>
-            ))}
+      <!-- Paso 2 · Entrega -->
+      <section class="pd-vista" data-vista="2" aria-labelledby="t-paso2-h" hidden>
+        <h3 id="t-paso2-h" tabindex="-1" class="sr-only"><span lang="es">Paso 2 de 3: entrega</span><span lang="en">Step 2 of 3: delivery</span></h3>
+        <form id="lista-form" class="grid gap-6" novalidate>
+          <fieldset>
+            <legend id="t-paso2" class="pd-h"><span lang="es">¿Cómo lo quieres?</span><span lang="en">How would you like it?</span></legend>
+            <div class="modos">
+              {modos.map((m) => (
+                <label class="modo presionable">
+                  <input type="radio" name="modo" value={m.id} class="sr-only" />
+                  <span class="modo-icono" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d={ICONO[m.id]} /></svg>
+                  </span>
+                  <span class="modo-titulo"><span lang="es">{m.es}</span><span lang="en">{m.en}</span></span>
+                  <span class="modo-sub"><span lang="es">{m.sub.es}</span><span lang="en">{m.sub.en}</span></span>
+                  <span class="modo-check" aria-hidden="true"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg></span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+
+          <!-- En mesa: plano -->
+          <div data-campo="mesa" class="pd-bloque">
+            <div class="flex items-end justify-between gap-3">
+              <h4 id="t-plano" class="pd-h"><span lang="es">Elige tu mesa</span><span lang="en">Pick your table</span></h4>
+              <p class="pd-nota-plano"><span lang="es">Plano ilustrativo · por confirmar con el restaurante</span><span lang="en">Illustrative plan · to be confirmed by the restaurant</span></p>
+            </div>
+            <PedidoPlano />
+            <ul class="pd-leyenda" aria-label="Leyenda / Legend">
+              <li><span class="pd-ley pd-ley-libre" aria-hidden="true"></span><span lang="es">Libre</span><span lang="en">Free</span></li>
+              <li><span class="pd-ley pd-ley-ocupada" aria-hidden="true"></span><span lang="es">Ocupada</span><span lang="en">Taken</span></li>
+              <li><span class="pd-ley pd-ley-tuya" aria-hidden="true"></span><span lang="es">Tu mesa</span><span lang="en">Your table</span></li>
+              <li class="pd-ley-demo"><span lang="es">Disponibilidad de demostración</span><span lang="en">Demo availability</span></li>
+            </ul>
+            <p id="pd-mesa-elegida" class="pd-mesa-elegida" aria-live="polite" hidden></p>
+            <div class="campo pd-mesa-manual">
+              <label for="lista-mesa"><span lang="es">¿No ves tu mesa? Escribe su número</span><span lang="en">Can't find your table? Type its number</span></label>
+              <input id="lista-mesa" type="number" inputmode="numeric" min="1" max="99" autocomplete="off" aria-describedby="err-mesa ayuda-mesa" data-ph-es="Ej. 7" data-ph-en="E.g. 7" />
+              <p id="ayuda-mesa" class="ayuda" hidden></p>
+              <p id="err-mesa" class="error" hidden></p>
+            </div>
           </div>
-        </fieldset>
 
-        <div data-campo="mesa" class="campo">
-          <label for="lista-mesa"><span lang="es">Número de mesa</span><span lang="en">Table number</span></label>
-          <input id="lista-mesa" type="number" inputmode="numeric" min="1" max="99" autocomplete="off" aria-describedby="err-mesa ayuda-mesa" />
-          <p id="ayuda-mesa" class="ayuda" hidden><span lang="es">Tomado del código QR de tu mesa.</span><span lang="en">Taken from your table's QR code.</span></p>
-          <p id="err-mesa" class="error" hidden></p>
+          <div data-campo="nombre" class="campo">
+            <label for="lista-nombre"><span lang="es">Tu nombre</span><span lang="en">Your name</span></label>
+            <input id="lista-nombre" type="text" maxlength={LIMITES.nombre} autocomplete="given-name" enterkeyhint="next" aria-describedby="err-nombre" data-ph-es="¿A nombre de quién?" data-ph-en="Name for the order" />
+            <p id="err-nombre" class="error" hidden></p>
+          </div>
+
+          <!-- Para llevar: hora de hoy -->
+          <div data-campo="hora" class="pd-bloque">
+            <div class="flex items-baseline justify-between gap-3">
+              <h4 id="t-hora" class="pd-h"><span lang="es">¿A qué hora pasas hoy?</span><span lang="en">What time will you come by today?</span></h4>
+            </div>
+            <p id="pd-hora-lectura" class="pd-hora-lectura" aria-live="polite"></p>
+            <div id="lista-hora" class="pd-horas" role="radiogroup" aria-labelledby="t-hora" aria-describedby="err-hora lista-cerrado"></div>
+            <p id="err-hora" class="error" hidden></p>
+          </div>
+
+          <!-- A domicilio: dirección y mapa -->
+          <div data-campo="direccion" class="pd-bloque grid gap-5">
+            <div class="campo">
+              <label for="lista-direccion"><span lang="es">Dirección de entrega</span><span lang="en">Delivery address</span></label>
+              <textarea id="lista-direccion" rows="2" maxlength={LIMITES.direccion} autocomplete="street-address" aria-describedby="err-direccion" data-ph-es="Calle, número y colonia" data-ph-en="Street, number and neighborhood"></textarea>
+              <p id="err-direccion" class="error" hidden></p>
+            </div>
+            <div>
+              <div class="flex items-end justify-between gap-3">
+                <h4 class="pd-h" id="t-mapa"><span lang="es">Marca tu puerta en el mapa</span><span lang="en">Mark your door on the map</span></h4>
+                <span class="pd-opcional"><span lang="es">Opcional</span><span lang="en">Optional</span></span>
+              </div>
+              <div class="pd-mapa-marco">
+                <div id="pd-mapa" class="pd-mapa" role="region" aria-labelledby="t-mapa" aria-describedby="pd-mapa-estado" data-lat={r.lat} data-lng={r.lng}>
+                  <p class="pd-mapa-cargando"><span lang="es">Cargando mapa…</span><span lang="en">Loading map…</span></p>
+                </div>
+              </div>
+              <div class="pd-mapa-acciones">
+                <button type="button" id="pd-mi-ubicacion" class="pd-boton pd-boton-linea presionable">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4" /><path d="M12 2v3M12 19v3M2 12h3M19 12h3" /></svg>
+                  <span><span lang="es">Usar mi ubicación</span><span lang="en">Use my location</span></span>
+                </button>
+                <button type="button" id="pd-quitar-pin" class="pd-boton pd-boton-sutil presionable" hidden>
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
+                  <span><span lang="es">Quitar punto</span><span lang="en">Remove pin</span></span>
+                </button>
+              </div>
+              <p id="pd-mapa-estado" class="pd-mapa-estado" aria-live="polite"></p>
+            </div>
+            <div class="campo">
+              <label for="lista-referencias"><span lang="es">Referencias</span><span lang="en">Landmarks</span> <span class="pd-opcional"><span lang="es">Opcional</span><span lang="en">Optional</span></span></label>
+              <input id="lista-referencias" type="text" maxlength={LIMITES.referencias} autocomplete="off" data-ph-es="Ej. portón negro, frente a la escuela" data-ph-en="E.g. black gate, across from the school" />
+              <p class="ayuda"><span lang="es">El costo de envío te lo confirma el restaurante por WhatsApp.</span><span lang="en">The restaurant confirms the delivery fee on WhatsApp.</span></p>
+            </div>
+          </div>
+
+          <p id="lista-cerrado" class="pd-aviso-cerrado" hidden></p>
+        </form>
+      </section>
+
+      <!-- Paso 3 · Pago -->
+      <section class="pd-vista" data-vista="3" aria-labelledby="t-paso3-h" hidden>
+        <h3 id="t-paso3-h" tabindex="-1" class="sr-only"><span lang="es">Paso 3 de 3: pago y envío</span><span lang="en">Step 3 of 3: payment and sending</span></h3>
+        <div class="grid gap-6">
+          <div class="pd-resumen-entrega">
+            <span class="pd-resumen-icono" aria-hidden="true"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path data-icono-entrega d={ICONO.mesa} /></svg></span>
+            <div class="min-w-0 flex-1">
+              <p id="pd-entrega-titulo" class="text-[16px] font-semibold"></p>
+              <p id="pd-entrega-detalle" class="text-[14px] text-niebla"></p>
+            </div>
+            <button type="button" data-ir-paso="2" class="pd-boton pd-boton-sutil pd-boton-chico presionable">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4" /></svg>
+              <span><span lang="es">Cambiar</span><span lang="en">Change</span></span>
+            </button>
+          </div>
+
+          <fieldset>
+            <legend id="t-paso3" class="pd-h"><span lang="es">¿Cómo pagas?</span><span lang="en">How will you pay?</span></legend>
+            <p class="pd-sub"><span lang="es">Pagas al recibir. Nunca pedimos pago en línea.</span><span lang="en">You pay when you get it. We never charge online.</span></p>
+            <div class="pagos" aria-describedby="err-pago">
+              <label class="modo pago presionable">
+                <input type="radio" name="pago" value="efectivo" class="sr-only" />
+                <span class="modo-icono" aria-hidden="true"><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="6.5" width="19" height="11" rx="2" /><circle cx="12" cy="12" r="2.6" /><path d="M6 9.5v5M18 9.5v5" /></svg></span>
+                <span class="modo-titulo"><span lang="es">Efectivo</span><span lang="en">Cash</span></span>
+                <span class="modo-sub"><span lang="es">Te llevamos cambio</span><span lang="en">We bring change</span></span>
+                <span class="modo-check" aria-hidden="true"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg></span>
+              </label>
+              <label class="modo pago presionable">
+                <input type="radio" name="pago" value="tarjeta" class="sr-only" />
+                <span class="modo-icono" aria-hidden="true"><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5.5" width="19" height="13" rx="2.2" /><path d="M2.5 10h19M6 15h4" /></svg></span>
+                <span class="modo-titulo"><span lang="es">Tarjeta</span><span lang="en">Card</span></span>
+                <span class="modo-sub" data-sub-tarjeta></span>
+                <span class="modo-check" aria-hidden="true"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg></span>
+              </label>
+            </div>
+            <p id="err-pago" class="error mt-2" hidden></p>
+          </fieldset>
+
+          <div id="pd-efectivo" class="pd-bloque" hidden>
+            <h4 class="pd-h" id="t-paga"><span lang="es">¿Con cuánto pagas?</span><span lang="en">What will you pay with?</span> <span class="pd-opcional"><span lang="es">Opcional</span><span lang="en">Optional</span></span></h4>
+            <div id="pd-montos" class="pd-chips" role="radiogroup" aria-labelledby="t-paga" aria-describedby="err-paga"></div>
+            <div class="campo pd-otro" id="pd-otro" hidden>
+              <label for="pd-paga-otro"><span lang="es">Monto en pesos</span><span lang="en">Amount in pesos</span></label>
+              <div class="pd-moneda">
+                <span aria-hidden="true">$</span>
+                <input id="pd-paga-otro" type="number" inputmode="numeric" min="1" step="1" autocomplete="off" aria-describedby="err-paga" />
+              </div>
+            </div>
+            <p id="pd-cambio" class="pd-cambio" aria-live="polite" hidden></p>
+            <p id="err-paga" class="error" hidden></p>
+          </div>
+          <div id="pd-tarjeta" class="pd-info-tarjeta" hidden>
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="2.5" width="12" height="19" rx="2.5" /><path d="M9 6.5h6M9 17.5h6M9 11h.01M12 11h.01M15 11h.01M9 14h.01M12 14h.01M15 14h.01" /></svg>
+            <p id="pd-tarjeta-texto"></p>
+          </div>
         </div>
+      </section>
 
-        <div data-campo="nombre" class="campo">
-          <label for="lista-nombre"><span lang="es">Tu nombre</span><span lang="en">Your name</span></label>
-          <input id="lista-nombre" type="text" maxlength={LIMITES.nombre} autocomplete="given-name" enterkeyhint="next" aria-describedby="err-nombre" />
-          <p id="err-nombre" class="error" hidden></p>
+      <!-- Seguimiento -->
+      <section class="pd-vista pd-seguimiento" data-vista="seguimiento" aria-labelledby="pd-seg-folio" hidden>
+        <div class="pd-sello">
+          <svg class="pd-sello-enso" viewBox="0 0 120 120" aria-hidden="true">
+            <circle class="pd-sello-aro" cx="60" cy="60" r="50" pathLength="100" />
+            <path class="pd-sello-check" d="M40 61.5 54 75l27-30" pathLength="100" />
+          </svg>
+          <div class="text-center">
+            <p class="pd-sub"><span lang="es">Tu folio</span><span lang="en">Your order number</span></p>
+            <p id="pd-seg-folio" class="pd-folio tabular-nums"></p>
+            <p id="pd-seg-hora" class="text-[14px] text-niebla"></p>
+          </div>
         </div>
-
-        <div data-campo="hora" class="campo">
-          <label for="lista-hora"><span lang="es">¿A qué hora pasas?</span><span lang="en">Pickup time</span></label>
-          <select id="lista-hora" aria-describedby="err-hora lista-cerrado"></select>
-          <p id="err-hora" class="error" hidden></p>
+        <ol id="pd-linea-tiempo" class="pd-tiempo" aria-label="Estado estimado / Estimated progress"></ol>
+        <p class="pd-aviso-seg">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 11v6M12 7.5h.01" /></svg>
+          <span><span lang="es">Los tiempos son estimados. El estado real te lo confirma el restaurante por WhatsApp; el seguimiento en vivo llega con el panel del restaurante.</span><span lang="en">Times are estimates. The restaurant confirms the real status on WhatsApp; live tracking arrives with the restaurant's dashboard.</span></span>
+        </p>
+        <div class="pd-seg-resumen">
+          <p id="pd-seg-entrega" class="text-[15px] font-semibold"></p>
+          <ul id="pd-seg-lineas" class="mt-2 grid gap-1.5 text-[15px]"></ul>
+          <div class="mt-3 flex items-baseline justify-between border-t border-hueso/10 pt-3">
+            <span class="text-[15px] text-niebla"><span lang="es">Subtotal</span><span lang="en">Subtotal</span></span>
+            <span><strong id="pd-seg-total" class="text-[18px] tabular-nums"></strong> <span class="text-[13px] text-niebla">MXN</span></span>
+          </div>
+          <p id="pd-seg-pago" class="mt-1 text-[14px] text-niebla"></p>
         </div>
-
-        <div data-campo="direccion" class="campo">
-          <label for="lista-direccion"><span lang="es">Dirección de entrega</span><span lang="en">Delivery address</span></label>
-          <textarea id="lista-direccion" rows="2" maxlength={LIMITES.direccion} autocomplete="street-address" aria-describedby="err-direccion" data-ph-es="Calle, número y colonia" data-ph-en="Street, number and neighborhood"></textarea>
-          <p id="err-direccion" class="error" hidden></p>
-          <label for="lista-referencias" class="mt-3"><span lang="es">Referencias</span><span lang="en">Landmarks</span> <span class="text-[13px] font-normal text-niebla"><span lang="es">(opcional)</span><span lang="en">(optional)</span></span></label>
-          <input id="lista-referencias" type="text" maxlength={LIMITES.referencias} autocomplete="off" data-ph-es="Ej. portón negro, frente a la escuela" data-ph-en="E.g. black gate, across from the school" />
-          <p class="ayuda"><span lang="es">El costo de envío te lo confirma el restaurante por WhatsApp.</span><span lang="en">The restaurant confirms the delivery fee on WhatsApp.</span></p>
+        <div class="grid gap-2.5">
+          <a id="pd-preguntar" href="#" target="_blank" rel="noopener" class="pd-boton pd-boton-wa-linea presionable">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path d={WA} /></svg>
+            <span><span lang="es">Preguntar por mi pedido</span><span lang="en">Ask about my order</span></span>
+          </a>
+          <div class="grid grid-cols-2 gap-2.5">
+            <a id="pd-reenviar" href="#" target="_blank" rel="noopener" class="pd-boton pd-boton-linea presionable">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12a8 8 0 0 1 14-5.3L20 9M20 4v5h-5M20 12a8 8 0 0 1-14 5.3L4 15M4 20v-5h5" /></svg>
+              <span><span lang="es">Volver a enviar</span><span lang="en">Send again</span></span>
+            </a>
+            <button type="button" id="pd-nuevo" class="pd-boton pd-boton-oro presionable">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+              <span><span lang="es">Nuevo pedido</span><span lang="en">New order</span></span>
+            </button>
+          </div>
+          <a href={`tel:${n.telefonoFijo}`} class="pd-boton pd-boton-sutil presionable">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3h4l2 5-2.5 1.5a11 11 0 0 0 6 6L16 13l5 2v4a2 2 0 0 1-2 2A17 17 0 0 1 3 5a2 2 0 0 1 2-2z" /></svg>
+            <span><span lang="es">Llamar</span><span lang="en">Call</span> <span class="tabular-nums">{n.telefonoFijoTexto}</span></span>
+          </a>
         </div>
+      </section>
+    </div>
 
-        <p id="lista-cerrado" class="rounded-2xl bg-hueso/[0.06] px-4 py-3 text-[14px]" hidden><span lang="es">Ahora estamos cerrados. Puedes mandar tu pedido y te contestamos al abrir.</span><span lang="en">We're closed right now. You can send your order and we'll reply when we open.</span></p>
-      </form>
+    <!-- Deshacer (quitar o vaciar) -->
+    <div id="pd-deshacer" class="pd-deshacer" hidden>
+      <p id="pd-deshacer-texto" class="min-w-0 flex-1 text-[14px]"></p>
+      <button type="button" id="pd-deshacer-boton" class="pd-boton pd-boton-chico pd-boton-oro presionable">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5" /><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11" /></svg>
+        <span><span lang="es">Deshacer</span><span lang="en">Undo</span></span>
+      </button>
     </div>
 
     <footer class="lista-pie">
-      <div class="flex items-baseline justify-between gap-3">
-        <p class="text-[15px] text-niebla"><span lang="es">Subtotal</span><span lang="en">Subtotal</span></p>
-        <p class="text-right"><strong id="lista-subtotal" class="text-[22px] font-semibold tabular-nums"></strong> <span class="text-[13px] text-niebla">MXN</span><span id="lista-usd" class="ml-2 text-[13px] text-humo tabular-nums"></span></p>
-      </div>
-      <p class="mt-1 text-[13px] text-niebla"><span lang="es">IVA incluido. Precio final lo confirma el restaurante.</span><span lang="en">Tax included. Final price confirmed by the restaurant.</span></p>
-      <div id="lista-errores" class="mt-3 rounded-2xl border border-[#e0795e]/50 bg-[#e0795e]/10 px-4 py-3 text-[14px]" role="alert" hidden></div>
-      <a id="lista-enviar" href="#" target="_blank" rel="noopener" class="boton-whatsapp presionable mt-3">
-        <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.7.8-.8 1-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.2-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.8 11.9 11.9 0 0 0 4.6 4c1.7.7 2.4.8 3.2.7a2.8 2.8 0 0 0 1.8-1.3 2.3 2.3 0 0 0 .2-1.3c-.1-.1-.3-.2-.5-.3z"/></svg>
-        <span><span lang="es">Enviar pedido por WhatsApp</span><span lang="en">Send order on WhatsApp</span></span>
-      </a>
-      <div id="lista-despues" class="mt-3 grid gap-2 rounded-2xl bg-hueso/[0.05] p-4 text-center" hidden>
-        <p class="text-[15px]"><span lang="es">¿Ya mandaste el mensaje en WhatsApp?</span><span lang="en">Did you send the message on WhatsApp?</span></p>
-        <div class="flex gap-2">
-          <button type="button" data-vaciar-ya class="boton-oro presionable min-h-11 flex-1 text-[15px]"><span lang="es">Sí, vaciar lista</span><span lang="en">Yes, clear list</span></button>
-          <button type="button" data-seguir class="boton-linea presionable min-h-11 flex-1 text-[15px]"><span lang="es">Seguir editando</span><span lang="en">Keep editing</span></button>
+      <div class="flex items-end justify-between gap-3">
+        <div class="min-w-0">
+          <p class="text-[14px] text-niebla"><span lang="es">Subtotal</span><span lang="en">Subtotal</span></p>
+          <p class="pd-total"><span class="pd-total-num" id="lista-subtotal"></span> <span class="text-[13px] font-normal text-niebla">MXN</span></p>
+          <p class="whitespace-nowrap text-[13px] text-humo tabular-nums"><span id="lista-usd"></span> <span lang="es">referencia</span><span lang="en">reference</span></p>
         </div>
+        <p class="pd-legal"><span lang="es">IVA incluido. Precio final lo confirma el restaurante.</span><span lang="en">Tax included. Final price confirmed by the restaurant.</span></p>
       </div>
-      <div class="mt-2 flex flex-wrap items-center justify-between gap-x-3 text-[14px]">
-        <button type="button" id="lista-vaciar" class="presionable min-h-11 rounded-full px-2 whitespace-nowrap text-niebla underline-offset-4 hover:text-hueso hover:underline"><span lang="es">Vaciar lista</span><span lang="en">Clear list</span></button>
-        <a href={`tel:${n.telefonoFijo}`} class="presionable min-h-11 content-center rounded-full px-2 whitespace-nowrap text-niebla underline-offset-4 hover:text-hueso hover:underline"><span lang="es">Llamar</span><span lang="en">Call</span> <span class="tabular-nums">{n.telefonoFijoTexto}</span></a>
+      <div id="lista-errores" class="pd-errores" role="alert" tabindex="-1" hidden></div>
+      <div class="pd-pie-botones">
+        <button type="button" id="pd-atras" class="pd-icono-boton pd-atras presionable" aria-label="Paso anterior / Previous step">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 6-6 6 6 6" /></svg>
+        </button>
+        <button type="button" id="pd-seguir" class="pd-boton pd-boton-oro pd-boton-grande presionable">
+          <span id="pd-seguir-texto"></span>
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+        </button>
+        <a id="lista-enviar" href="#" target="_blank" rel="noopener" class="boton-whatsapp presionable" hidden>
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><path d={WA} /></svg>
+          <span><span lang="es">Enviar pedido por WhatsApp</span><span lang="en">Send order on WhatsApp</span></span>
+        </a>
       </div>
     </footer>
   </div>
@@ -108,18 +340,32 @@ const modos = [
 
 <template id="tpl-linea">
   <li class="linea-lista">
-    <div class="min-w-0 flex-1">
-      <p class="ll-nombre text-[16px] leading-snug font-semibold"></p>
-      <p class="ll-op mt-0.5 text-[14px] text-oro-claro" hidden></p>
-      <p class="ll-nota mt-0.5 text-[14px] text-niebla" hidden></p>
-      <p class="ll-estado mt-1 text-[13px] text-[#ffb4a3]" hidden></p>
+    <div class="ll-foto" aria-hidden="true"><img alt="" width="64" height="64" decoding="async" /></div>
+    <div class="ll-cuerpo">
+      <div class="flex items-start gap-3">
+        <p class="ll-nombre min-w-0 flex-1"></p>
+        <p class="ll-precio tabular-nums"></p>
+      </div>
+      <p class="ll-op" hidden></p>
+      <p class="ll-nota" hidden></p>
+      <p class="ll-estado" hidden></p>
     </div>
-    <div class="grid justify-items-end gap-2">
-      <p class="ll-precio text-[16px] font-semibold tabular-nums"></p>
-      <div class="cantidad chica" role="group">
-        <button type="button" data-l="menos" class="presionable"></button>
+    <div class="ll-editar campo" hidden>
+      <label class="sr-only"><span lang="es">Nota para cocina</span><span lang="en">Note for the kitchen</span></label>
+      <input type="text" maxlength={LIMITES.nota} enterkeyhint="done" autocomplete="off" />
+    </div>
+    <div class="ll-controles">
+      <button type="button" data-l="nota" class="pd-boton pd-boton-sutil pd-boton-chico presionable" aria-expanded="false">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4" /></svg>
+        <span class="ll-nota-rotulo"></span>
+      </button>
+      <button type="button" data-l="quitar" class="pd-icono-boton presionable">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 7h14M10 11v6M14 11v6M7 7l1 12h8l1-12M9 7V5h6v2" /></svg>
+      </button>
+      <div class="pd-stepper" role="group">
+        <button type="button" data-l="menos" class="presionable"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 12h12" /></svg></button>
         <output class="tabular-nums"></output>
-        <button type="button" data-l="mas" class="presionable" aria-label="Uno más / One more"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 12h12M12 6v12" /></svg></button>
+        <button type="button" data-l="mas" class="presionable"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 12h12M12 6v12" /></svg></button>
       </div>
     </div>
   </li>

@@ -20,6 +20,8 @@ for (const [nombre, w, h] of TAMANOS) {
   page.on('pageerror', (e) => errores.push(e.message));
   page.on('console', (m) => { if (m.type() === 'error') errores.push(m.text()); });
   await page.route('https://wa.me/**', (r) => r.abort());
+  // Teselas del mapa: imagen vacía (la prueba no depende de la red externa).
+  await page.route('https://*.basemaps.cartocdn.com/**', (r) => r.fulfill({ status: 200, contentType: 'image/png', body: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=', 'base64') }));
   await page.goto(`${BASE}/?src=qr-mesa-7`, { waitUntil: 'networkidle' });
   ok(new URL(page.url()).search === '', 'la URL queda sin ?src');
   ok(await page.evaluate(() => sessionStorage.getItem('makizen-mesa')) === '7', 'mesa 7 guardada en la sesión');
@@ -60,38 +62,109 @@ for (const [nombre, w, h] of TAMANOS) {
   await page.waitForTimeout(200);
   ok((await page.locator('.isla-lista .contador').textContent()) === '3', 'bebida agregada con un toque');
 
-  // Mi lista: mesa 7 preseleccionada y enlace de WhatsApp.
+  // Mi pedido: paso 1 → 2 (entrega). Mesa 7 del QR preseleccionada en el plano.
+  ctx.on('page', (p) => p.close().catch(() => {}));
+  const texto = async () => new URL((await page.locator('#lista-enviar').getAttribute('href')) ?? '#', BASE).searchParams.get('text') ?? '';
   await page.locator('[data-abrir-lista]').first().click();
   await page.waitForSelector('#lista[open]');
   await page.waitForTimeout(400);
+  ok(await page.locator('.linea-lista').count() === 2, 'Mi pedido muestra 2 líneas como tarjetas');
+  // Stepper, quitar con "Deshacer" y nota editable.
+  const segunda = page.locator('.linea-lista').nth(1);
+  await segunda.locator('[data-l="mas"]').click();
+  ok((await page.locator('.linea-lista').nth(1).locator('output').textContent()) === '2', 'el stepper suma');
+  await page.locator('.linea-lista').nth(1).locator('[data-l="menos"]').click();
+  ok((await page.locator('.linea-lista').nth(1).locator('output').textContent()) === '1', 'el stepper resta');
+  await page.locator('.linea-lista').nth(1).locator('[data-l="quitar"]').click();
+  await page.waitForSelector('#pd-deshacer:not([hidden])');
+  ok(await page.locator('.linea-lista').count() === 1, 'quitar una línea (botón con icono de bote)');
+  await page.locator('#pd-deshacer-boton').click();
+  await page.waitForTimeout(300);
+  ok(await page.locator('.linea-lista').count() === 2, '«Deshacer» la regresa');
+  await page.locator('.linea-lista').nth(1).locator('[data-l="nota"]').click();
+  await page.locator('.linea-lista').nth(1).locator('.ll-editar input').fill('bien fría');
+  await page.keyboard.press('Enter');
+  await page.waitForTimeout(300);
+  ok((await page.locator('.linea-lista').nth(1).locator('.ll-nota').textContent())?.includes('bien fría'), 'nota editada desde la tarjeta');
+  await page.locator('#pd-seguir').click();
+  await page.waitForTimeout(300);
   ok(await page.locator('input[name="modo"][value="mesa"]').isChecked(), 'modalidad en mesa por el QR');
-  ok((await page.inputValue('#lista-mesa')) === '7', 'mesa 7 en el campo');
-  let href = await page.locator('#lista-enviar').getAttribute('href');
-  let texto = new URL(href).searchParams.get('text') ?? '';
-  ok(href.startsWith('https://wa.me/526381560660?text='), 'enlace a wa.me del negocio');
-  ok(texto.includes('En mesa: 7') && texto.includes('2 x Sopa Vietnamita de Pollo o Camarón (Camarón)') && texto.includes('Nota: sin cebolla') && texto.includes('Precio final lo confirma el restaurante.'), 'mensaje completo en español');
+  ok(await page.locator('.pd-mesa[data-mesa="7"][aria-pressed="true"]').count() === 1, 'mesa 7 marcada en el plano');
+  // Mesa ocupada (demostración): no se elige. Mesa libre: sí.
+  await page.locator('.pd-mesa[data-mesa="3"]').click({ force: true });
+  ok(await page.locator('.pd-mesa[data-mesa="3"][aria-pressed="true"]').count() === 0, 'mesa ocupada no se elige');
+  await page.locator('.pd-mesa[data-mesa="5"]').click();
+  ok(await page.locator('.pd-mesa[data-mesa="5"][aria-pressed="true"]').count() === 1, 'mesa 5 elegida en el plano');
+  ok((await page.locator('#pd-mesa-elegida').textContent())?.includes('Mesa 5'), 'resumen de la mesa elegida');
+  await page.locator('#pd-seguir').click();
+  await page.waitForTimeout(300);
+  // Sin forma de pago no se envía.
+  await page.locator('#lista-enviar').click();
+  ok(await page.locator('#err-pago').isVisible(), 'pide elegir efectivo o tarjeta');
+  // Efectivo con "Otro monto": cambio calculado y en el mensaje.
+  await page.locator('label.pago:has(input[value="efectivo"])').click();
+  await page.locator('label.pd-chip:has(input[value="otro"])').click();
+  await page.fill('#pd-paga-otro', '100');
+  await page.locator('#lista-enviar').click();
+  ok(await page.locator('#err-paga').isVisible(), 'un monto menor al total no se acepta');
+  await page.fill('#pd-paga-otro', '1000');
+  ok(await page.locator('#pd-cambio').isVisible(), 'muestra el cambio');
+  let t = await texto();
+  ok(t.includes('Pago: efectivo, paga con $1,000 (cambio: $'), 'mensaje con efectivo y cambio');
+  await page.locator('label.pago:has(input[value="tarjeta"])').click();
+  t = await texto();
+  ok((await page.locator('#lista-enviar').getAttribute('href')).startsWith('https://wa.me/526381560660?text='), 'enlace a wa.me del negocio');
+  ok(/Pedido MAKIZEN · MZ-[2-9A-Z]{4}/.test(t) && t.includes('En mesa: 5') && t.includes('2 x Sopa Vietnamita de Pollo o Camarón (Camarón)') && t.includes('Nota: sin cebolla') && t.includes('Pago: tarjeta') && t.includes('Precio final lo confirma el restaurante.'), 'mensaje completo con folio, mesa y pago');
 
-  // Para llevar sin nombre: errores visibles al intentar enviar.
+  // Para llevar sin nombre: no deja avanzar y lo pide.
+  await page.locator('#pd-atras').click();
+  await page.waitForTimeout(300);
   await page.locator('label.modo:has(input[value="llevar"])').click();
-  await page.locator('#lista-enviar').click({ force: true });
+  await page.locator('#pd-seguir').click();
   ok(await page.locator('#err-nombre').isVisible(), 'pide el nombre para llevar');
   await page.fill('#lista-nombre', 'Ana');
-  href = await page.locator('#lista-enviar').getAttribute('href');
-  texto = new URL(href).searchParams.get('text') ?? '';
-  ok(texto.includes('Para llevar: Ana'), 'mensaje para llevar con nombre');
-  // A domicilio: dirección obligatoria.
+  if (await page.locator('.pd-hora-chip:not(.vencida)').count()) await page.locator('.pd-hora-chip:not(.vencida)').first().click();
+  await page.locator('#pd-seguir').click();
+  await page.waitForTimeout(300);
+  await page.locator('label.pago:has(input[value="efectivo"])').click();
+  t = await texto();
+  ok(t.includes('Para llevar: Ana') && t.includes('Pago: efectivo'), 'mensaje para llevar con nombre, hora y efectivo');
+
+  // A domicilio: dirección obligatoria y mapa.
+  await page.locator('#pd-atras').click();
+  await page.waitForTimeout(300);
   await page.locator('label.modo:has(input[value="domicilio"])').click();
-  await page.locator('#lista-enviar').click({ force: true });
+  await page.locator('#pd-seguir').click();
   ok(await page.locator('#err-direccion').isVisible(), 'pide la dirección a domicilio');
   await page.fill('#lista-direccion', 'Calle 13 #45, Centro');
-  href = await page.locator('#lista-enviar').getAttribute('href');
-  ok((new URL(href).searchParams.get('text') ?? '').includes('Envío: lo confirma el restaurante.'), 'mensaje a domicilio con aviso de envío');
-  ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'sin scroll horizontal con la lista abierta');
+  await page.waitForSelector('#pd-mapa.leaflet-container', { timeout: 8000 }).catch(() => {});
+  ok(await page.locator('#pd-mapa.leaflet-container').count() === 1, 'mapa de entrega cargado');
+  ok(await page.locator('#pd-mapa .leaflet-control-attribution').textContent().then((s) => s.includes('OpenStreetMap') && s.includes('CARTO')), 'atribución © OpenStreetMap © CARTO');
+  await page.locator('#pd-mapa').scrollIntoViewIfNeeded();
+  const caja = await page.locator('#pd-mapa').boundingBox();
+  await page.mouse.click(caja.x + caja.width * 0.7, caja.y + caja.height * 0.35);
+  await page.waitForTimeout(300);
+  ok(await page.locator('#pd-mapa .pd-icono-pin').count() === 1 && await page.locator('#pd-mapa-estado.ok').count() === 1, 'tocar el mapa fija el pin dorado');
+  await page.locator('#pd-seguir').click();
+  await page.waitForTimeout(300);
+  t = await texto();
+  ok(t.includes('Envío: lo confirma el restaurante.'), 'mensaje a domicilio con aviso de envío');
+  ok(/Ubicación: https:\/\/maps\.google\.com\/\?q=-?\d+\.\d{6},-?\d+\.\d{6}/.test(t), 'mensaje con el enlace de ubicación (6 decimales)');
+  ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'sin scroll horizontal con el pedido abierto');
   await page.screenshot({ path: `e2e/captura-${nombre}-lista.png` });
+
+  // Enviar: se abre WhatsApp (interceptado) y aparece el seguimiento.
+  await page.locator('#lista-enviar').click();
+  await page.waitForSelector('[data-vista="seguimiento"]:not([hidden])', { timeout: 5000 });
+  const enviado = await page.evaluate(() => JSON.parse(localStorage.getItem('makizen-pedido') ?? 'null'));
+  ok(/^MZ-[2-9A-Z]{4}$/.test(enviado?.folio ?? '') && (await page.locator('#pd-seg-folio').textContent()) === enviado.folio, 'seguimiento con folio guardado');
+  ok(await page.locator('.pd-etapa').count() === 4, 'línea de tiempo con 4 etapas');
+  ok((await page.evaluate(() => JSON.parse(localStorage.getItem('makizen-lista') ?? '{"lineas":[]}').lineas.length)) === 0, 'el carrito queda vacío al enviar');
+  ok((await page.locator('#pd-reenviar').getAttribute('href')) === enviado.url, '«Volver a enviar» usa el mismo enlace');
   await page.keyboard.press('Escape');
   await page.waitForTimeout(400);
 
-  // Idioma: /en/, título y mensaje en inglés, USD visible.
+  // Idioma: /en/, título en inglés, USD visible y seguimiento en inglés.
   await page.locator('#nav [data-lang="en"]').click();
   await page.waitForTimeout(500);
   ok(new URL(page.url()).pathname === '/en/', 'la URL cambia a /en/');
@@ -99,8 +172,8 @@ for (const [nombre, w, h] of TAMANOS) {
   ok(await page.locator('.producto .text-humo:visible', { hasText: 'US$' }).first().isVisible(), 'USD visible');
   await page.locator('[data-abrir-lista]').first().click();
   await page.waitForSelector('#lista[open]');
-  href = await page.locator('#lista-enviar').getAttribute('href');
-  ok((new URL(href).searchParams.get('text') ?? '').includes('Delivery: Ana'), 'mensaje en inglés');
+  const pregunta = new URL(await page.locator('#pd-preguntar').getAttribute('href')).searchParams.get('text') ?? '';
+  ok(pregunta.includes(`my order ${enviado.folio}`), 'preguntar por el pedido en inglés');
   await page.keyboard.press('Escape');
   await page.waitForTimeout(300);
   if (nombre === 'computadora') ok(await page.locator('.riel').isVisible(), 'índice lateral visible');
@@ -136,6 +209,85 @@ for (const [nombre, w, h] of TAMANOS) {
   await page.locator('[data-abrir="camaron-roca"]').click();
   await page.waitForSelector('#hoja[open]', { timeout: 5000 });
   ok(errores.length === 0, `con notas largas y emojis el menú sigue funcionando${errores.length ? ': ' + errores.join(' | ') : ''}`);
+  await ctx.close();
+}
+
+// Pedido: QR de una mesa fuera del plano, ubicación del teléfono (permitida y negada),
+// seguimiento al volver a abrir y "Nuevo pedido".
+{
+  console.log('\npedido: QR, ubicación y seguimiento');
+  const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=', 'base64');
+  const base = { v: 1, t: 0, modo: 'domicilio', nombre: 'Ana', hora: 'pronto', direccion: 'Calle 13 #45, Centro', referencias: '', lineas: [{ id: 'makizen-roll', n: 1 }] };
+  const preparar = async (ctx, url) => {
+    const page = await ctx.newPage();
+    const errores = [];
+    page.on('pageerror', (e) => errores.push(e.message));
+    page.on('console', (m) => { if (m.type() === 'error') errores.push(m.text()); });
+    await page.route(/basemaps\.cartocdn\.com/, (r) => r.fulfill({ status: 200, contentType: 'image/png', body: PNG }));
+    await page.route('https://wa.me/**', (r) => r.abort());
+    await page.goto(url, { waitUntil: 'networkidle' });
+    await page.evaluate((l) => localStorage.setItem('makizen-lista', JSON.stringify({ ...l, t: Date.now() })), base);
+    await page.reload({ waitUntil: 'networkidle' });
+    return { page, errores };
+  };
+
+  // Mesa 40 desde el QR: no está en el plano, se acepta con aviso.
+  let ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' });
+  let { page, errores } = await preparar(ctx, `${BASE}/?src=qr-mesa-40`);
+  await page.locator('[data-abrir-lista]').first().click();
+  await page.waitForSelector('#lista[open]');
+  await page.locator('#pd-seguir').click();
+  await page.locator('label.modo:has(input[value="mesa"])').click();
+  ok((await page.inputValue('#lista-mesa')) === '40' && await page.locator('#ayuda-mesa').isVisible(), 'mesa 40 del QR aceptada con aviso (fuera del plano)');
+  await page.locator('#pd-seguir').click();
+  await page.locator('label.pago:has(input[value="tarjeta"])').click();
+  const t40 = new URL(await page.locator('#lista-enviar').getAttribute('href')).searchParams.get('text') ?? '';
+  ok(t40.includes('En mesa: 40') && t40.includes('Pago: tarjeta (terminal en la mesa)'), 'mensaje con la mesa del QR');
+  ok(errores.length === 0, `sin errores de consola${errores.length ? ': ' + errores.join(' | ') : ''}`);
+  await ctx.close();
+
+  // Ubicación permitida.
+  ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, serviceWorkers: 'block', permissions: ['geolocation'], geolocation: { latitude: 31.3201234, longitude: -113.5409876 } });
+  ({ page, errores } = await preparar(ctx, BASE));
+  ctx.on('page', (p) => p.close().catch(() => {}));
+  await page.locator('[data-abrir-lista]').first().click();
+  await page.waitForSelector('#lista[open]');
+  await page.locator('#pd-seguir').click();
+  await page.waitForSelector('#pd-mapa.leaflet-container', { timeout: 8000 }).catch(() => {});
+  await page.locator('#pd-mi-ubicacion').click();
+  await page.waitForSelector('#pd-mapa-estado.ok', { timeout: 5000 }).catch(() => {});
+  ok(await page.locator('#pd-mapa .pd-icono-pin').count() === 1, '«Usar mi ubicación» coloca el pin');
+  await page.locator('#pd-seguir').click();
+  await page.locator('label.pago:has(input[value="efectivo"])').click();
+  await page.locator('label.pd-chip:has(input[value="exacto"])').click();
+  const tu = new URL(await page.locator('#lista-enviar').getAttribute('href')).searchParams.get('text') ?? '';
+  ok(tu.includes('Ubicación: https://maps.google.com/?q=31.320123,-113.540988') && tu.includes('Pago: efectivo (exacto)'), 'mensaje con la ubicación del teléfono');
+  await page.locator('#lista-enviar').click();
+  await page.waitForSelector('[data-vista="seguimiento"]:not([hidden])', { timeout: 5000 });
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(400);
+  await page.locator('#nav [data-abrir-lista]').first().click();
+  await page.waitForSelector('#lista[open]');
+  ok(await page.locator('[data-vista="seguimiento"]').isVisible(), 'al volver a abrir se ve el seguimiento');
+  await page.locator('#pd-nuevo').click();
+  await page.waitForTimeout(300);
+  ok(await page.locator('#lista-vacia').isVisible() && (await page.evaluate(() => localStorage.getItem('makizen-pedido'))) === null, '«Nuevo pedido» limpia el seguimiento');
+  ok(errores.length === 0, `sin errores de consola${errores.length ? ': ' + errores.join(' | ') : ''}`);
+  await ctx.close();
+
+  // Ubicación negada: mensaje claro, el pedido sigue.
+  ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block', reducedMotion: 'reduce' });
+  ({ page, errores } = await preparar(ctx, BASE));
+  await page.locator('[data-abrir-lista]').first().click();
+  await page.waitForSelector('#lista[open]');
+  await page.locator('#pd-seguir').click();
+  await page.waitForSelector('#pd-mapa.leaflet-container', { timeout: 8000 }).catch(() => {});
+  await page.evaluate(() => { navigator.geolocation.getCurrentPosition = (_ok, mal) => mal({ code: 1, message: 'denied', PERMISSION_DENIED: 1, POSITION_UNAVAILABLE: 2, TIMEOUT: 3 }); });
+  await page.locator('#pd-mi-ubicacion').click();
+  ok((await page.locator('#pd-mapa-estado').textContent())?.includes('permiso'), 'permiso de ubicación negado: lo explica');
+  await page.locator('#pd-seguir').click();
+  ok(await page.locator('[data-vista="3"]').isVisible(), 'sin ubicación igual se puede seguir (con movimiento reducido)');
+  ok(errores.length === 0, `sin errores de consola${errores.length ? ': ' + errores.join(' | ') : ''}`);
   await ctx.close();
 }
 

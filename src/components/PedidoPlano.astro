@@ -1,0 +1,129 @@
+---
+// Plano cenital ILUSTRATIVO del salón para elegir mesa (pedido "En mesa").
+// Inspirado en el interior real: muros azules, banca gris, mesas de madera, barra de
+// cócteles frente al muro negro con el isotipo, cocina al fondo y ventanas al frente.
+// El dibujo es SVG decorativo; cada mesa es un <button> real encima (teclado, lector, ≥ 44 px).
+import { plano } from '../data/schema';
+import { posicion } from '../lib/plano';
+
+const { ancho: W, alto: H } = plano;
+const TAM = { redonda: [40, 40], cuadrada: [44, 44], larga: [104, 42] } as const;
+
+/** Sillas alrededor de cada mesa (en unidades del plano). Las de la banca no se dibujan: es la banca. */
+function sillas(m: (typeof plano.mesas)[number]) {
+  const [w, h] = TAM[m.forma];
+  const s: { x: number; y: number; w: number; h: number }[] = [];
+  const banca = m.x < 90 && m.y < 360;
+  if (m.forma === 'larga') {
+    for (const dx of [-34, 0, 34]) { s.push({ x: m.x + dx - 10, y: m.y - h / 2 - 15, w: 20, h: 10 }); s.push({ x: m.x + dx - 10, y: m.y + h / 2 + 5, w: 20, h: 10 }); }
+  } else if (m.personas === 2) {
+    s.push({ x: m.x - 10, y: m.y - h / 2 - 15, w: 20, h: 10 });
+    s.push({ x: m.x - 10, y: m.y + h / 2 + 5, w: 20, h: 10 });
+  } else if (banca) {
+    s.push({ x: m.x + w / 2 + 5, y: m.y - 17, w: 10, h: 14 });
+    s.push({ x: m.x + w / 2 + 5, y: m.y + 3, w: 10, h: 14 });
+  } else {
+    s.push({ x: m.x - 10, y: m.y - h / 2 - 15, w: 20, h: 10 });
+    s.push({ x: m.x - 10, y: m.y + h / 2 + 5, w: 20, h: 10 });
+    s.push({ x: m.x - w / 2 - 15, y: m.y - 10, w: 10, h: 20 });
+    s.push({ x: m.x + w / 2 + 5, y: m.y - 10, w: 10, h: 20 });
+  }
+  return s;
+}
+const rotulos = [
+  { x: 180, y: 96, es: 'Barra de cócteles', en: 'Cocktail bar' },
+  { x: 308, y: 50, es: 'Cocina', en: 'Kitchen' },
+  { x: 296, y: 476, es: 'Entrada', en: 'Entrance' },
+  { x: 100, y: 476, es: 'Ventanas', en: 'Windows' },
+];
+---
+<div class="pd-plano" style={`--ar:${W}/${H}`} data-plano>
+  <svg class="pd-plano-dibujo" viewBox={`0 0 ${W} ${H}`} aria-hidden="true" focusable="false">
+    <defs>
+      <pattern id="pd-piso" width="24" height="24" patternUnits="userSpaceOnUse">
+        <path d="M24 0H0v24" fill="none" stroke="rgb(244 241 234 / 0.045)" stroke-width="1" />
+      </pattern>
+      <pattern id="pd-rayas" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+        <path d="M0 0v7" stroke="rgb(244 241 234 / 0.12)" stroke-width="2" />
+      </pattern>
+      <linearGradient id="pd-barra" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#a06d3f" /><stop offset="1" stop-color="#6b4426" />
+      </linearGradient>
+      <radialGradient id="pd-halo" cx="0.5" cy="0.5" r="0.5">
+        <stop offset="0" stop-color="#f4f1ea" stop-opacity="0.55" /><stop offset="1" stop-color="#f4f1ea" stop-opacity="0" />
+      </radialGradient>
+    </defs>
+    <!-- Piso -->
+    <rect x="8" y="8" width={W - 16} height={H - 16} rx="18" fill="rgb(12 12 11 / 0.72)" />
+    <rect x="8" y="8" width={W - 16} height={H - 16} rx="18" fill="url(#pd-piso)" />
+    <!-- Muros: azul real en el fondo y a la izquierda -->
+    <path d={`M8 ${H - 140} V26 a18 18 0 0 1 18 -18 H260`} fill="none" stroke="#4a63a6" stroke-width="7" stroke-linecap="round" />
+    <path d={`M260 8 H${W - 26} a18 18 0 0 1 18 18 V${H - 26} a18 18 0 0 1 -18 18 H332 M262 ${H - 8} H196`} fill="none" stroke="rgb(244 241 234 / 0.28)" stroke-width="4" stroke-linecap="round" />
+    <!-- Ventanas (izquierda abajo y frente) -->
+    <path d={`M8 ${H - 132} V${H - 26} a18 18 0 0 1 18 18 H190`} fill="none" stroke="rgb(170 205 230 / 0.55)" stroke-width="5" stroke-dasharray="26 5" stroke-linecap="round" />
+    <!-- Entrada con puerta abatible -->
+    <path d={`M264 ${H - 8} A60 60 0 0 1 324 ${H - 68}`} fill="none" stroke="rgb(210 178 106 / 0.6)" stroke-width="1.6" stroke-dasharray="4 4" />
+    <path d={`M264 ${H - 8} L324 ${H - 68}`} stroke="rgb(210 178 106 / 0.8)" stroke-width="2.5" stroke-linecap="round" />
+    <!-- Cocina -->
+    <rect x="268" y="12" width="78" height="74" rx="8" fill="rgb(5 5 5 / 0.8)" />
+    <rect x="268" y="12" width="78" height="74" rx="8" fill="url(#pd-rayas)" />
+    <path d="M268 74 H346" stroke="rgb(210 178 106 / 0.5)" stroke-width="2" stroke-dasharray="6 4" />
+    <!-- Muro negro con el isotipo retroiluminado y barra de cócteles -->
+    <rect x="100" y="11" width="160" height="16" rx="4" fill="#050505" stroke="rgb(174 139 61 / 0.45)" />
+    <ellipse cx="180" cy="19" rx="40" ry="14" fill="url(#pd-halo)" />
+    <image href="/brand/isotipo.svg" x="169" y="8" width="22" height="22" />
+    <rect x="100" y="40" width="160" height="22" rx="11" fill="url(#pd-barra)" />
+    <rect x="104" y="42" width="152" height="5" rx="2.5" fill="rgb(255 255 255 / 0.14)" />
+    {[118, 144, 170, 196, 222, 248].map((x) => <circle cx={x - 6} cy="74" r="6.5" fill="#1d1d1c" stroke="rgb(210 178 106 / 0.45)" stroke-width="1.4" />)}
+    <!-- Banca gris corrida junto al muro azul -->
+    <rect x="13" y="104" width="22" height="252" rx="7" fill="#3b3b3d" />
+    {[0, 1, 2, 3].map((k) => <path d={`M15 ${168 + k * 64} H33`} stroke="rgb(0 0 0 / 0.45)" stroke-width="2" />)}
+    <!-- Plantas junto a la entrada -->
+    <circle cx="336" cy="372" r="9" fill="#2e4a35" /><circle cx="336" cy="372" r="4" fill="#3f6649" />
+    <!-- Sillas de cada mesa -->
+    {plano.mesas.map((m) => (
+      <g class="pd-sillas" data-sillas={m.n}>
+        {sillas(m).map((s) => <rect x={s.x} y={s.y} width={s.w} height={s.h} rx="4" />)}
+      </g>
+    ))}
+  </svg>
+  <ul class="pd-plano-rotulos" aria-hidden="true">
+    {rotulos.map((r) => (
+      <li style={`left:${(r.x / W) * 100}%;top:${(r.y / H) * 100}%`}><span lang="es">{r.es}</span><span lang="en">{r.en}</span></li>
+    ))}
+  </ul>
+  <div class="pd-mesas" role="group" aria-labelledby="t-plano" aria-describedby="plano-desc">
+    {plano.mesas.map((m) => {
+      const { left, top } = posicion(plano, m);
+      const [w, h] = TAM[m.forma];
+      const ocupada = plano.ocupadasDemo.includes(m.n);
+      return (
+        <button
+          type="button"
+          class="pd-mesa presionable"
+          data-mesa={m.n}
+          data-forma={m.forma}
+          data-personas={m.personas}
+          data-zona-es={m.zona.es}
+          data-zona-en={m.zona.en}
+          data-ocupada={ocupada ? 'si' : undefined}
+          aria-pressed="false"
+          aria-disabled={ocupada ? 'true' : undefined}
+          style={`left:${left}%;top:${top}%;--tw:${((w / W) * 100).toFixed(3)};--th:${((h / W) * 100).toFixed(3)}`}
+        >
+          <span class="pd-mesa-tapa" aria-hidden="true">
+            <span class="pd-mesa-num">{m.n}</span>
+          </span>
+          <span class="sr-only">
+            <span lang="es">Mesa {m.n}, {m.personas} personas, {m.zona.es}{ocupada ? ', ocupada' : ''}</span>
+            <span lang="en">Table {m.n}, seats {m.personas}, {m.zona.en}{ocupada ? ', taken' : ''}</span>
+          </span>
+        </button>
+      );
+    })}
+  </div>
+  <p id="plano-desc" class="sr-only">
+    <span lang="es">Plano ilustrativo visto desde arriba: al fondo el muro con el logo y la barra de cócteles, la cocina a la derecha, una banca junto al muro azul a la izquierda, y las ventanas y la entrada al frente.</span>
+    <span lang="en">Illustrative top-down plan: the logo wall and cocktail bar at the back, the kitchen on the right, a booth along the blue wall on the left, and the windows and entrance at the front.</span>
+  </p>
+</div>

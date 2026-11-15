@@ -1,0 +1,21 @@
+{
+  "$comentario": "Plano ILUSTRATIVO del salón (inspirado en las fotos del interior: muros azules, banca gris, mesas de madera, barra de cócteles frente al muro negro con el isotipo). Posiciones y números por confirmar con el restaurante. ocupadasDemo es disponibilidad de demostración. La ubicación del restaurante es aproximada (Blvd. Freemont y Josefa Ortiz de Domínguez, plaza de la gasolinera Las Conchas), por confirmar.",
+  "ancho": 360,
+  "alto": 500,
+  "mesas": [
+    { "n": 1, "x": 62, "y": 136, "forma": "cuadrada", "personas": 4, "zona": { "es": "Banca junto al muro azul", "en": "Booth by the blue wall" } },
+    { "n": 2, "x": 62, "y": 200, "forma": "cuadrada", "personas": 4, "zona": { "es": "Banca junto al muro azul", "en": "Booth by the blue wall" } },
+    { "n": 3, "x": 62, "y": 264, "forma": "cuadrada", "personas": 4, "zona": { "es": "Banca junto al muro azul", "en": "Booth by the blue wall" } },
+    { "n": 4, "x": 62, "y": 328, "forma": "cuadrada", "personas": 4, "zona": { "es": "Banca junto al muro azul", "en": "Booth by the blue wall" } },
+    { "n": 5, "x": 170, "y": 146, "forma": "cuadrada", "personas": 4, "zona": { "es": "Salón, frente a la barra", "en": "Dining room, facing the bar" } },
+    { "n": 6, "x": 268, "y": 150, "forma": "redonda", "personas": 2, "zona": { "es": "Salón, frente a la barra", "en": "Dining room, facing the bar" } },
+    { "n": 7, "x": 214, "y": 240, "forma": "larga", "personas": 6, "zona": { "es": "Mesa grande del salón", "en": "Big table, dining room" } },
+    { "n": 8, "x": 168, "y": 334, "forma": "cuadrada", "personas": 4, "zona": { "es": "Salón", "en": "Dining room" } },
+    { "n": 9, "x": 270, "y": 334, "forma": "redonda", "personas": 2, "zona": { "es": "Salón", "en": "Dining room" } },
+    { "n": 10, "x": 62, "y": 420, "forma": "redonda", "personas": 2, "zona": { "es": "Junto a la ventana", "en": "By the window" } },
+    { "n": 11, "x": 150, "y": 424, "forma": "cuadrada", "personas": 4, "zona": { "es": "Junto a la ventana", "en": "By the window" } },
+    { "n": 12, "x": 234, "y": 428, "forma": "redonda", "personas": 2, "zona": { "es": "Cerca de la entrada", "en": "Near the entrance" } }
+  ],
+  "ocupadasDemo": [3, 8, 11],
+  "restaurante": { "lat": 31.3157, "lng": -113.5286, "aproximada": true }
+}
