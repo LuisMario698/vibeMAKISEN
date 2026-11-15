@@ -1,11 +1,14 @@
 ---
-// Isla dinámica: navegación de categorías como "oro líquido".
-// Capa 1 (.isla-liquido): manchas sólidas con filtro SVG "goo" → se funden como líquido.
-// Capa 2: botones y panel reales, encima y sin filtro (texto nítido y accesible).
+// Barra flotante del menú (la «isla»): tres controles separados, oro sobre mármol.
+//   [ 01 Sección actual ▾ ]  ·  ( Buscar )  ·  [ Mi pedido · 3 ]
+// Cada uno abre lo suyo: el selector de categorías, la búsqueda o el panel del pedido.
+// Teléfono: los paneles suben como hoja; computadora: popover anclado sobre la barra.
+// Todo el movimiento es transform/opacity (src/styles/isla.css); la lógica, src/scripts/isla.ts.
 import Idioma from './Idioma.astro';
 import IconoBolsa from './IconoBolsa.astro';
 import { menu } from '../data/schema';
 import '../styles/detalle.css';
+import '../styles/isla.css';
 import { iconoDe } from '../lib/iconos-categoria';
 
 const grupos = [
@@ -13,83 +16,61 @@ const grupos = [
   { id: 'bebidas', es: 'Bebidas', en: 'Drinks' },
 ] as const;
 const miniatura = (c: (typeof menu.categorias)[number]) => c.platillos.find((p) => p.foto)?.foto;
+const primera = menu.categorias[0]!;
 ---
 <div id="isla-velo" class="isla-velo" aria-hidden="true"></div>
-<div id="isla" class="isla" data-estado="oculta">
-  <svg class="absolute size-0" aria-hidden="true" focusable="false">
-    <defs>
-      <filter id="goo" x="-30%" y="-30%" width="160%" height="160%" color-interpolation-filters="sRGB">
-        <feGaussianBlur in="SourceGraphic" stdDeviation="10" result="desenfoque" />
-        <feColorMatrix in="desenfoque" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 24 -11" result="goo" />
-        <feComposite in="SourceGraphic" in2="goo" operator="atop" />
-      </filter>
-    </defs>
-  </svg>
+<div id="isla" class="isla" data-estado="oculta" data-lista="no">
+  <div class="isla-barra">
+    <!-- 1 · Sección actual: abre el selector de categorías. Deslizar cambia a la vecina. -->
+    <button type="button" class="isla-pildora isla-ctl presionable" aria-expanded="false" aria-controls="isla-panel" aria-haspopup="dialog" style="--k:0" inert>
+      <span class="num tabular-nums" aria-hidden="true">01</span>
+      <span class="isla-texto"><span class="sr-only"><span lang="es">Sección actual:</span><span lang="en">Current section:</span> </span><span class="actual"><span lang="es">{primera.nombre.es}</span><span lang="en">{primera.nombre.en}</span></span></span>
+      <svg class="flecha" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9.5 6 6 6-6" /></svg>
+      <span class="avance" aria-hidden="true"></span>
+    </button>
 
-  <div class="isla-liquido" aria-hidden="true">
-    <i class="mancha cuerpo"></i>
-    <i class="mancha boton"></i>
-    <i class="mancha bolsa"></i>
-    <i class="mancha gota g1"></i>
-    <i class="mancha gota g2"></i>
-    <i class="mancha gota g3"></i>
+    <!-- 2 · Buscar: abre la búsqueda con el teclado listo. -->
+    <button type="button" class="isla-lupa isla-ctl presionable" aria-expanded="false" aria-controls="isla-busca" aria-haspopup="dialog" style="--k:1" inert>
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5" /><path d="m16 16 4 4" /></svg>
+      <span class="sr-only"><span lang="es">Buscar en el menú</span><span lang="en">Search the menu</span></span>
+    </button>
+
+    <!-- 3 · Mi pedido: abre el panel del pedido (lista.ts). Destino del vuelo al agregar. -->
+    <button type="button" class="isla-lista isla-ctl bolsa-boton presionable" aria-label="Mi pedido / My order" style="--k:2" inert>
+      <span class="bolsa-onda" aria-hidden="true"></span>
+      <IconoBolsa tam={23} grueso={2.1} />
+      <span class="isla-rotulo" aria-hidden="true"><span lang="es">Mi pedido</span><span lang="en">My order</span></span>
+      <span class="contador tabular-nums" aria-hidden="true" data-vista="0" data-antes="0">0</span>
+    </button>
   </div>
 
-  <button type="button" class="isla-pildora presionable" aria-expanded="false" aria-controls="isla-panel">
-    <span class="anillo" aria-hidden="true">
-      <svg viewBox="0 0 36 36" width="36" height="36"><circle cx="18" cy="18" r="15.5" fill="none" stroke="rgb(0 0 0 / 0.18)" stroke-width="3" /><circle class="avance" cx="18" cy="18" r="15.5" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" pathLength="100" stroke-dasharray="100" stroke-dashoffset="100" transform="rotate(-90 18 18)" /></svg>
-      <span class="num">01</span>
-    </span>
-    <span class="isla-texto"><span class="sr-only"><span lang="es">Categoría actual:</span><span lang="en">Current category:</span> </span><span class="actual"></span></span>
-    <svg class="flecha" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="m6 15 6-6 6 6" /></svg>
-  </button>
-
-  <button type="button" class="isla-lupa presionable" aria-label="Buscar en el menú / Search the menu">
-    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5" /><path d="m16 16 4 4" /></svg>
-  </button>
-
-  <button type="button" class="isla-lista bolsa-boton presionable" aria-label="Mi pedido / My order">
-    <span class="bolsa-onda" aria-hidden="true"></span>
-    <IconoBolsa tam={24} grueso={2.1} />
-    <span class="contador tabular-nums" aria-hidden="true" data-vista="0" data-antes="0">0</span>
-  </button>
-
-  <div id="isla-panel" class="isla-panel" role="dialog" aria-modal="true" aria-label="Menú / Menu" inert>
-    <div class="flex items-center gap-2 px-4 pt-4">
-      <p class="rotulo flex-1 text-[15px]"><span lang="es">Menú</span><span lang="en">Menu</span></p>
+  <!-- Selector de categorías -->
+  <div id="isla-panel" class="isla-hoja" role="dialog" aria-modal="true" aria-labelledby="isla-t-cats" inert>
+    <div class="isla-cabeza">
+      <span class="isla-asa" aria-hidden="true"></span>
+      <h2 id="isla-t-cats" class="rotulo flex-1 text-[15px] font-semibold"><span lang="es">Secciones del menú</span><span lang="en">Menu sections</span></h2>
       <Idioma sobreOro />
       <button type="button" data-isla-cerrar class="presionable tap grid place-items-center rounded-full" aria-label="Cerrar / Close">
         <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
       </button>
     </div>
-    <form role="search" class="relative mx-4 mt-3" onsubmit="return false">
-      <svg class="pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><circle cx="11" cy="11" r="6.5" /><path d="m16 16 4 4" /></svg>
-      <input id="buscar" type="search" inputmode="search" autocomplete="off" enterkeyhint="search" aria-label="Buscar en el menú" placeholder="Buscar…"
-        class="h-12 w-full rounded-full border-0 bg-noche/12 pr-4 pl-10 text-[16px] font-medium text-noche placeholder:text-noche/75 focus:bg-noche/18 focus:outline-2 focus:outline-noche" />
-    </form>
-    <div class="isla-filtros mx-4 mt-2.5 flex gap-2 overflow-x-auto" role="group" aria-label="Filtros / Filters">
-      <button type="button" data-filtro="favorito" aria-pressed="false" class="filtro presionable"><span lang="es">Favoritos</span><span lang="en">Favorites</span></button>
-      <button type="button" data-filtro="sinPicante" aria-pressed="false" class="filtro presionable"><span lang="es">Sin picante</span><span lang="en">Not spicy</span></button>
-      <button type="button" data-filtro="cocido" aria-pressed="false" class="filtro presionable"><span lang="es">Cocido</span><span lang="en">Cooked</span></button>
-    </div>
-
     <div class="isla-scroll">
       <div class="isla-cats">
         {grupos.map((g) => (
           <section>
             <h3 class="isla-grupo"><span lang="es">{g.es}</span><span lang="en">{g.en}</span></h3>
             <ul class="grid grid-cols-2 gap-2 sm:grid-cols-3">
-              {menu.categorias.filter((c) => c.grupo === g.id).map((c) => {
+              {menu.categorias.map((c, i) => ({ c, i })).filter(({ c }) => c.grupo === g.id).map(({ c, i }) => {
                 const m = miniatura(c);
                 return (
                   <li class="isla-item">
-                    <button type="button" data-ir={c.id} class="isla-cat presionable">
+                    <button type="button" data-ir={c.id} aria-current="false" class="isla-cat presionable">
                       <span class="miniatura">
-                        {m ? <img src={`/menu/${m}.webp`} alt="" loading="lazy" decoding="async" /> : <img src={iconoDe(c.id)} alt="" loading="lazy" class="icono" />}
+                        {m ? <img src={`/menu/${m}.webp`} alt="" width="40" height="40" loading="lazy" decoding="async" /> : <img src={iconoDe(c.id)} alt="" width="30" height="30" loading="lazy" decoding="async" class="icono" />}
                       </span>
                       <span class="min-w-0 text-left">
                         <span class="line-clamp-2 block text-[13.5px] leading-[1.2] font-semibold"><span lang="es">{c.nombre.es}</span><span lang="en">{c.nombre.en}</span></span>
-                        <span class="block text-[13px] text-noche/85">{c.platillos.length}</span>
+                        <span class="isla-cuenta block text-[13px] tabular-nums"><span aria-hidden="true">{String(i + 1).padStart(2, '0')} · </span>{c.platillos.length}<span class="sr-only"><span lang="es"> productos</span><span lang="en"> items</span></span></span>
                       </span>
                     </button>
                   </li>
@@ -99,10 +80,34 @@ const miniatura = (c: (typeof menu.categorias)[number]) => c.platillos.find((p) 
           </section>
         ))}
       </div>
+      <p class="isla-nota"><span lang="es">Picante y crudo: etiquetas por confirmar con cocina.</span><span lang="en">Spicy and raw labels: pending kitchen confirmation.</span></p>
+    </div>
+  </div>
+
+  <!-- Búsqueda -->
+  <div id="isla-busca" class="isla-hoja isla-hoja-busca" role="dialog" aria-modal="true" aria-labelledby="isla-t-busca" inert>
+    <div class="isla-cabeza">
+      <span class="isla-asa" aria-hidden="true"></span>
+      <h2 id="isla-t-busca" class="rotulo flex-1 text-[15px] font-semibold"><span lang="es">Buscar</span><span lang="en">Search</span></h2>
+      <button type="button" data-isla-cerrar class="presionable tap grid place-items-center rounded-full" aria-label="Cerrar / Close">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
+      </button>
+    </div>
+    <form role="search" class="relative mx-4 mt-1" onsubmit="return false">
+      <svg class="pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><circle cx="11" cy="11" r="6.5" /><path d="m16 16 4 4" /></svg>
+      <input id="buscar" type="search" inputmode="search" autocomplete="off" enterkeyhint="search" aria-label="Buscar en el menú" placeholder="Buscar…"
+        class="h-12 w-full rounded-full border-0 bg-noche/12 pr-4 pl-10 text-[16px] font-medium text-noche placeholder:text-noche/75 focus:bg-noche/18 focus:outline-2 focus:outline-noche" />
+    </form>
+    <div class="isla-filtros mx-4 mt-2.5 flex gap-2 overflow-x-auto" role="group" aria-label="Filtros / Filters">
+      <button type="button" data-filtro="favorito" aria-pressed="false" class="filtro presionable"><span lang="es">Favoritos</span><span lang="en">Favorites</span></button>
+      <button type="button" data-filtro="sinPicante" aria-pressed="false" class="filtro presionable"><span lang="es">Sin picante</span><span lang="en">Not spicy</span></button>
+      <button type="button" data-filtro="cocido" aria-pressed="false" class="filtro presionable"><span lang="es">Cocido</span><span lang="en">Cooked</span></button>
+    </div>
+    <div class="isla-scroll">
+      <p class="isla-pista"><span lang="es">Escribe un platillo, ingrediente o bebida, o usa un filtro.</span><span lang="en">Type a dish, ingredient or drink, or use a filter.</span></p>
       <ul class="isla-resultados" hidden></ul>
       <p id="isla-estado" class="sr-only" aria-live="polite"></p>
       <p class="isla-vacio" hidden><span lang="es">Sin resultados. Prueba otra palabra o quita un filtro.</span><span lang="en">No matches. Try another word or remove a filter.</span></p>
-      <p class="isla-nota"><span lang="es">Picante y crudo: etiquetas por confirmar con cocina.</span><span lang="en">Spicy and raw labels: pending kitchen confirmation.</span></p>
     </div>
   </div>
 </div>

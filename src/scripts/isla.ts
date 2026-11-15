@@ -1,8 +1,12 @@
-// Isla dinámica de "oro líquido". Las manchas (.mancha) viven bajo un filtro SVG goo:
-// cuando se acercan se funden y cuando se separan se estiran como un líquido.
-// Aquí solo se calcula la geometría de cada estado; el movimiento lo hace CSS.
+// Barra flotante del menú (la «isla»): tres controles separados, cada uno abre lo suyo.
+//   · Sección actual (número, nombre, avance) → selector de categorías. Deslizarla cambia a la vecina.
+//   · Buscar → búsqueda con el teclado listo y filtros rápidos.
+//   · Mi pedido → panel del pedido (lista.ts). También es el destino del vuelo al agregar (bolsa.ts).
+// Rendimiento: nada de filtros SVG ni de animar left/width/height. Aparecer, abrir y cerrar son
+// transiciones CSS de transform/opacity (src/styles/isla.css) que corren en el compositor, así
+// que no se traban aunque el hilo principal esté ocupado pintando la sección a la que se salta.
 
-import { escapar, normalizar } from '../lib/texto';
+import { normalizar } from '../lib/texto';
 import { etiquetaPedido } from '../lib/detalle';
 import { ponerContador } from './bolsa';
 
@@ -13,9 +17,20 @@ type Resultado = {
   favorito: boolean; picante: number; crudo: boolean; comida: boolean; agotado: boolean;
 };
 type Filtro = 'favorito' | 'sinPicante' | 'cocido';
-const bi = (t: Txt) => `<span lang="es">${escapar(t.es)}</span><span lang="en">${escapar(t.en)}</span>`;
-type Caja = { l: number; b: number; w: number; h: number; r?: number };
 type Estado = 'oculta' | 'pildora' | 'abierta';
+type Panel = 'cats' | 'busca';
+
+/** Texto bilingüe como nodos (sin innerHTML). */
+function ponerBi(el: Element, t: Txt) {
+  const s = (lang: string, txt: string) => { const n = document.createElement('span'); n.lang = lang; n.textContent = txt; return n; };
+  el.replaceChildren(s('es', t.es), s('en', t.en));
+}
+function nodo<K extends keyof HTMLElementTagNameMap>(tag: K, clase: string, hijos: (Node | string)[] = []) {
+  const n = document.createElement(tag);
+  if (clase) n.className = clase;
+  n.append(...hijos);
+  return n;
+}
 
 export function crearIsla(o: {
   cats: Cat[];
@@ -25,226 +40,212 @@ export function crearIsla(o: {
   abrirLista: () => void;
   reducir: () => boolean;
 }) {
-  const $ = <T extends HTMLElement = HTMLElement>(s: string) => document.querySelector<T>(s)!;
+  const $ = <T extends HTMLElement = HTMLElement>(s: string, r: ParentNode = document) => r.querySelector<T>(s)!;
+  const html = document.documentElement;
   const isla = $('#isla');
   const velo = $('#isla-velo');
-  const cuerpo = $('.mancha.cuerpo');
-  const boton = $('.mancha.boton');
-  const bolsa = $('.mancha.bolsa');
-  const btnLista = $<HTMLButtonElement>('.isla-lista');
-  const contador = $('.isla-lista .contador');
-  const gotas = [...isla.querySelectorAll<HTMLElement>('.mancha.gota')];
+  const barra = $('.isla-barra');
   const pildora = $<HTMLButtonElement>('.isla-pildora');
   const lupa = $<HTMLButtonElement>('.isla-lupa');
-  const panel = $('#isla-panel');
-  const actual = $('.isla-pildora .actual');
-  const num = $('.isla-pildora .num');
-  const avance = $('.isla-pildora .avance');
+  const btnLista = $<HTMLButtonElement>('.isla-lista');
+  const contador = $('.contador', btnLista);
+  const num = $('.num', pildora);
+  const texto = $('.isla-texto', pildora);
+  const actual = $('.actual', pildora);
+  const avance = $('.avance', pildora);
+  const paneles: Record<Panel, HTMLElement> = { cats: $('#isla-panel'), busca: $('#isla-busca') };
   const input = $<HTMLInputElement>('#buscar');
-  const cats = $('.isla-cats');
   const resultados = $('.isla-resultados');
   const vacio = $('.isla-vacio');
+  const pista = $('.isla-pista');
+  const estadoBusqueda = $('#isla-estado');
+  const botonesIr = [...document.querySelectorAll<HTMLElement>('[data-ir]')];
+  const riel = document.querySelector<HTMLElement>('.riel');
+  const escritorio = matchMedia('(min-width: 64rem)');
 
   let estado: Estado = 'oculta';
+  let abierto: Panel | null = null;
   let idx = -1;
   let piezas = 0;
+  let totalTxt = '';
   const filtros = new Set<Filtro>();
-  const ctx = document.createElement('canvas').getContext('2d')!;
-  const es = () => document.documentElement.lang !== 'en';
+  const es = () => html.lang !== 'en';
+  /** Cuánto tarda la barra en terminar de subir (la bolsa es el último control, --k: 2). */
+  const MS_APARECE = 460;
+  let tLista = 0;
 
-  // Escalonado de la lista del panel
-  panel.querySelectorAll<HTMLElement>('.isla-item').forEach((li, k) => li.style.setProperty('--k', String(k)));
+  const controles = (si: boolean) => { pildora.inert = lupa.inert = btnLista.inert = !si; };
 
-  const H = 54; // alto de la píldora y diámetro del botón
-  const GAP = 8;
-  const ancho = () => Math.min(innerWidth - 24, innerWidth >= 1024 ? 560 : innerWidth >= 640 ? 520 : 440);
-  const altoPanel = () => Math.round(Math.min(innerHeight * 0.76, 620));
-
-  function medir(t: string) {
-    ctx.font = '600 15px Poppins, system-ui, sans-serif';
-    return Math.ceil(ctx.measureText(t).width);
-  }
-  function poner(el: HTMLElement, c: Caja) {
-    el.style.left = `${c.l}px`;
-    el.style.bottom = `${c.b}px`;
-    el.style.width = `${c.w}px`;
-    el.style.height = `${c.h}px`;
-    if (c.r !== undefined) el.style.borderRadius = `${c.r}px`;
-  }
-  function sinTransicion(els: HTMLElement[], fn: () => void) {
-    els.forEach((e) => e.classList.add('quieta'));
-    fn();
-    void isla.offsetWidth;
-    els.forEach((e) => e.classList.remove('quieta'));
+  /* ── Miniaturas del selector: se piden en un momento libre tras aparecer la barra ── */
+  let precargado = false;
+  function precargar() {
+    if (precargado) return;
+    precargado = true;
+    const pedir = () => paneles.cats.querySelectorAll<HTMLImageElement>('img[loading="lazy"]').forEach((i) => { i.loading = 'eager'; });
+    if ('requestIdleCallback' in window) requestIdleCallback(pedir, { timeout: 2500 }); else setTimeout(pedir, 1200);
   }
 
-  function geo() {
-    const W = ancho();
-    const nombre = idx >= 0 ? o.cats[idx]!.nombre[es() ? 'es' : 'en'] : '';
-    // Con algo en la lista aparece un tercer botón (Mi pedido) a la derecha.
-    const extra = piezas > 0 ? H + GAP : 0;
-    const cw = Math.max(piezas > 0 ? 150 : 168, Math.min(W - H - GAP - extra, 9 + 36 + 10 + medir(nombre) + 10 + 20 + 16));
-    const l0 = (W - (cw + GAP + H + extra)) / 2;
-    return { W, cw, l0, P: altoPanel(), extra };
-  }
-
-  function pintar() {
-    const g = geo();
-    isla.style.width = `${g.W}px`;
-    isla.style.height = `${g.P}px`;
-    isla.style.setProperty('--alto-panel', `${g.P}px`);
-    const pill: Caja = { l: g.l0, b: 0, w: g.cw, h: H, r: H / 2 };
-    const btn: Caja = { l: g.l0 + g.cw + GAP, b: 0, w: H, h: H, r: H / 2 };
-    // Sin lista, la bolsa vive fundida dentro del botón de búsqueda.
-    const bol: Caja = piezas > 0 ? { l: btn.l + H + GAP, b: 0, w: H, h: H, r: H / 2 } : { ...btn, l: btn.l + 7, b: 7, w: H - 14, h: H - 14, r: (H - 14) / 2 };
-    const centro = (d: number): Caja => ({ l: g.l0 + g.cw / 2 - d / 2, b: (H - d) / 2, w: d, h: d, r: d / 2 });
-    if (estado === 'oculta') {
-      const c: Caja = { l: (g.W - H) / 2, b: -120, w: H, h: H, r: H / 2 };
-      poner(cuerpo, c); poner(boton, c); poner(bolsa, c);
-      gotas.forEach((d) => poner(d, { ...c, w: 16, h: 16, r: 8, l: c.l + 19 }));
-    } else if (estado === 'pildora') {
-      poner(cuerpo, pill); poner(boton, btn); poner(bolsa, bol);
-      gotas.forEach((d) => poner(d, centro(16)));
-    } else {
-      poner(cuerpo, { l: 0, b: 0, w: g.W, h: g.P, r: 32 });
-      // Los botones se hunden en la esquina del panel: el líquido los absorbe.
-      poner(boton, { l: g.W - 58, b: g.P - 58, w: 40, h: 40, r: 20 });
-      poner(bolsa, { l: g.W - 58, b: g.P - 58, w: 40, h: 40, r: 20 });
-    }
-    poner(pildora, pill);
-    poner(lupa, btn);
-    poner(btnLista, piezas > 0 ? bol : btn);
-    isla.dataset.lista = piezas > 0 ? 'si' : 'no';
-    // Botones invisibles no deben recibir foco con Tab.
-    pildora.inert = lupa.inert = estado !== 'pildora';
-    btnLista.inert = estado !== 'pildora' || piezas === 0;
-  }
-
-  /* ── Mostrar / ocultar: cae una gota y se divide en píldora + botón ── */
+  /* ── Aparecer / ocultar: los tres controles suben escalonados (CSS) ── */
   function mostrar(si: boolean) {
     if (si && estado === 'oculta') {
-      const g = geo();
       estado = 'pildora';
       isla.dataset.estado = 'pildora';
-      if (o.reducir()) { pintar(); return; }
-      // Fase 1: una sola gota sube. Fase 2: se estira y se divide.
-      tLista = Math.max(tLista, performance.now() + 300 + 320);
-      const c: Caja = { l: (g.W - H) / 2, b: 0, w: H, h: H, r: H / 2 };
-      poner(cuerpo, c); poner(boton, c);
-      setTimeout(pintar, 300);
+      controles(true);
+      if (!o.reducir()) tLista = Math.max(tLista, performance.now() + MS_APARECE);
+      precargar();
     } else if (!si && estado === 'pildora') {
       estado = 'oculta';
       isla.dataset.estado = 'oculta';
-      pintar();
+      controles(false);
     }
   }
 
-  /* ── Categoría actual: el texto rueda, la píldora se ajusta y salta una gota ── */
+  /* ── Sección actual: número, nombre (rueda en la dirección del cambio) y avance ── */
+  let rueda: Animation | null = null;
   function actualizar(nuevo: number, dir = 1) {
-    if (nuevo === idx || nuevo < 0) return;
+    if (nuevo === idx || nuevo < 0 || nuevo >= o.cats.length) return;
     const antes = idx;
     idx = nuevo;
     const c = o.cats[idx]!;
-    actual.innerHTML = bi(c.nombre);
+    ponerBi(actual, c.nombre);
     num.textContent = String(idx + 1).padStart(2, '0');
-    avance.style.strokeDashoffset = String(100 - ((idx + 1) / o.cats.length) * 100);
-    document.querySelectorAll('[data-ir]').forEach((b) => b.setAttribute('aria-current', String((b as HTMLElement).dataset.ir === c.id)));
-    if (estado !== 'pildora') { pintar(); return; }
-    pintar();
-    if (antes < 0 || o.reducir()) return;
-    actual.animate(
-      [{ transform: `translateY(${dir * 70}%)`, opacity: 0, filter: 'blur(4px)' }, { transform: 'none', opacity: 1, filter: 'none' }],
-      { duration: 420, easing: 'cubic-bezier(0.16, 1, 0.3, 1)' },
+    avance.style.transform = `scaleX(${(idx + 1) / o.cats.length})`;
+    for (const b of botonesIr) {
+      const si = b.dataset.ir === c.id;
+      if ((b.getAttribute('aria-current') === 'true') !== si) b.setAttribute('aria-current', String(si));
+    }
+    seguirEnRiel(c.id);
+    if (antes < 0 || estado === 'oculta' || o.reducir()) return;
+    rueda?.cancel();
+    rueda = actual.animate(
+      [{ transform: `translateY(${dir * 60}%)`, opacity: 0 }, { transform: 'none', opacity: 1 }],
+      { duration: 280, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' },
     );
-    salpicar(dir);
+  }
+  /** En computadora, el riel lateral mantiene a la vista la categoría activa (si no cabe completo). */
+  function seguirEnRiel(id: string) {
+    if (!riel || riel.scrollHeight <= riel.clientHeight + 4) return;
+    const b = riel.querySelector<HTMLElement>(`[data-ir="${CSS.escape(id)}"]`);
+    if (!b) return;
+    const y = b.offsetTop;
+    if (y < riel.scrollTop + 48 || y + b.offsetHeight > riel.scrollTop + riel.clientHeight - 48) {
+      riel.scrollTo({ top: y - riel.clientHeight / 2, behavior: o.reducir() ? 'auto' : 'smooth' });
+    }
   }
 
-  function salpicar(dir: number) {
-    const g = geo();
-    const d = gotas[0]!;
-    const x = g.l0 + g.cw / 2 + dir * Math.min(60, g.cw / 4) - 9;
-    sinTransicion([d], () => poner(d, { l: x, b: 18, w: 18, h: 18, r: 9 }));
-    requestAnimationFrame(() => {
-      poner(d, { l: x + dir * 10, b: H + 16, w: 16, h: 16, r: 8 });
-      setTimeout(() => { if (estado === 'pildora') poner(d, { l: g.l0 + g.cw / 2 - 8, b: (H - 16) / 2, w: 16, h: 16, r: 8 }); }, 300);
-    });
-  }
-
-  /* ── Abrir: el líquido se derrama hacia arriba y salpica ── */
+  /* ── Abrir y cerrar paneles: hoja que sube (teléfono) o popover sobre la barra (computadora) ── */
   let foco: HTMLElement | null = null;
+  function primerFoco(p: Panel) {
+    if (p === 'busca') return input;
+    return paneles.cats.querySelector<HTMLElement>('[data-ir][aria-current="true"]') ?? paneles.cats.querySelector<HTMLElement>('[data-ir]')!;
+  }
   function abrir(conBusqueda = false) {
-    if (estado === 'abierta') return;
-    if (estado === 'oculta') { estado = 'pildora'; pintar(); }
-    foco = document.activeElement as HTMLElement;
-    const g = geo();
+    const quiere: Panel = conBusqueda ? 'busca' : 'cats';
+    if (abierto === quiere) return;
+    if (estado === 'oculta') mostrar(true);
+    if (abierto) cerrarPanel(abierto);
+    else foco = document.activeElement as HTMLElement | null;
+    abierto = quiere;
     estado = 'abierta';
     isla.dataset.estado = 'abierta';
-    pildora.setAttribute('aria-expanded', 'true');
-    velo.classList.add('on');
-    document.documentElement.classList.add('isla-abierta');
-    panel.inert = false;
-    if (!o.reducir()) {
-      // Gotas que saltan antes de que el panel las alcance.
-      const xs = [0.18, 0.52, 0.82];
-      gotas.forEach((d, i) => {
-        d.classList.add('rapida');
-        poner(d, { l: g.W * xs[i]! - 11, b: 90 + i * 70 + (i % 2) * 40, w: 22 - i * 3, h: 22 - i * 3, r: 11 });
-      });
-      setTimeout(() => gotas.forEach((d) => { d.classList.remove('rapida'); poner(d, { l: g.W / 2 - 8, b: g.P / 2, w: 16, h: 16, r: 8 }); }), 420);
+    isla.dataset.panel = quiere;
+    const p = paneles[quiere];
+    if (escritorio.matches) {
+      // El popover crece desde su botón (una lectura de layout al abrir, no por cuadro).
+      const b = (quiere === 'cats' ? pildora : lupa).getBoundingClientRect();
+      const r = p.getBoundingClientRect();
+      p.style.setProperty('--ox', `${Math.round(b.left + b.width / 2 - r.left)}px`);
     }
-    pintar();
-    setTimeout(() => {
-      panel.classList.add('lista');
-      (conBusqueda ? input : (panel.querySelector<HTMLElement>('[data-ir][aria-current="true"]') ?? input)).focus({ preventScroll: true });
-    }, o.reducir() ? 0 : 230);
+    p.inert = false;
+    p.classList.add('on');
+    velo.classList.add('on');
+    html.classList.add('isla-abierta');
+    pildora.setAttribute('aria-expanded', String(quiere === 'cats'));
+    lupa.setAttribute('aria-expanded', String(quiere === 'busca'));
+    // En el teléfono la hoja cubre la barra: fuera del orden de Tab mientras está abierta.
+    barra.inert = !escritorio.matches;
+    // Foco en el mismo toque (en iPhone el teclado solo sale si el foco llega dentro del gesto).
+    primerFoco(quiere).focus({ preventScroll: true });
+    if (quiere === 'busca') teclado();
   }
-
-  /* ── Cerrar: el panel escurre de vuelta a la píldora ── */
+  function cerrarPanel(p: Panel) {
+    const el = paneles[p];
+    el.classList.remove('on');
+    el.inert = true;
+    el.style.translate = '';
+    el.style.maxHeight = '';
+  }
   function cerrar(devolverFoco = true) {
-    if (estado !== 'abierta') return;
-    const g = geo();
-    panel.classList.remove('lista');
-    panel.inert = true;
+    if (estado !== 'abierta' || !abierto) return;
+    cerrarPanel(abierto);
+    abierto = null;
+    delete isla.dataset.panel;
     velo.classList.remove('on');
-    document.documentElement.classList.remove('isla-abierta');
+    html.classList.remove('isla-abierta');
     pildora.setAttribute('aria-expanded', 'false');
+    lupa.setAttribute('aria-expanded', 'false');
+    barra.inert = false;
     estado = 'pildora';
     isla.dataset.estado = 'pildora';
-    if (!o.reducir()) {
-      // Gotas que quedan colgando y luego caen a la píldora.
-      sinTransicion(gotas, () => gotas.forEach((d, i) => poner(d, { l: g.W * (0.25 + i * 0.25) - 10, b: 70 + i * 50, w: 20, h: 20, r: 10 })));
-    }
-    setTimeout(pintar, o.reducir() ? 0 : 60);
-    if (devolverFoco) (foco ?? pildora).focus({ preventScroll: true });
+    controles(true);
+    if (devolverFoco) (foco && foco.isConnected && !foco.closest('[inert]') ? foco : pildora).focus({ preventScroll: true });
   }
 
-  /* ── Búsqueda y filtros rápidos dentro de la isla ── */
+  // Teclado del teléfono: la hoja de búsqueda sube con él y se ajusta al alto visible.
+  const vv = window.visualViewport;
+  function teclado() {
+    const p = paneles.busca;
+    if (abierto !== 'busca' || escritorio.matches || !vv) { p.style.translate = ''; p.style.maxHeight = ''; return; }
+    const kb = Math.max(0, innerHeight - vv.height - vv.offsetTop);
+    p.style.translate = kb > 40 ? `0 ${-Math.round(kb)}px` : '';
+    p.style.maxHeight = kb > 40 ? `${Math.round(vv.height - 16)}px` : '';
+  }
+  vv?.addEventListener('resize', teclado);
+
+  /* ── Búsqueda y filtros rápidos: las filas se crean una vez y luego solo se muestran/ocultan ── */
+  let filas: { p: Resultado; li: HTMLLIElement }[] | null = null;
+  function crearFilas() {
+    filas = o.platillos.map((p) => {
+      const img = document.createElement('img');
+      img.alt = ''; img.decoding = 'async'; img.loading = 'lazy';
+      if (p.foto) { img.src = `/menu/${p.foto}.webp`; img.width = 40; img.height = 40; } else { img.src = p.icono; img.width = 30; img.height = 30; img.className = 'icono'; }
+      const nombre = nodo('span', 'isla-res-nombre'); ponerBi(nombre, p.nombre);
+      const cat = nodo('span', 'isla-res-cat'); ponerBi(cat, p.cat);
+      const b = nodo('button', `isla-res presionable${p.agotado ? ' agotado' : ''}`, [
+        nodo('span', 'miniatura', [img]),
+        nodo('span', 'min-w-0 flex-1 text-left', [nombre, cat]),
+        nodo('span', 'isla-res-precio tabular-nums', [p.precio]),
+      ]);
+      b.type = 'button';
+      b.dataset.platillo = p.id;
+      const li = nodo('li', '', [b]);
+      li.hidden = true;
+      return { p, li };
+    });
+    resultados.replaceChildren(...filas.map((f) => f.li));
+  }
   function buscar() {
     const q = normalizar(input.value);
-    if (!q && filtros.size === 0) { cats.hidden = false; resultados.hidden = true; vacio.hidden = true; return; }
+    const nada = !q && filtros.size === 0;
+    pista.hidden = !nada;
+    if (nada) { resultados.hidden = true; vacio.hidden = true; estadoBusqueda.textContent = ''; return; }
+    if (!filas) crearFilas();
     const pal = q ? q.split(/\s+/) : [];
-    const hits = o.platillos.filter((p) =>
-      pal.every((w) => p.texto.includes(w)) &&
-      (!filtros.has('favorito') || p.favorito) &&
-      (!filtros.has('sinPicante') || (p.comida && p.picante === 0)) &&
-      (!filtros.has('cocido') || (p.comida && !p.crudo)),
-    ).slice(0, 60);
-    cats.hidden = true;
-    anunciarResultados(hits.length);
-    vacio.hidden = hits.length > 0;
-    resultados.hidden = hits.length === 0;
-    resultados.innerHTML = hits
-      .map(
-        (p, k) => `<li style="--k:${Math.min(k, 12)}"><button type="button" data-platillo="${escapar(p.id)}" class="isla-res presionable${p.agotado ? ' agotado' : ''}">
-          <span class="miniatura">${p.foto ? `<img src="/menu/${escapar(p.foto)}.webp" alt="" width="40" height="40" loading="lazy" decoding="async">` : `<img src="${escapar(p.icono)}" alt="" width="30" height="30" decoding="async" class="icono">`}</span>
-          <span class="min-w-0 flex-1 text-left"><span class="block truncate text-[15px] font-semibold">${bi(p.nombre)}</span>
-          <span class="block truncate text-[13px] text-noche/85">${bi(p.cat)}</span></span>
-          <span class="text-[15px] font-bold tabular-nums">${escapar(p.precio)}</span></button></li>`,
-      )
-      .join('');
+    let n = 0;
+    for (const { p, li } of filas!) {
+      const si = n < 60 &&
+        pal.every((w) => p.texto.includes(w)) &&
+        (!filtros.has('favorito') || p.favorito) &&
+        (!filtros.has('sinPicante') || (p.comida && p.picante === 0)) &&
+        (!filtros.has('cocido') || (p.comida && !p.crudo));
+      if (si) n++;
+      if (li.hidden === si) li.hidden = !si;
+    }
+    anunciarResultados(n);
+    vacio.hidden = n > 0;
+    resultados.hidden = n === 0;
   }
   input.addEventListener('input', buscar);
-  const estadoBusqueda = $('#isla-estado');
   let tBusqueda = 0;
   function anunciarResultados(n: number) {
     clearTimeout(tBusqueda);
@@ -252,108 +253,119 @@ export function crearIsla(o: {
       estadoBusqueda.textContent = n === 0 ? (es() ? 'Sin resultados.' : 'No matches.') : es() ? `${n} ${n === 1 ? 'resultado' : 'resultados'}` : `${n} ${n === 1 ? 'result' : 'results'}`;
     }, 400);
   }
-  panel.querySelectorAll<HTMLButtonElement>('[data-filtro]').forEach((b) => b.addEventListener('click', () => {
+  paneles.busca.querySelectorAll<HTMLButtonElement>('[data-filtro]').forEach((b) => b.addEventListener('click', () => {
     const f = b.dataset.filtro as Filtro;
     if (filtros.has(f)) filtros.delete(f); else filtros.add(f);
     b.setAttribute('aria-pressed', String(filtros.has(f)));
     buscar();
   }));
 
-  /* ── Mi pedido: contador y rebote de la bolsa al agregar ── */
-  let totalTxt = '';
+  /* ── Mi pedido: contador y rebote al recibir un platillo ── */
   function contar(n: number, total: string) {
-    const antes = piezas;
     piezas = n;
     totalTxt = total;
     ponerContador(contador, n);
     btnLista.setAttribute('aria-label', etiquetaPedido(n, total, es() ? 'es' : 'en'));
-    if ((antes > 0) !== (n > 0)) pintar();
-    // La bolsa brota del botón de búsqueda: tarda un momento en llegar a su lugar.
-    if (antes === 0 && n > 0 && estado === 'pildora' && !o.reducir()) tLista = Math.max(tLista, performance.now() + 380);
+    isla.dataset.lista = n > 0 ? 'si' : 'no';
   }
-  /** Cuándo termina de formarse la bolsa (la isla que aparece o la bolsa que brota). */
-  let tLista = 0;
+  /** Cuándo termina de subir la bolsa (la barra que aparece). */
   const bolsaListaEn = () => Math.max(0, tLista - performance.now());
-  /** Caja final (en pantalla) de la bolsa de Mi pedido, aunque aún esté en transición. */
+  /** Caja final (en pantalla) del botón Mi pedido, aunque la barra aún esté subiendo:
+   *  se mide sin la traslación de entrada (offset dentro de la barra, que no se mueve). */
   function destinoBolsa() {
-    if (estado !== 'pildora' || piezas === 0) return null;
-    const g = geo();
-    const r = isla.getBoundingClientRect();
-    return { x: r.left + g.l0 + g.cw + GAP + H + GAP, y: r.bottom - H, w: H, h: H };
+    if (estado !== 'pildora') return null;
+    const b = barra.getBoundingClientRect();
+    return { x: b.left + btnLista.offsetLeft, y: b.top + btnLista.offsetTop, w: btnLista.offsetWidth, h: btnLista.offsetHeight };
   }
-  /** El líquido de la bolsa se hincha al recibir un platillo (la bolsa y el contador los anima bolsa.ts).
+  /** El botón se hincha al recibir un platillo (la bolsa y el contador los anima bolsa.ts).
    *  Si llegan varios seguidos, cada rebote reemplaza al anterior (no se acumulan escalas). */
-  let rebotes: Animation[] = [];
-  function rebotar(conLiquido = true) {
+  let rebote: Animation | null = null;
+  function rebotar(conBoton = true) {
     if (estado === 'oculta') mostrar(true);
-    if (o.reducir() || estado !== 'pildora' || !conLiquido) return;
-    rebotes.forEach((a) => a.cancel());
-    const resorte = { duration: 380, easing: 'cubic-bezier(0.34, 1.4, 0.64, 1)' };
-    rebotes = [
-      btnLista.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.1)', offset: 0.3 }, { transform: 'scale(1)' }], resorte),
-      bolsa.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.2)', offset: 0.3 }, { transform: 'scale(1)' }], resorte),
-    ];
+    if (o.reducir() || estado !== 'pildora' || !conBoton) return;
+    rebote?.cancel();
+    rebote = btnLista.animate(
+      [{ scale: '1' }, { scale: '1.08', offset: 0.3 }, { scale: '1' }],
+      { duration: 380, easing: 'cubic-bezier(0.34, 1.4, 0.64, 1)' },
+    );
   }
 
-  /* ── Eventos ── */
-  let x0 = 0; let arrastre = 0; let deslizo = false;
-  pildora.addEventListener('pointerdown', (e) => { x0 = e.clientX; arrastre = 0; deslizo = false; pildora.setPointerCapture(e.pointerId); });
-  pildora.addEventListener('pointermove', (e) => {
-    if (!pildora.hasPointerCapture(e.pointerId)) return;
-    arrastre = e.clientX - x0;
-    if (Math.abs(arrastre) > 6 && !o.reducir()) cuerpo.style.transform = `translateX(${arrastre * 0.18}px) scaleX(${1 + Math.min(Math.abs(arrastre), 120) / 900})`;
+  /* ── Deslizar la sección actual: el nombre sigue al dedo con resistencia y cambia a la vecina ── */
+  let x0 = 0; let arrastre = 0; let deslizo = false; let siguiendo = false;
+  pildora.addEventListener('pointerdown', (e) => {
+    if (e.button !== 0) return;
+    x0 = e.clientX; arrastre = 0; deslizo = false; siguiendo = true;
+    pildora.setPointerCapture(e.pointerId);
+    texto.classList.remove('suelta');
   });
-  const soltar = () => {
-    cuerpo.style.transform = '';
-    if (Math.abs(arrastre) > 45) {
+  pildora.addEventListener('pointermove', (e) => {
+    if (!siguiendo) return;
+    arrastre = e.clientX - x0;
+    if (Math.abs(arrastre) > 6 && !o.reducir()) {
+      const d = arrastre;
+      const amortiguado = (d * 60) / (60 + Math.abs(d) * 0.55);
+      texto.style.transform = `translateX(${amortiguado.toFixed(1)}px)`;
+      texto.style.opacity = String(1 - Math.min(Math.abs(d), 120) / 260);
+    }
+  });
+  const soltar = (cambiar: boolean) => {
+    if (!siguiendo) return;
+    siguiendo = false;
+    texto.classList.add('suelta');
+    texto.style.transform = '';
+    texto.style.opacity = '';
+    if (cambiar && Math.abs(arrastre) > 45) {
       deslizo = true;
-      const dir = arrastre < 0 ? 1 : -1;
-      const n = Math.max(0, Math.min(o.cats.length - 1, idx + dir));
+      const n = Math.max(0, Math.min(o.cats.length - 1, idx + (arrastre < 0 ? 1 : -1)));
       if (n !== idx) o.ir(o.cats[n]!.id);
     }
   };
-  pildora.addEventListener('pointerup', soltar);
-  pildora.addEventListener('pointercancel', () => { cuerpo.style.transform = ''; });
-  pildora.addEventListener('click', () => { if (deslizo) { deslizo = false; return; } abrir(); });
-  pildora.addEventListener('keydown', (e) => {
-    if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
-      e.preventDefault();
-      const n = Math.max(0, Math.min(o.cats.length - 1, idx + (e.key === 'ArrowRight' ? 1 : -1)));
-      o.ir(o.cats[n]!.id);
-    }
+  pildora.addEventListener('pointerup', () => soltar(true));
+  pildora.addEventListener('pointercancel', () => soltar(false));
+  pildora.addEventListener('click', () => {
+    if (deslizo) { deslizo = false; return; }
+    if (abierto === 'cats') cerrar(); else abrir(false);
   });
-  lupa.addEventListener('click', () => abrir(true));
+  pildora.addEventListener('keydown', (e) => {
+    if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+    e.preventDefault();
+    const n = Math.max(0, Math.min(o.cats.length - 1, idx + (e.key === 'ArrowRight' ? 1 : -1)));
+    if (n !== idx) o.ir(o.cats[n]!.id);
+  });
+  lupa.addEventListener('click', () => { if (abierto === 'busca') cerrar(); else abrir(true); });
   btnLista.addEventListener('click', () => o.abrirLista());
   velo.addEventListener('click', () => cerrar());
-  panel.addEventListener('click', (e) => {
-    const t = e.target as HTMLElement;
-    const ir = t.closest<HTMLElement>('[data-ir]');
-    const pl = t.closest<HTMLElement>('[data-platillo]');
-    if (t.closest('[data-isla-cerrar]')) cerrar();
-    else if (ir) { cerrar(false); setTimeout(() => o.ir(ir.dataset.ir!), o.reducir() ? 0 : 260); }
-    else if (pl) { cerrar(false); setTimeout(() => o.abrir(pl.dataset.platillo!), o.reducir() ? 0 : 320); }
-  });
+  for (const p of Object.values(paneles)) {
+    p.addEventListener('click', (e) => {
+      const t = e.target as HTMLElement;
+      const ir = t.closest<HTMLElement>('[data-ir]');
+      const pl = t.closest<HTMLElement>('[data-platillo]');
+      if (t.closest('[data-isla-cerrar]')) cerrar();
+      else if (ir) {
+        // Cerrar y saltar en el mismo toque: la hoja baja (compositor) mientras la sección llega.
+        cerrar(false);
+        o.ir(ir.dataset.ir!);
+        pildora.focus({ preventScroll: true });
+      } else if (pl) {
+        cerrar(false);
+        setTimeout(() => o.abrir(pl.dataset.platillo!), o.reducir() ? 0 : 180);
+      }
+    });
+  }
   addEventListener('keydown', (e) => { if (e.key === 'Escape' && estado === 'abierta') cerrar(); });
   document.addEventListener('focusin', (e) => {
-    if (estado === 'abierta' && !panel.contains(e.target as Node) && !(e.target as HTMLElement).closest('dialog')) input.focus({ preventScroll: true });
+    if (estado !== 'abierta' || !abierto) return;
+    const t = e.target as HTMLElement;
+    if (paneles[abierto].contains(t) || t.closest('dialog') || (escritorio.matches && barra.contains(t))) return;
+    primerFoco(abierto).focus({ preventScroll: true });
   });
-  // En el teléfono, la barra del navegador que entra y sale al hacer scroll dispara resize
-  // muchas veces seguidas: se repinta una vez por cuadro y solo si cambió el tamaño.
-  let tamAntes = '';
-  let cuadroResize = 0;
-  addEventListener('resize', () => {
-    if (cuadroResize) return;
-    cuadroResize = requestAnimationFrame(() => {
-      cuadroResize = 0;
-      const tam = `${ancho()}x${altoPanel()}`;
-      if (tam !== tamAntes) { tamAntes = tam; pintar(); }
-    });
-  }, { passive: true });
+  // Pasar de teléfono a computadora (girar la tableta) con un panel abierto: se cierra limpio.
+  escritorio.addEventListener('change', () => cerrar(false));
 
-  if (o.reducir()) isla.classList.add('sin-movimiento');
-  pintar();
   return {
-    mostrar, actualizar, pintar, cerrar, contar, rebotar, destinoBolsa, bolsaListaEn, abrir,
+    mostrar, actualizar, cerrar, contar, rebotar, destinoBolsa, bolsaListaEn, abrir,
+    /** Se conserva por compatibilidad: la barra se acomoda sola con CSS (flex), no hay geometría que recalcular. */
+    pintar() {},
     get indice() { return idx; }, get estado() { return estado; }, pildora: () => pildora, bolsaEl: () => btnLista,
     /** Al cambiar de idioma: la etiqueta del botón del pedido. */
     idioma() { btnLista.setAttribute('aria-label', etiquetaPedido(piezas, totalTxt, es() ? 'es' : 'en')); },

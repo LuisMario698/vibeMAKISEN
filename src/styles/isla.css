@@ -1,0 +1,171 @@
+/* ── Barra flotante del menú (la «isla») ─────────────────────────────────────
+   Tres controles separados, oro sobre mármol, cada uno con su forma:
+     píldora de oro (sección actual) · círculo de mármol (buscar) · cuadro redondeado (Mi pedido).
+   Solo se animan transform / translate / scale / opacity: corre en el compositor, sin filtros SVG
+   ni cambios de left/width/height. Lógica en src/scripts/isla.ts. */
+
+.isla { color: #0a0a0a; }
+.isla-barra {
+  position: fixed; z-index: 45; left: 0; right: 0; bottom: calc(env(safe-area-inset-bottom) + 12px);
+  width: min(calc(100% - 24px), 30rem); margin-inline: auto;
+  display: flex; align-items: center; gap: 10px; pointer-events: none;
+}
+@media (min-width: 40rem) { .isla-barra { width: 33rem; gap: 12px; } }
+/* Teléfonos muy angostos (320 px): más espacio para el nombre de la sección; toques siguen ≥ 44 px. */
+@media (max-width: 22.4rem) {
+  .isla-barra { width: calc(100% - 16px); gap: 8px; }
+  .isla-lupa, .isla-lista { width: 48px; }
+  .isla-pildora { gap: 8px; padding: 0 10px 0 7px; }
+}
+
+.isla-ctl {
+  position: relative; flex: none; display: flex; align-items: center; justify-content: center;
+  height: 52px; pointer-events: auto; touch-action: manipulation;
+  --sombra: 0 14px 30px -12px rgb(0 0 0 / 0.9), 0 2px 8px rgb(0 0 0 / 0.4);
+  box-shadow: var(--sombra);
+  /* Entrada escalonada (--k: 0, 1, 2), presión y color. */
+  transition:
+    translate 520ms var(--ease-salida) calc(var(--k, 0) * 45ms),
+    opacity 240ms ease calc(var(--k, 0) * 45ms),
+    transform 160ms var(--ease-salida),
+    background-color 200ms ease, color 200ms ease;
+}
+.isla[data-estado="oculta"] .isla-ctl {
+  translate: 0 calc(100% + 30px); opacity: 0; pointer-events: none;
+  transition: translate 260ms cubic-bezier(0.4, 0, 0.7, 0.2), opacity 200ms ease, transform 160ms var(--ease-salida);
+}
+.isla-ctl:focus-visible { outline: 2px solid var(--color-hueso); outline-offset: 3px; }
+
+/* 1 · Sección actual: píldora de oro con número, nombre, flecha y avance. */
+.isla-pildora {
+  flex: 1 1 auto; min-width: 0; justify-content: flex-start; gap: 10px; padding: 0 14px 0 8px;
+  border-radius: 26px; overflow: hidden; touch-action: pan-y;
+  background: linear-gradient(180deg, #d2b26a 0%, #b8954a 48%, #a2813a 100%);
+  color: #0a0a0a; font-size: 15px; font-weight: 600; letter-spacing: 0.005em;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.38), inset 0 -1px 0 rgb(0 0 0 / 0.22), var(--sombra);
+}
+.isla-pildora .num {
+  flex: none; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%;
+  background: #0a0a0a; color: var(--color-oro-claro);
+  font-family: var(--font-alt); font-size: 12px; font-weight: 600; letter-spacing: 0.04em;
+}
+.isla-texto { flex: 1; min-width: 0; overflow: hidden; text-align: left; }
+.isla-texto .actual { display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.isla-texto.suelta { transition: transform 260ms var(--ease-salida), opacity 200ms ease; }
+.isla-pildora .flecha { flex: none; transition: rotate 240ms var(--ease-salida); }
+.isla-pildora[aria-expanded="true"] .flecha { rotate: 180deg; }
+/* Avance en la carta: hilo bajo el nombre que crece con scaleX (sin animar el ancho). */
+.isla-pildora::after, .isla-pildora .avance {
+  content: ""; position: absolute; left: 54px; right: 20px; bottom: 6px; height: 2px; border-radius: 2px; pointer-events: none;
+}
+.isla-pildora::after { background: rgb(10 10 10 / 0.16); }
+.isla-pildora .avance { z-index: 1; background: rgb(10 10 10 / 0.7); transform-origin: left center; transform: scaleX(0.05); transition: transform 420ms var(--ease-salida); }
+
+/* 2 · Buscar: círculo de mármol con aro de oro. 3 · Mi pedido: cuadro redondeado de mármol. */
+.isla-lupa, .isla-lista {
+  width: 52px; color: var(--color-oro-claro);
+  background:
+    radial-gradient(120% 90% at 30% 0%, rgb(255 255 255 / 0.08), transparent 60%),
+    linear-gradient(rgb(12 12 11 / 0.5), rgb(12 12 11 / 0.78)),
+    var(--marmol) 30% 40% / 640% auto no-repeat,
+    #0c0c0b;
+  box-shadow: inset 0 0 0 1.5px rgb(210 178 106 / 0.75), var(--sombra);
+}
+.isla-lupa { border-radius: 50%; }
+.isla-lista { gap: 8px; border-radius: 17px; }
+.isla-rotulo { display: none; font-size: 14px; font-weight: 600; color: var(--color-hueso); white-space: nowrap; }
+@media (min-width: 40rem) {
+  .isla-lista { width: auto; padding: 0 18px 0 15px; }
+  .isla-rotulo { display: inline; }
+}
+.isla-lupa[aria-expanded="true"] { background: var(--color-oro); color: #0a0a0a; }
+@media (hover: hover) and (pointer: fine) {
+  .isla-lupa:hover, .isla-lista:hover { box-shadow: inset 0 0 0 1.5px var(--color-oro-claro), var(--sombra); }
+  .isla-pildora:hover .flecha { translate: 0 2px; }
+}
+/* Contador: el texto real queda transparente; lo visible rueda en ::before/::after (detalle.css). */
+.isla-lista .contador {
+  position: absolute; top: -6px; right: -6px; display: grid; place-items: center; min-width: 22px; height: 22px; padding: 0 5px;
+  border-radius: 11px; background: #0a0a0a; color: transparent; font-size: 12px; font-weight: 700;
+  box-shadow: 0 0 0 2px var(--color-oro); overflow: hidden;
+}
+.isla-lista .bolsa-onda { border-radius: inherit; }
+
+/* ── Velo ── */
+.isla-velo { position: fixed; inset: 0; z-index: 44; background: rgb(0 0 0 / 0.62); opacity: 0; pointer-events: none; transition: opacity 240ms ease; }
+.isla-velo.on { opacity: 1; pointer-events: auto; transition-duration: 300ms; }
+@media (pointer: fine) { .isla-velo { background: rgb(0 0 0 / 0.5); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); } }
+
+/* ── Paneles: hoja que sube (teléfono) ── */
+.isla-hoja {
+  position: fixed; z-index: 46; left: 8px; right: 8px; bottom: calc(env(safe-area-inset-bottom) + 8px);
+  max-height: min(80svh, 640px); display: flex; flex-direction: column; overflow: hidden; contain: layout paint;
+  border-radius: 28px; color: #0a0a0a;
+  background: linear-gradient(180deg, #d6b770 0%, #bb984d 34%, #ae8b3d 100%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.42), 0 -8px 40px rgb(0 0 0 / 0.55);
+  visibility: hidden; opacity: 0; transform: translateY(calc(100% + 24px));
+  transition: transform 220ms cubic-bezier(0.4, 0, 0.7, 0.2), opacity 200ms ease, visibility 0s 220ms;
+}
+.isla-hoja.on {
+  visibility: visible; opacity: 1; transform: none;
+  transition: transform 420ms var(--ease-cajon), opacity 140ms ease, visibility 0s;
+}
+.isla-hoja-busca { height: min(74svh, 600px); }
+/* Tableta: la hoja no ocupa todo el ancho, se centra sobre la barra. */
+@media (min-width: 40rem) { .isla-hoja { left: calc(50% - 18rem); right: auto; width: 36rem; } }
+/* Solo la lista se encoge y desplaza; cabecera, buscador y filtros conservan su alto. */
+.isla-hoja > :not(.isla-scroll) { flex: none; }
+.isla-cabeza { position: relative; display: flex; align-items: center; gap: 8px; padding: 16px 10px 6px 20px; }
+.isla-asa { position: absolute; top: 7px; left: 50%; width: 36px; height: 4px; margin-left: -18px; border-radius: 2px; background: rgb(10 10 10 / 0.28); }
+.isla-hoja.on .isla-scroll { animation: isla-contenido 320ms 70ms var(--ease-salida) both; }
+@keyframes isla-contenido { from { opacity: 0; transform: translateY(10px); } }
+
+/* ── Computadora: popover anclado sobre la barra, crece desde su botón ── */
+@media (min-width: 64rem) {
+  .isla-hoja {
+    left: calc(50% - 17.5rem); right: auto; width: 35rem;
+    bottom: calc(env(safe-area-inset-bottom) + 12px + 52px + 12px);
+    max-height: min(70vh, 620px); border-radius: 24px;
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.42), 0 24px 60px -10px rgb(0 0 0 / 0.75);
+    transform-origin: var(--ox, 50%) 100%; transform: translateY(8px) scale(0.96);
+    transition: transform 150ms ease-out, opacity 150ms ease-out, visibility 0s 150ms;
+  }
+  .isla-hoja.on { transform: none; transition: transform 220ms cubic-bezier(0.23, 1, 0.32, 1), opacity 160ms ease-out, visibility 0s; }
+  .isla-hoja-busca { height: min(64vh, 560px); }
+  .isla-asa { display: none; }
+  .isla-cabeza { padding-top: 12px; }
+}
+
+/* ── Contenido de los paneles ── */
+.isla-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 12px 16px 20px; mask-image: linear-gradient(to bottom, transparent, #000 12px, #000 calc(100% - 22px), transparent); scrollbar-width: none; }
+.isla-grupo { margin: 6px 4px 8px; font-family: var(--font-alt); font-size: 12px; font-weight: 600; letter-spacing: 0.24em; text-transform: uppercase; }
+.isla-cats section + section .isla-grupo { margin-top: 18px; }
+.isla-cat, .isla-res { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 56px; padding: 6px 10px 6px 6px; border-radius: 18px; background: rgb(0 0 0 / 0.08); text-align: left; }
+.isla-res { gap: 12px; padding-right: 14px; }
+@media (hover: hover) and (pointer: fine) { .isla-cat:hover, .isla-res:hover { background: rgb(0 0 0 / 0.16); } }
+.isla-cat:focus-visible, .isla-res:focus-visible, .filtro:focus-visible { outline: 2px solid #0a0a0a; outline-offset: 2px; }
+.isla-cuenta { color: rgb(10 10 10 / 0.82); }
+.isla-cat[aria-current="true"] { background: #0a0a0a; color: var(--color-oro-claro); }
+.isla-cat[aria-current="true"] .isla-cuenta { color: var(--color-oro-claro); }
+.isla .miniatura { flex: none; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 14px; background: #0a0a0a; overflow: hidden; }
+.isla .miniatura img { max-width: 40px; max-height: 40px; object-fit: contain; }
+.isla .miniatura img.icono { max-width: 30px; max-height: 30px; }
+.isla-resultados:not([hidden]) { display: flex; flex-direction: column; gap: 6px; }
+.isla-res-nombre { display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 15px; font-weight: 600; }
+.isla-res-cat { display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 13px; color: rgb(10 10 10 / 0.82); }
+.isla-res-precio { flex: none; font-size: 15px; font-weight: 700; }
+.isla-res.agotado .miniatura { opacity: 0.45; }
+.isla-res.agotado .isla-res-precio { text-decoration: line-through; }
+.isla-pista, .isla-vacio { padding: 28px 12px; text-align: center; font-size: 15px; color: rgb(10 10 10 / 0.82); }
+.isla-nota { padding: 14px 8px 0; text-align: center; font-size: 13px; }
+.isla-filtros { scrollbar-width: none; }
+.filtro { flex: none; min-height: 44px; padding: 0 16px; border-radius: 999px; background: rgb(0 0 0 / 0.1); font-size: 14px; font-weight: 600; white-space: nowrap; }
+@media (hover: hover) and (pointer: fine) { .filtro:hover { background: rgb(0 0 0 / 0.18); } }
+.filtro[aria-pressed="true"] { background: #0a0a0a; color: var(--color-oro-claro); }
+
+/* ── Movimiento reducido: sin desplazamientos, solo aparece/desaparece (fundido mínimo) ── */
+@media (prefers-reduced-motion: reduce) {
+  .isla-ctl, .isla[data-estado="oculta"] .isla-ctl { translate: none; }
+  .isla-hoja, .isla-hoja.on { transform: none; }
+  .isla-hoja.on .isla-scroll { animation: none; }
+}

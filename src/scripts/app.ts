@@ -1,5 +1,5 @@
 // Interacción del menú. Sin librerías: Web Animations API, IntersectionObserver,
-// CSS scroll-driven, filtro SVG "goo" para la isla y clip-path + FLIP para el detalle.
+// CSS scroll-driven, transiciones de transform/opacity para la isla y clip-path + FLIP para el detalle.
 // Este archivo solo conecta los módulos: idioma, estado del local, isla, hoja y lista.
 import { etiquetaPedido } from '../lib/detalle';
 import { precio } from '../lib/precios';
@@ -27,7 +27,7 @@ function aplicarIdioma() {
   lista.pintar();
   etiquetaNav();
   isla.idioma();
-  requestAnimationFrame(() => { isla.pintar(); espiar(); });
+  requestAnimationFrame(() => espiar());
 }
 document.addEventListener('click', (e) => {
   const b = (e.target as HTMLElement).closest<HTMLElement>('[data-lang]');
@@ -69,19 +69,36 @@ $$('.revela, .cortina').forEach((el) => revela.observe(el));
 
 /* ── Categorías: isla, índice lateral y categoría activa ───────────── */
 const secciones = $$('[data-seccion]');
+/** Mientras dura un salto elegido por la persona, el espía no corrige la categoría activa. */
 let bloqueo = 0;
+let llegada: Animation | null = null;
 function ir(id: string) {
   const sec = document.getElementById(id);
   if (!sec) return;
   const i = datos.cats.findIndex((c) => c.id === id);
   isla.actualizar(i, i >= isla.indice ? 1 : -1);
-  bloqueo = Date.now() + 1000;
-  setTimeout(espiar, 1050);
   $$('.revela, .cortina', sec).forEach((el) => el.classList.add('visto'));
-  sec.scrollIntoView({ behavior: reducir() ? 'auto' : 'smooth', block: 'start' });
   history.replaceState(history.state, '', `#${id}`);
-  sec.classList.remove('llega'); void sec.offsetWidth; sec.classList.add('llega');
-  setTimeout(() => sec.classList.remove('llega'), 1300);
+  // Cerca (menos de ~1 pantalla): desplazamiento suave y corto. Lejos: salto instantáneo y una
+  // llegada breve de la sección (fundido + 16 px, solo transform/opacity). Antes se recorría toda
+  // la carta con scroll suave: un segundo o más pintando tarjetas que nadie veía, con tirones.
+  const cerca = Math.abs(sec.getBoundingClientRect().top - 80) < innerHeight * 1.1;
+  const suave = cerca && !reducir();
+  bloqueo = performance.now() + (suave ? 1200 : 250);
+  sec.scrollIntoView({ behavior: suave ? 'smooth' : 'instant', block: 'start' });
+  if (suave) addEventListener('scrollend', () => { bloqueo = performance.now() + 120; }, { once: true });
+  if (!suave && !reducir()) {
+    llegada?.cancel();
+    llegada = sec.animate(
+      [{ opacity: 0, transform: 'translateY(16px)' }, { opacity: 1, transform: 'none' }],
+      { duration: 300, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' },
+    );
+  }
+  // Destello del título (sin forzar un reflow para reiniciar la animación).
+  sec.classList.remove('llega');
+  requestAnimationFrame(() => sec.classList.add('llega'));
+  clearTimeout(Number(sec.dataset.tLlega));
+  sec.dataset.tLlega = String(window.setTimeout(() => sec.classList.remove('llega'), 1300));
 }
 
 const isla = crearIsla({
@@ -98,21 +115,29 @@ const isla = crearIsla({
   reducir,
 });
 
-// Categoría activa: la última sección cuyo borde superior ya cruzó la línea del 40 % de la pantalla.
-// Se calcula solo cuando una sección cruza esa línea (IntersectionObserver) o al terminar un
-// scroll; antes se leía el layout de todas las secciones en cada cuadro del scroll.
+// Categoría activa: la última sección que toca la franja superior (0–40 % de la pantalla).
+// Solo IntersectionObserver: el navegador avisa cuando una sección entra o sale de la franja
+// (también tras un salto instantáneo) y aquí se guarda ese estado; nunca se lee el layout.
+const enFranja = new Set<number>();
+const pasada = secciones.map(() => false);
 function espiar() {
-  if (Date.now() < bloqueo) return;
-  const linea = innerHeight * 0.4;
+  if (performance.now() < bloqueo) return;
   let i = -1;
-  secciones.forEach((s, k) => { if (s.getBoundingClientRect().top <= linea) i = k; });
+  enFranja.forEach((k) => { if (k > i) i = k; });
+  // Fuera de toda sección: arriba de la carta → la primera; debajo (Visita) → la última pasada.
+  if (i < 0) i = pasada.lastIndexOf(true);
   const nuevo = Math.max(0, i);
   if (nuevo !== isla.indice) isla.actualizar(nuevo, nuevo > isla.indice ? 1 : -1);
 }
-const cruce = new IntersectionObserver(() => espiar(), { rootMargin: '0px 0px -60% 0px' });
+const cruce = new IntersectionObserver((entradas) => {
+  for (const e of entradas) {
+    const k = secciones.indexOf(e.target as HTMLElement);
+    if (e.isIntersecting) enFranja.add(k); else enFranja.delete(k);
+    pasada[k] = !e.isIntersecting && e.boundingClientRect.top < 0;
+  }
+  espiar();
+}, { rootMargin: '0px 0px -60% 0px' });
 secciones.forEach((s) => cruce.observe(s));
-// Saltos largos (enlace a la portada, teclado): ninguna sección cruza la línea a la vista.
-addEventListener('scrollend', () => espiar(), { passive: true });
 
 /* ── Mi pedido ─────────────────────────────────────────────────────── */
 let enMenu = false;
