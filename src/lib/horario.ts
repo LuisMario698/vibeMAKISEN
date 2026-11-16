@@ -66,3 +66,38 @@ export function ranurasHoy(horario: Horario[], ahora: Ahora, paso = 15, margen =
   for (let m = desde; m <= hasta; m += paso) out.push(hhmm(m));
   return out;
 }
+
+/** Reloj ensō de la portada: arco del servicio de hoy en una carátula de 12 h (como un reloj
+ *  real: 1 pm queda en la 1 y 10 pm en las 10), dónde va la aguja ahora y cuánto falta. */
+export type Reloj = {
+  /** Grados (0 = las 12, sentido horario) donde empieza y termina el servicio de hoy; null si hoy cierra. */
+  arco: { inicio: number; largo: number } | null;
+  aguja: number;
+  abierto: boolean;
+  texto: Txt;
+};
+const grados = (min: number) => ((((min % 720) + 720) % 720) / 720) * 360;
+const duracion = (m: number, en: boolean) => {
+  const h = Math.floor(m / 60), r = m % 60;
+  if (h === 0) return en ? `${r} min` : `${r} min`;
+  return r === 0 ? `${h} h` : `${h} h ${r} min`;
+};
+export function relojHoy(horario: Horario[], ahora: Ahora): Reloj {
+  const hoy = horario.find((h) => h.dia === ahora.dia);
+  const aguja = grados(ahora.min);
+  if (!hoy) {
+    const e = estadoLocal(horario, ahora);
+    return { arco: null, aguja, abierto: false, texto: e.texto };
+  }
+  const a = minutos(hoy.abre), c = minutos(hoy.cierra);
+  const arco = { inicio: grados(a), largo: Math.min(360, ((c - a) / 720) * 360) };
+  if (ahora.min >= a && ahora.min < c) {
+    const falta = c - ahora.min;
+    return { arco, aguja, abierto: true, texto: { es: `Cierra en ${duracion(falta, false)}`, en: `Closes in ${duracion(falta, true)}` } };
+  }
+  if (ahora.min < a) {
+    const falta = a - ahora.min;
+    return { arco, aguja, abierto: false, texto: { es: `Abre en ${duracion(falta, false)}`, en: `Opens in ${duracion(falta, true)}` } };
+  }
+  return { arco, aguja, abierto: false, texto: estadoLocal(horario, ahora).texto };
+}

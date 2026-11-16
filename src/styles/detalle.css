@@ -131,7 +131,7 @@ dialog.hoja.sale-agregado { pointer-events: none; }
 
 /* ── Bolsa de «Mi pedido»: boca que abre y cierra, onda y contador que rueda ── */
 .bolsa-ico { overflow: visible; transform-origin: 50% 90%; }
-.bolsa-tapa { transform-box: view-box; transform-origin: 4.2px 9.6px; transition: transform 300ms var(--ease-salida); }
+.bolsa-tapa { transform-box: view-box; transform-origin: 5.9px 8.3px; transition: transform 300ms var(--ease-salida); }
 .bolsa-onda { position: absolute; inset: 0; border-radius: 999px; pointer-events: none; opacity: 0; box-shadow: 0 0 0 2px var(--color-oro-claro); }
 .nav-lista .bolsa-onda { inset: auto; left: 2px; top: calc(50% - 20px); width: 40px; height: 40px; }
 @media (hover: hover) and (pointer: fine) { .bolsa-boton:hover .bolsa-tapa { transform: rotate(-10deg) translateY(-0.4px); } }

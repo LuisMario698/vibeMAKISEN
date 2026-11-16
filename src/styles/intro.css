@@ -303,3 +303,71 @@ html.intro-espera #inicio .marca-brillo::before { animation-play-state: paused; 
 .logo-nav { transition: opacity 300ms ease, transform 400ms var(--ease-salida); }
 #nav:not(.solida) .logo-nav { opacity: 0; transform: translateY(-6px); }
 @media (prefers-reduced-motion: reduce) { .marca-brillo { display: none; } }
+
+/* ── Hoy en MAKIZEN: reloj ensō + ubicación y domicilio (sin tarjetas) ─────────────── */
+.hoy-mk { display: flex; align-items: center; gap: clamp(16px, 5vw, 32px); }
+.hoy-reloj { position: relative; flex: none; display: grid; place-items: center; width: clamp(118px, 34vw, 156px); aspect-ratio: 1; border-radius: 50%; }
+.hoy-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.hoy-svg circle, .hoy-svg line { fill: none; vector-effect: non-scaling-stroke; }
+.hoy-fondo { stroke: rgb(244 241 234 / 0.1); stroke-width: 1.5; }
+.hoy-marca { stroke: rgb(244 241 234 / 0.28); stroke-width: 1.2; stroke-linecap: round; }
+.hoy-marca.mayor { stroke: var(--color-oro-claro); stroke-width: 1.6; }
+/* El arco: pincel dorado; se dibuja al aparecer (largo y giro los pone estado.ts). */
+.hoy-arco { stroke: var(--color-oro); stroke-width: 6; stroke-linecap: round; transform-origin: 60px 60px; rotate: calc(var(--inicio, 30) * 1deg - 90deg);
+  stroke-dasharray: var(--largo, 270) 360; stroke-dashoffset: var(--largo, 270); filter: drop-shadow(0 0 6px rgb(210 178 106 / 0.35)); }
+.hoy-eco { stroke: var(--color-oro-claro); stroke-width: 1.2; stroke-linecap: round; opacity: 0.5; transform-origin: 60px 60px; rotate: calc(var(--inicio, 30) * 1deg - 70deg);
+  stroke-dasharray: calc(var(--largo, 270) * 0.7) 360; stroke-dashoffset: calc(var(--largo, 270) * 0.7); }
+.hoy-aguja { transform-origin: 60px 60px; rotate: calc(var(--desde, 30) * 1deg); }
+.hoy-punto { fill: var(--color-oro-claro) !important; }
+.hoy-halo { fill: rgb(210 178 106 / 0.25) !important; transform-origin: 60px 12px; }
+.hoy-mk[data-abierto="si"] .hoy-halo { animation: hoy-late 2.4s ease-out infinite; }
+@keyframes hoy-late { 0% { scale: 0.6; opacity: 0.9; } 100% { scale: 1.9; opacity: 0; } }
+.hoy-centro { position: relative; display: grid; justify-items: center; line-height: 1.05; text-align: center; }
+.hoy-ceja { font-family: var(--font-alt); font-size: 11px; letter-spacing: 0.3em; text-transform: uppercase; color: var(--color-oro-claro); padding-left: 0.3em; }
+.hoy-horas { margin-top: 4px; font-size: clamp(17px, 4.6vw, 21px); font-weight: 700; letter-spacing: -0.01em; white-space: nowrap; }
+/* Al entrar en pantalla: el arco se traza, el eco lo sigue y el punto viaja hasta la hora actual. */
+.hoy-mk.visto .hoy-arco { stroke-dashoffset: 0; transition: stroke-dashoffset 1300ms 150ms var(--ease-salida); }
+.hoy-mk.visto .hoy-eco { stroke-dashoffset: 0; transition: stroke-dashoffset 1500ms 350ms var(--ease-salida); }
+.hoy-mk.visto .hoy-aguja { rotate: calc(var(--aguja, 30) * 1deg); transition: rotate 1500ms 250ms cubic-bezier(0.34, 1.2, 0.64, 1); }
+.hoy-datos { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.hoy-estado { display: flex; align-items: center; gap: 9px; margin: 0 0 6px; font-size: 15px; font-weight: 600; }
+.hoy-led { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--color-cerrado); box-shadow: 0 0 0 3px rgb(224 121 94 / 0.18); }
+.hoy-mk[data-abierto="si"] .hoy-led { background: var(--color-abierto); box-shadow: 0 0 0 3px rgb(79 191 134 / 0.2); }
+.hoy-enlace { position: relative; display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 6px 0; color: var(--color-hueso); text-decoration: none; }
+.hoy-enlace + .hoy-enlace::before { content: ""; position: absolute; left: 50px; right: 0; top: 0; height: 1px; background: linear-gradient(90deg, rgb(174 139 61 / 0.5), rgb(244 241 234 / 0.06) 70%, transparent); }
+.hoy-ico { flex: none; display: grid; place-items: center; width: 38px; height: 38px; border-radius: 50%; color: var(--color-oro-claro); box-shadow: inset 0 0 0 1.2px rgb(174 139 61 / 0.6); background: rgb(12 12 11 / 0.6); transition: background-color 200ms ease, color 200ms ease; }
+.hoy-txt { flex: 1; min-width: 0; display: grid; line-height: 1.25; }
+.hoy-txt b { font-size: 16px; font-weight: 600; }
+.hoy-txt small { font-size: 13.5px; color: var(--color-niebla); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hoy-flecha { flex: none; color: var(--color-oro-claro); font-size: 18px; transition: translate 260ms var(--ease-salida); }
+@media (hover: hover) and (pointer: fine) {
+  .hoy-enlace:hover .hoy-ico { background: var(--color-oro); color: #0a0a0a; }
+  .hoy-enlace:hover .hoy-flecha { translate: 5px 0; }
+  .hoy-reloj:hover .hoy-arco { filter: drop-shadow(0 0 10px rgb(210 178 106 / 0.6)); }
+}
+.hoy-enlace:active .hoy-flecha { translate: 5px 0; }
+/* Los enlaces entran escalonados después del reloj. */
+.hoy-mk .hoy-datos > * { opacity: 0; translate: 14px 0; }
+.hoy-mk.visto .hoy-datos > * { opacity: 1; translate: 0 0; transition: opacity 600ms var(--ease-salida), translate 700ms var(--ease-salida); }
+.hoy-mk.visto .hoy-datos > :nth-child(2) { transition-delay: 220ms; }
+.hoy-mk.visto .hoy-datos > :nth-child(3) { transition-delay: 340ms; }
+.hoy-mk.visto .hoy-datos > :nth-child(1) { transition-delay: 120ms; }
+#inicio[data-quieta] .hoy-halo { animation-play-state: paused; }
+@media (min-width: 64rem) { .hoy-mk { max-width: 46rem; } }
+@media (prefers-reduced-motion: reduce) {
+  .hoy-arco, .hoy-eco { stroke-dashoffset: 0 !important; transition: none !important; }
+  .hoy-aguja { rotate: calc(var(--aguja, 30) * 1deg) !important; transition: none !important; }
+  .hoy-halo { animation: none !important; }
+  .hoy-mk .hoy-datos > * { opacity: 1; translate: none; }
+}
+/* Teléfono: reloj y estado arriba; los enlaces a todo lo ancho debajo (nada se corta). */
+@media (max-width: 39.99rem) {
+  .hoy-mk { display: grid; grid-template-columns: auto 1fr; column-gap: 18px; row-gap: 4px; align-items: center; }
+  .hoy-mk .hoy-datos { display: contents; }
+  .hoy-mk .hoy-reloj { grid-row: 1; grid-column: 1; width: 112px; }
+  .hoy-mk .hoy-estado { grid-row: 1; grid-column: 2; margin: 0; font-size: 18px; line-height: 1.25; align-items: flex-start; }
+  .hoy-mk .hoy-estado .hoy-led { margin-top: 8px; }
+  .hoy-mk .hoy-enlace { grid-column: 1 / -1; }
+  .hoy-mk .hoy-enlace:first-of-type { margin-top: 10px; }
+  .hoy-mk .hoy-enlace::before { content: ""; position: absolute; left: 50px; right: 0; top: 0; height: 1px; background: linear-gradient(90deg, rgb(174 139 61 / 0.5), rgb(244 241 234 / 0.06) 70%, transparent); }
+}
