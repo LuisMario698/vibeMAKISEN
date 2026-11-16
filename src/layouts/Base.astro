@@ -76,7 +76,7 @@ const og = new URL('/og/makizen.jpg', sitio).href;
         if (l) d.lang = l === 'en' ? 'en' : 'es-MX';
         if (d.dataset.tituloEn) document.title = d.lang === 'en' ? d.dataset.tituloEn : d.dataset.tituloEs;
         // Modo ligero: equipo de gama baja (Chromium informa ≤ 4 GB de memoria) o ahorro
-        // de datos. Quita solo efectos caros de pintar (p. ej. el filtro goo de la isla).
+        // de datos. Quita solo efectos caros de pintar (p. ej. animaciones infinitas y desenfoques).
         try {
           var c = navigator.connection, m = navigator.deviceMemory;
           if ((m && m <= 4) || (c && c.saveData) || matchMedia('(prefers-reduced-data: reduce)').matches) d.classList.add('ligero');

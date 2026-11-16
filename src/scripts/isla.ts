@@ -9,6 +9,7 @@
 import { normalizar } from '../lib/texto';
 import { etiquetaPedido } from '../lib/detalle';
 import { ponerContador } from './bolsa';
+import { miniRecorte } from './comun';
 
 type Txt = { es: string; en: string };
 type Cat = { id: string; nombre: Txt };
@@ -208,7 +209,7 @@ export function crearIsla(o: {
     filas = o.platillos.map((p) => {
       const img = document.createElement('img');
       img.alt = ''; img.decoding = 'async'; img.loading = 'lazy';
-      if (p.foto) { img.src = `/menu/${p.foto}.webp`; img.width = 40; img.height = 40; } else { img.src = p.icono; img.width = 30; img.height = 30; img.className = 'icono'; }
+      if (p.foto) { img.src = miniRecorte(p.foto); img.width = 40; img.height = 40; } else { img.src = p.icono; img.width = 30; img.height = 30; img.className = 'icono'; }
       const nombre = nodo('span', 'isla-res-nombre'); ponerBi(nombre, p.nombre);
       const cat = nodo('span', 'isla-res-cat'); ponerBi(cat, p.cat);
       const b = nodo('button', `isla-res presionable${p.agotado ? ' agotado' : ''}`, [

@@ -13,6 +13,7 @@ import Lista from './Lista.astro';
 import Riel from './Riel.astro';
 import { menu } from '../data/schema';
 import fotos from '../data/fotos.json';
+import mini from '../data/miniaturas.json';
 import { foto, realDe } from '../data/fotos-reales';
 import { iconoDe } from '../lib/iconos-categoria';
 import { jsonSeguro } from '../lib/texto';
@@ -25,6 +26,7 @@ const datos = {
   telefonoFijo: menu.negocio.telefonoFijo,
   horario: menu.negocio.horario,
   fotos,
+  mini: Object.entries((mini as unknown as { recortes: Record<string, { anchos: number[] }> }).recortes).filter(([, v]) => v.anchos.includes(240)).map(([k]) => k),
   reales: Object.fromEntries(Object.entries(realDe).map(([id, f]) => [id, foto(f)])),
   cats: menu.categorias.map((c) => ({ id: c.id, nombre: c.nombre })),
   platillos: menu.categorias.flatMap((c) => c.platillos.map((p) => ({ ...p, cat: c.nombre, catId: c.id }))),

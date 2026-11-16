@@ -13,7 +13,7 @@ import { estadoMesa, mesaDePlano, mesaValida, puedeElegir } from '../lib/plano';
 import { precio, usd } from '../lib/precios';
 import { crearFolio, esFolio, HORAS_PEDIDO, sanearPedido, type PedidoEnviado } from '../lib/seguimiento';
 import { distanciaKm, lejos, redondear, type Coordenada } from '../lib/ubicacion';
-import { $, $$, anunciar, avisar, datos, guardar, html, idioma, ponerBi, reducir } from './comun';
+import { $, $$, anunciar, avisar, datos, guardar, html, idioma, miniRecorte, ponerBi, reducir } from './comun';
 import type { Agregado } from './hoja';
 import { lectura as lecturaHora, pintarHoras } from './pedido/horas';
 import type { Mapa } from './pedido/mapa';
@@ -121,7 +121,7 @@ export function crearLista(o: { alCambiar: (piezas: number, total: number) => vo
   function miniatura(img: HTMLImageElement, id: string) {
     const p = porId.get(id);
     const marco = img.parentElement!;
-    if (p?.foto && datos.fotos[p.foto]) { img.src = `/menu/${p.foto}.webp`; marco.dataset.modo = 'recorte'; }
+    if (p?.foto && datos.fotos[p.foto]) { img.src = miniRecorte(p.foto); marco.dataset.modo = 'recorte'; }
     else if (datos.reales[id]) { img.src = datos.reales[id]!.src; marco.dataset.modo = 'foto'; }
     else { img.src = (p && datos.iconos[p.catId]) || '/brand/isotipo.svg'; marco.dataset.modo = 'icono'; }
   }

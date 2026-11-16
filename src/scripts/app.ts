@@ -5,7 +5,7 @@ import { etiquetaPedido } from '../lib/detalle';
 import { precio } from '../lib/precios';
 import { normalizar } from '../lib/texto';
 import { avisarAgregado, llevarALaBolsa, ocultarAviso, ponerContador, prepararAviso, reservar, type Destino } from './bolsa';
-import { $, $$, datos, guardar, html, reducir } from './comun';
+import { $, $$, datos, guardar, html, miniRecorte, reducir } from './comun';
 import { pintarEstado } from './estado';
 import { crearHoja } from './hoja';
 import { crearIsla } from './isla';
@@ -240,7 +240,7 @@ function destinoBolsa(): Destino | null {
 function miniatura(id: string) {
   const p = datos.platillos.find((x) => x.id === id);
   if (!p) return undefined;
-  return p.foto ? `/menu/${p.foto}.webp` : datos.reales[p.id]?.src ?? datos.iconos[p.catId];
+  return p.foto ? miniRecorte(p.foto) : datos.reales[p.id]?.src ?? datos.iconos[p.catId];
 }
 /** La bolsa recibió el platillo (el contador ya rodó): rebota el líquido de la isla y aparece el aviso. */
 function llego(id: string, n: number, destino: Destino | null) {

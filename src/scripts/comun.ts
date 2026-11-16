@@ -13,6 +13,8 @@ export type Datos = {
   telefonoFijo: string;
   horario: Horario[];
   fotos: Record<string, [number, number]>;
+  /** Recortes con variante ligera de 240 px (miniaturas de la isla, el pedido y el aviso). */
+  mini: string[];
   reales: Record<string, Foto>;
   cats: { id: string; nombre: Txt }[];
   platillos: PlatilloCliente[];
@@ -20,6 +22,9 @@ export type Datos = {
 };
 
 export const datos: Datos = JSON.parse(document.getElementById('datos-menu')!.textContent!);
+const conMini = new Set(datos.mini ?? []);
+/** URL ligera de un recorte para miniaturas (≤ 60 px): variante de 240 px si existe. */
+export const miniRecorte = (id: string) => (conMini.has(id) ? `/menu/v/${id}-240.webp` : `/menu/${id}.webp`);
 export const html = document.documentElement;
 export const $ = <T extends Element = HTMLElement>(s: string, r: ParentNode = document) => r.querySelector<T>(s);
 export const $$ = <T extends Element = HTMLElement>(s: string, r: ParentNode = document) => [...r.querySelectorAll<T>(s)];

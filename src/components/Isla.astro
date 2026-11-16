@@ -1,4 +1,7 @@
 ---
+import miniJson from '../data/miniaturas.json';
+const conMini = new Set(Object.entries((miniJson as unknown as { recortes: Record<string, { anchos: number[] }> }).recortes).filter(([, v]) => v.anchos.includes(240)).map(([k]) => k));
+const miniUrl = (id: string) => (conMini.has(id) ? `/menu/v/${id}-240.webp` : `/menu/${id}.webp`);
 // Barra flotante del menú (la «isla»): tres controles separados, oro sobre mármol.
 //   [ 01 Sección actual ▾ ]  ·  ( Buscar )  ·  [ Mi pedido · 3 ]
 // Cada uno abre lo suyo: el selector de categorías, la búsqueda o el panel del pedido.
@@ -66,7 +69,7 @@ const primera = menu.categorias[0]!;
                   <li class="isla-item">
                     <button type="button" data-ir={c.id} aria-current="false" class="isla-cat presionable">
                       <span class="miniatura">
-                        {m ? <img src={`/menu/${m}.webp`} alt="" width="40" height="40" loading="lazy" decoding="async" /> : <img src={iconoDe(c.id)} alt="" width="30" height="30" loading="lazy" decoding="async" class="icono" />}
+                        {m ? <img src={miniUrl(m)} alt="" width="40" height="40" loading="lazy" decoding="async" /> : <img src={iconoDe(c.id)} alt="" width="30" height="30" loading="lazy" decoding="async" class="icono" />}
                       </span>
                       <span class="min-w-0 text-left">
                         <span class="line-clamp-2 block text-[13.5px] leading-[1.2] font-semibold"><span lang="es">{c.nombre.es}</span><span lang="en">{c.nombre.en}</span></span>

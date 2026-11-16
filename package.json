@@ -18,7 +18,8 @@
     "assets": "node scripts/prepare-assets.mjs",
     "og": "node scripts/og.mjs",
     "qr": "node scripts/qr.mjs",
-    "deploy": "npm run build && wrangler deploy"
+    "deploy": "npm run build && wrangler deploy",
+    "miniaturas": "node scripts/miniaturas.mjs"
   },
   "dependencies": {
     "@fontsource/montserrat": "^5.3.0",
