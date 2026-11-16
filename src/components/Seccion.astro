@@ -4,6 +4,7 @@
 import type { Categoria } from '../data/schema';
 import fotos from '../data/fotos.json';
 import { foto, fotoTarjeta, portadas } from '../data/fotos-reales';
+import mini from '../data/miniaturas.json';
 import Tarjeta from './Tarjeta.astro';
 
 interface Props { cat: Categoria; n: number }
@@ -13,6 +14,8 @@ const tieneFoto = (p: Categoria['platillos'][number]) => !!(p.foto && tam[p.foto
 const enRejilla = cat.grupo === 'comida' ? cat.platillos : cat.platillos.filter(tieneFoto);
 const enLista = cat.grupo === 'comida' ? [] : cat.platillos.filter((p) => !tieneFoto(p));
 const portada = portadas[cat.id] ? foto(portadas[cat.id]!) : undefined;
+// Relleno provisional mientras llega la foto (scripts/miniaturas.mjs).
+const lqip = portadas[cat.id] ? (mini as unknown as { fotos: Record<string, { lqip: string }> }).fotos[portadas[cat.id]!]?.lqip : undefined;
 ---
 <section id={cat.id} data-seccion={cat.id} class="contenedor scroll-mt-20 pt-16" aria-labelledby={`t-${cat.id}`}>
   <header class="revela">
@@ -30,7 +33,7 @@ const portada = portadas[cat.id] ? foto(portadas[cat.id]!) : undefined;
   {portada && (
     <figure class="cortina relative mt-6 aspect-[16/10] overflow-hidden rounded-3xl bg-pizarra sm:aspect-[21/8]" aria-hidden="true">
       <div class="paralaje absolute -inset-y-[8%] inset-x-0">
-        <img src={portada.src} srcset={portada.srcset} sizes="(min-width: 86rem) 1056px, (min-width: 64rem) calc(100vw - 20rem), calc(100vw - 2rem)" width={portada.w} height={portada.h} alt="" loading="lazy" decoding="async" class="cortina-img h-full w-full object-cover" />
+        <img src={portada.src} srcset={portada.srcset} sizes="(min-width: 86rem) 1056px, (min-width: 64rem) calc(100vw - 20rem), calc(100vw - 2rem)" width={portada.w} height={portada.h} alt="" loading="lazy" decoding="async" class="cortina-img lqip h-full w-full object-cover" style={lqip ? `--lqip:url(${lqip})` : undefined} />
       </div>
     </figure>
   )}

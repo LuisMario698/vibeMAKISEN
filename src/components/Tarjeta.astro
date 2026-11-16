@@ -9,13 +9,19 @@ import { precio, usd } from '../lib/precios';
 import { iconoDe } from '../lib/iconos-categoria';
 import fotos from '../data/fotos.json';
 import { foto, fotoTarjeta } from '../data/fotos-reales';
+import mini from '../data/miniaturas.json';
+import { sizesFila, sizesRecorte, srcsetRecorte } from '../lib/imagenes';
 
 interface Props { p: Platillo; cat: string; i: number; forma: 'tarjeta' | 'fila' }
 const { p, cat, i, forma } = Astro.props;
 const tc = menu.tipoCambioReferencia;
 const tam = fotos as unknown as Record<string, [number, number]>;
-const recorte = p.foto && tam[p.foto] ? { src: `/menu/${p.foto}.webp`, w: tam[p.foto]![0], h: tam[p.foto]![1] } : null;
+// Variantes, relleno provisional (LQIP) y sombra pre-renderizada: scripts/miniaturas.mjs.
+const M = mini as unknown as { sombraEscala: number; recortes: Record<string, { anchos: number[]; lqip: string; sombra: string }>; fotos: Record<string, { lqip: string }> };
+const mr = p.foto ? M.recortes[p.foto] : undefined;
+const recorte = p.foto && tam[p.foto] && mr ? { src: `/menu/${p.foto}.webp`, w: tam[p.foto]![0], h: tam[p.foto]![1], srcset: srcsetRecorte(p.foto, tam[p.foto]![0], mr.anchos), lqip: `--lqip:url(${mr.lqip})`, sombra: `background-image:url(${mr.sombra});--k:${M.sombraEscala}` } : null;
 const real = !recorte && fotoTarjeta[p.id] ? foto(fotoTarjeta[p.id]!) : null;
+const lqipReal = real ? `--lqip:url(${M.fotos[fotoTarjeta[p.id]!]?.lqip ?? ''})` : undefined;
 const modo = recorte ? 'recorte' : real ? 'foto' : 'icono';
 const corta = etiquetaCorta(p);
 // Bebidas en lista sin sabores a elegir: se agregan con un toque.
@@ -29,9 +35,10 @@ const veta = `--mx:${semilla % 100}%;--my:${(semilla * 7) % 100}%`;
     <article class="producto group relative cursor-pointer" data-modo={modo} data-cat={cat}>
       <div class:list={['producto-marco relative aspect-square overflow-hidden rounded-[22px] bg-pizarra ring-1 ring-white/[0.06]', p.agotado && 'agotado-marco']} style={veta}>
         {modo !== 'foto' && <div class="absolute inset-0 bg-[radial-gradient(70%_55%_at_50%_60%,rgb(174_139_61/0.17),transparent_72%)]"></div>}
-        {recorte && <img src={recorte.src} width={recorte.w} height={recorte.h} alt="" loading="lazy" decoding="async" data-foto={p.id} class="producto-img absolute inset-0 m-auto h-[84%] w-[84%] object-contain drop-shadow-[0_18px_16px_rgb(0_0_0/0.75)]" />}
-        {real && <img src={real.src} srcset={real.srcset} sizes="(min-width: 640px) 33vw, 50vw" width={real.w} height={real.h} alt="" loading="lazy" decoding="async" data-foto={p.id} class="producto-img absolute inset-0 h-full w-full object-cover" />}
-        {modo === 'icono' && <img src={iconoDe(cat)} width="64" height="64" alt="" loading="lazy" data-foto={p.id} class="producto-img absolute inset-0 m-auto h-[46%] w-[46%] object-contain opacity-85" />}
+        {recorte && <span class="producto-sombra" style={recorte.sombra} aria-hidden="true"></span>}
+        {recorte && <img src={recorte.src} srcset={recorte.srcset} sizes={sizesRecorte(recorte.w, recorte.h)} width={recorte.w} height={recorte.h} alt="" loading="lazy" decoding="async" data-foto={p.id} class="producto-img lqip absolute inset-0 m-auto h-[84%] w-[84%] object-contain" style={recorte.lqip} />}
+        {real && <img src={real.src} srcset={real.srcset} sizes="(min-width: 64rem) 22vw, (min-width: 40rem) 30vw, 46vw" width={real.w} height={real.h} alt="" loading="lazy" decoding="async" data-foto={p.id} class="producto-img lqip absolute inset-0 h-full w-full object-cover" style={lqipReal} />}
+        {modo === 'icono' && <img src={iconoDe(cat)} width="64" height="64" alt="" decoding="async" data-foto={p.id} class="producto-img absolute inset-0 m-auto h-[46%] w-[46%] object-contain opacity-85" />}
         {p.agotado && <p class="absolute top-2.5 left-2.5 rounded-full bg-noche/85 px-2.5 py-1 text-[11px] font-semibold tracking-wider uppercase"><span lang="es">Agotado</span><span lang="en">Sold out</span></p>}
       </div>
       <div class="mt-3 px-0.5">
@@ -51,9 +58,9 @@ const veta = `--mx:${semilla % 100}%;--my:${(semilla * 7) % 100}%`;
   <li class="revela" style={`--i:${i}`}>
     <article class="producto group relative flex cursor-pointer items-center gap-3.5 border-b border-oro/[0.16] py-3" data-modo={modo} data-cat={cat}>
       <div class:list={['producto-marco relative size-16 shrink-0 overflow-hidden rounded-2xl bg-pizarra ring-1 ring-white/[0.06]', p.agotado && 'agotado-marco']} style={veta}>
-        {recorte && <img src={recorte.src} width={recorte.w} height={recorte.h} alt="" loading="lazy" decoding="async" data-foto={p.id} class="producto-img absolute inset-0 m-auto h-[86%] w-[86%] object-contain" />}
-        {real && <img src={real.src} width={real.w} height={real.h} alt="" loading="lazy" decoding="async" data-foto={p.id} class="producto-img absolute inset-0 h-full w-full object-cover" />}
-        {modo === 'icono' && <img src={iconoDe(cat)} width="64" height="64" alt="" loading="lazy" data-foto={p.id} class="producto-img absolute inset-0 m-auto h-[58%] w-[58%] object-contain opacity-80" />}
+        {recorte && <img src={recorte.src} srcset={recorte.srcset} sizes={sizesFila(recorte.w, recorte.h)} width={recorte.w} height={recorte.h} alt="" loading="lazy" decoding="async" data-foto={p.id} class="producto-img lqip absolute inset-0 m-auto h-[86%] w-[86%] object-contain" style={recorte.lqip} />}
+        {real && <img src={real.src} srcset={real.srcset} sizes="64px" width={real.w} height={real.h} alt="" loading="lazy" decoding="async" data-foto={p.id} class="producto-img lqip absolute inset-0 h-full w-full object-cover" style={lqipReal} />}
+        {modo === 'icono' && <img src={iconoDe(cat)} width="64" height="64" alt="" decoding="async" data-foto={p.id} class="producto-img absolute inset-0 m-auto h-[58%] w-[58%] object-contain opacity-80" />}
       </div>
       <div class="min-w-0 flex-1">
         <div class="flex items-baseline gap-3">
