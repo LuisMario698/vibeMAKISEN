@@ -1,41 +1,50 @@
 /* ─────────────────────────────────────────────────────────────────────────
    "Mi pedido" como COMANDA del restaurante, sin desplazamiento.
-   Lenguaje propio: papel de comanda sobre mármol negro (borde perforado de
-   impresora, puntos guía hasta el precio, casillas impresas con palomita a mano),
-   rótulos en versalitas Montserrat, filete dorado con el punto del logo.
-   Botón principal: oro sólido rectangular. Secundarios: texto subrayado en oro
-   o icono dentro de un aro dorado. Lo que no cabe se abre en su propia capa.
-   Movimiento solo con transform/opacity; respeta prefers-reduced-motion.
+   Lenguaje propio: papel de comanda sobre mármol negro (borde dentado de
+   impresora, puntos guía hasta el precio), rótulos en versalitas Montserrat,
+   filete dorado con el punto del logo, y el ensō de la marca como marca de
+   "elegido" (se traza alrededor del redondel, como quien encierra la opción
+   en la comanda). Billetes como papeletas con su marco.
+   Botón principal: oro sólido rectangular, uno por paso. Secundarios: texto
+   subrayado en oro. Cerrar: una × sin caja.
+   La hoja mide lo que su contenido (hasta el alto de la pantalla); lo que no
+   cabe se abre en su propia capa. Movimiento solo con transform/opacity.
    ───────────────────────────────────────────────────────────────────────── */
 
 dialog.lista {
   --pd-papel: rgb(25 24 21 / 0.96);
   --pd-filete: rgb(174 139 61 / 0.42);
-  --pd-renglon: rgb(244 241 234 / 0.14);
-  --pd-rotulo-ancho: 5.6rem;
+  --pd-renglon: rgb(244 241 234 / 0.16);
+  --pd-corte: rgb(174 139 61 / 0.42);
+  --pd-rotulo-ancho: 6.1rem;
   --pd-x: 16px;
+  --pd-alto-max: calc(100dvh - env(safe-area-inset-top) - 8px);
 }
+html[lang="en"] dialog.lista { --pd-rotulo-ancho: 5.6rem; }
 
-/* ── Panel: hoja desde abajo (teléfono/tablet) y cajón derecho (computadora) ── */
-dialog.lista { inset: auto 0 0 0; margin: 0 auto; width: min(100%, 34rem); height: calc(100dvh - env(safe-area-inset-top) - 8px); max-width: none; max-height: none; padding: 0; border: 0; background: transparent; color: inherit; overflow: visible; }
-@media (min-width: 40rem) { dialog.lista { height: min(92dvh, 50rem); } }
+/* ── Panel: hoja desde abajo (teléfono/tablet), del alto de su contenido; cajón a la derecha (computadora) ── */
+dialog.lista { inset: auto 0 0 0; margin: 0 auto; width: min(100%, 34rem); height: auto; max-width: none; max-height: var(--pd-alto-max); padding: 0; border: 0; background: transparent; color: inherit; overflow: visible; }
+@media (min-width: 40rem) { dialog.lista { --pd-alto-max: min(92dvh, 50rem); } }
 dialog.lista::backdrop { background: rgb(0 0 0 / 0.7); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); animation: pd-velo 280ms ease-out; }
 dialog.lista.cerrando::backdrop { animation: pd-velo 200ms ease-out reverse forwards; }
 .lista-panel {
-  position: relative; display: flex; flex-direction: column; height: 100%; overflow: clip;
+  position: relative; display: flex; flex-direction: column; height: auto; max-height: var(--pd-alto-max); overflow: clip;
   border-radius: 14px 14px 0 0;
   background: linear-gradient(rgb(12 12 11 / 0.9), rgb(10 10 9 / 0.95)), var(--marmol) center / cover no-repeat, #0e0e0d;
   box-shadow: 0 -20px 60px rgb(0 0 0 / 0.5), inset 0 1px 0 rgb(210 178 106 / 0.35);
 }
+/* Con una capa abierta (comanda completa, plano, mapa) la hoja usa todo el alto. */
+.lista-panel.con-capa { height: var(--pd-alto-max); }
 dialog.lista[open] .lista-panel { animation: pd-sube 420ms var(--ease-cajon); }
 dialog.lista.cerrando .lista-panel { animation: pd-baja 200ms var(--ease-cajon) forwards; }
 @media (min-width: 64rem) and (min-height: 36rem) {
-  dialog.lista { inset: 0 0 0 auto; margin: 0; width: 28rem; height: 100dvh; }
-  .lista-panel { border-radius: 0; box-shadow: -20px 0 60px rgb(0 0 0 / 0.5), inset 1px 0 0 rgb(210 178 106 / 0.35); }
+  dialog.lista { inset: 0 0 0 auto; margin: 0; width: 28rem; height: 100dvh; --pd-alto-max: 100dvh; }
+  .lista-panel { height: 100%; border-radius: 0; box-shadow: -20px 0 60px rgb(0 0 0 / 0.5), inset 1px 0 0 rgb(210 178 106 / 0.35); }
   dialog.lista[open] .lista-panel { animation: pd-cajon-entra 360ms var(--ease-cajon); }
   dialog.lista.cerrando .lista-panel { animation: pd-cajon-sale 200ms var(--ease-cajon) forwards; }
   .lista-panel > .pd-asa { display: none; }
   dialog.lista { --pd-x: 22px; }
+  .lista-scroll { flex: 1 1 auto; }
 }
 @keyframes pd-velo { from { opacity: 0; } }
 @keyframes pd-sube { from { transform: translateY(100%); } }
@@ -49,50 +58,48 @@ dialog.lista.cerrando .lista-panel { animation: pd-baja 200ms var(--ease-cajon) 
 .lista-panel { touch-action: manipulation; }
 
 /* ── Piezas comunes ── */
-.pd-rotulo { font-family: var(--font-alt); font-size: 12px; font-weight: 500; line-height: 1.2; letter-spacing: 0.14em; text-transform: uppercase; color: var(--color-oro-claro); }
-.pd-detalle { font-size: 13px; line-height: 1.4; color: var(--color-niebla); }
-.pd-detalle-fuerte { color: var(--color-hueso); }
-.error { font-size: 13px; line-height: 1.35; color: #ffb4a3; padding-top: 4px; }
+/* Rótulo de la comanda: versalitas Montserrat, legibles (14 px, poco espaciado). */
+.pd-rotulo { font-family: var(--font-alt); font-size: 14px; font-weight: 600; line-height: 1.2; letter-spacing: 0.05em; text-transform: uppercase; color: var(--color-oro-claro); }
+.pd-detalle { font-size: 14px; line-height: 1.4; color: var(--color-niebla); }
+.error { font-size: 14px; line-height: 1.35; color: #ffb4a3; padding-top: 2px; }
+.error[hidden] { display: none; }
 /* Puntos guía de la comanda (entre el nombre y el precio). */
 .pd-guia { align-self: end; min-width: 12px; height: 2px; margin-bottom: 0.42em; background: radial-gradient(circle, rgb(210 178 106 / 0.6) 0 0.9px, transparent 1.3px) 0 50% / 6px 2px repeat-x; }
 
-/* Aro dorado con icono (cerrar, atrás, mi ubicación). */
-.pd-aro { display: grid; flex: none; place-items: center; width: 44px; height: 44px; border-radius: 50%; border: 1.5px solid rgb(174 139 61 / 0.8); background: transparent; color: var(--color-oro-claro); }
-.pd-aro[disabled] { opacity: 0.5; }
-.pd-aro[aria-busy="true"] svg { animation: pd-gira 1s linear infinite; }
-@keyframes pd-gira { to { transform: rotate(1turn); } }
+/* Cerrar / volver de una capa: una × dorada sin caja (zona táctil de 44 px). */
+.pd-x { display: grid; flex: none; place-items: center; width: 44px; height: 44px; margin-right: -10px; color: var(--color-oro-claro); border-radius: 4px; }
+@media (hover: hover) and (pointer: fine) { .pd-x:hover { color: var(--color-hueso); } }
 
 /* Enlace de acción: texto subrayado en oro (secundarios). */
-.pd-enlace { display: inline-flex; align-items: center; min-height: 44px; padding: 0 2px; font-size: 14px; font-weight: 600; line-height: 1.2; color: var(--color-hueso); white-space: nowrap; text-decoration: underline; text-decoration-color: var(--color-oro); text-decoration-thickness: 1.5px; text-underline-offset: 5px; transition: color 160ms ease; }
-.pd-enlace-claro { color: var(--color-oro-claro); }
+.pd-enlace { display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; padding: 0 2px; font-size: 15px; font-weight: 600; line-height: 1.2; color: var(--color-hueso); white-space: nowrap; text-decoration: underline; text-decoration-color: var(--color-oro); text-decoration-thickness: 1.5px; text-underline-offset: 5px; transition: color 160ms ease; }
+.pd-enlace[aria-busy="true"] { color: var(--color-niebla); text-decoration-style: dotted; cursor: progress; }
 .pd-enlace-falso { font-size: 14px; font-weight: 600; text-decoration: underline; text-decoration-color: var(--color-oro); text-decoration-thickness: 1.5px; text-underline-offset: 5px; white-space: nowrap; }
 
-/* Botón principal: oro sólido, rectangular, esquinas sobrias. */
-.pd-boton { display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 48px; padding: 0 18px; border-radius: 6px; font-size: 16px; font-weight: 600; line-height: 1.15; text-align: center; white-space: nowrap; }
+/* Botón principal: oro sólido, rectangular, esquinas sobrias. Uno por paso. */
+.pd-boton { min-width: 0; display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 48px; padding: 0 18px; border-radius: 3px; font-size: 16px; font-weight: 700; line-height: 1.15; letter-spacing: 0.01em; text-align: center; white-space: nowrap; }
 .pd-boton svg { flex: none; }
-.pd-boton-oro { background: var(--color-oro); color: #0a0a0a; }
+.pd-boton-oro { background: var(--color-oro); color: #0a0a0a; box-shadow: inset 0 -2px 0 rgb(0 0 0 / 0.22); }
 .pd-boton-grande { flex: 1; min-height: 52px; }
-.pd-boton[aria-disabled="true"] { opacity: 0.5; }
-.boton-whatsapp { background: #25d366; color: #04140a; font-weight: 700; }
+.pd-boton[aria-disabled="true"] { background: transparent; color: var(--color-niebla); box-shadow: inset 0 0 0 1px rgb(174 139 61 / 0.6); }
 @media (hover: hover) and (pointer: fine) {
-  .pd-boton-oro:hover { background: var(--color-oro-claro); }
-  .boton-whatsapp:hover { background: #3ee07a; }
-  .pd-aro:hover { background: rgb(174 139 61 / 0.16); }
+  .pd-boton-oro:not([aria-disabled="true"]):hover { background: var(--color-oro-claro); }
   .pd-enlace:hover { color: var(--color-oro-claro); }
 }
 
-/* ── Cabecera: título, resumen y pasos con el filete dorado ── */
+/* ── Cabecera: título, resumen (pasos 2 y 3) y pasos con el filete dorado ── */
 .lista-cabeza { flex: none; padding: 2px var(--pd-x) 0; }
-.pd-cabeza-fila { display: flex; align-items: center; gap: 10px; min-height: 50px; }
+.pd-cabeza-fila { display: flex; align-items: center; gap: 10px; min-height: 48px; }
 .pd-titulo { flex: none; font-size: 20px; line-height: 1.15; font-weight: 600; letter-spacing: -0.01em; }
 .pd-titulo:focus { outline: none; }
-.pd-resumen { flex: 1; min-width: 0; overflow: hidden; font-size: 14px; color: var(--color-niebla); white-space: nowrap; text-overflow: ellipsis; }
-.pd-cerrar { margin-left: auto; margin-right: -4px; }
+.pd-resumen { flex: 1; min-width: 0; overflow: hidden; font-size: 15px; color: var(--color-niebla); white-space: nowrap; text-overflow: ellipsis; text-align: right; }
+.pd-resumen:empty { display: none; }
+.pd-cabeza-fila > .pd-x { margin-left: auto; }
+.pd-resumen:not(:empty) + .pd-x { margin-left: 0; }
 .pd-pasos { position: relative; margin-inline: -6px; }
 dialog.lista:is([data-paso="vacio"], [data-paso="seguimiento"]) .pd-pasos { display: none; }
 dialog.lista:is([data-paso="vacio"], [data-paso="seguimiento"]) .lista-cabeza { border-bottom: 1px solid rgb(174 139 61 / 0.25); padding-bottom: 6px; }
 .pd-pasos ol { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
-.pd-paso { display: flex; align-items: center; justify-content: center; gap: 7px; width: 100%; min-height: 44px; font-family: var(--font-alt); font-size: 12px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: var(--color-niebla); transition: color 200ms ease; }
+.pd-paso { display: flex; align-items: center; justify-content: center; gap: 7px; width: 100%; min-height: 44px; font-family: var(--font-alt); font-size: 14px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--color-niebla); transition: color 200ms ease; }
 .pd-paso-num { font-variant-numeric: tabular-nums; color: rgb(244 241 234 / 0.5); transition: color 200ms ease; }
 .pd-paso[data-estado="actual"] { color: var(--color-hueso); }
 .pd-paso[data-estado="actual"] .pd-paso-num, .pd-paso[data-estado="hecho"] .pd-paso-num { color: var(--color-oro-claro); }
@@ -102,90 +109,94 @@ dialog.lista:is([data-paso="vacio"], [data-paso="seguimiento"]) .lista-cabeza { 
 .pd-pasos-punto { position: absolute; inset: 0; transform: translateX(calc(var(--paso, 0) * 33.3333%)); transition: transform 420ms var(--ease-cajon); }
 .pd-pasos-punto::after { content: ""; position: absolute; top: -3px; left: calc(16.6667% - 3.5px); width: 7px; height: 7px; border-radius: 50%; background: var(--color-oro-claro); box-shadow: 0 0 10px 1px rgb(210 178 106 / 0.55); }
 
-/* ── Cuerpo: cada paso cabe; el desplazamiento solo queda de respaldo (teclado, zoom) ── */
-.lista-scroll { flex: 1; min-height: 0; display: flex; flex-direction: column; overflow-y: auto; overflow-x: clip; overscroll-behavior: contain; padding: 12px var(--pd-x); scrollbar-width: thin; scrollbar-color: rgb(174 139 61 / 0.4) transparent; }
+/* ── Cuerpo: cada paso cabe; el desplazamiento solo queda de respaldo (zoom) ── */
+.lista-scroll { flex: 0 1 auto; min-height: 0; display: flex; flex-direction: column; overflow-y: auto; overflow-x: clip; overscroll-behavior: contain; padding: 12px var(--pd-x); scrollbar-width: thin; scrollbar-color: rgb(174 139 61 / 0.4) transparent; }
 .pd-vista:not([hidden]) { display: flex; flex-direction: column; gap: 10px; }
 .lista-scroll :is(.pd-renglon, .pd-bloque, fieldset) { scroll-margin-block: 12px; }
 
 /* La comanda: papel oscuro con el borde de arriba dentado, como el ticket arrancado de la impresora. */
 .pd-comanda {
-  position: relative; padding: 15px 14px 12px;
+  position: relative; padding: 14px 14px 12px;
   background: var(--pd-papel);
-  border: 1px solid var(--pd-filete); border-top: 0; border-radius: 0 0 4px 4px;
+  border: 1px solid var(--pd-filete); border-top: 0; border-radius: 0 0 3px 3px;
   -webkit-mask: conic-gradient(from 135deg at 50% 0, #000 90deg, #0000 0) 0 0 / 12px 6px repeat-x, linear-gradient(#000 0 0) 0 6px / 100% 100% no-repeat;
   mask: conic-gradient(from 135deg at 50% 0, #000 90deg, #0000 0) 0 0 / 12px 6px repeat-x, linear-gradient(#000 0 0) 0 6px / 100% 100% no-repeat;
 }
 fieldset { min-width: 0; margin: 0; padding: 0; border: 0; }
 
 /* ── Paso 1: la comanda con las líneas ── */
-.pd-vista-pedido { flex: 1 0 auto; }
 .pd-comanda-pedido { display: flex; flex-direction: column; }
-.pd-comanda-cabeza { display: flex; align-items: center; gap: 14px; margin-top: -4px; border-bottom: 1.5px dashed rgb(174 139 61 / 0.4); }
-.pd-comanda-cabeza .pd-rotulo { margin-right: auto; }
-.pd-folio-chico { letter-spacing: 0.16em; }
-.pd-lineas { display: grid; }
+.pd-comanda-cabeza { display: flex; align-items: center; gap: 16px; margin-top: -4px; border-bottom: 1.5px dashed var(--pd-corte); }
+.pd-comanda-cabeza .pd-rotulo { margin-right: auto; white-space: nowrap; }
+.pd-lineas { display: grid; grid-template-columns: minmax(0, 1fr); }
 .linea-lista { display: grid; grid-template-columns: minmax(0, max-content) minmax(12px, 1fr) max-content; align-items: end; column-gap: 6px; padding-top: 7px; border-bottom: 1px dotted var(--pd-renglon); }
 .linea-lista[hidden] { display: none; }
 .linea-lista:last-child { border-bottom: 0; }
-.ll-nombre { min-width: 0; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; font-size: 15px; font-weight: 600; line-height: 1.3; }
-.ll-precio { font-size: 15px; font-weight: 600; line-height: 1.3; }
+.ll-nombre { min-width: 0; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; font-size: 16px; font-weight: 600; line-height: 1.3; }
+.ll-precio { font-size: 16px; font-weight: 600; line-height: 1.3; }
 .ll-fila { grid-column: 1 / -1; display: flex; align-items: center; gap: 10px; min-height: 46px; }
-.ll-meta { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; }
-.ll-op { flex: none; font-family: var(--font-alt); font-size: 12px; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: var(--color-oro-claro); }
+.ll-meta { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; }
+.ll-op { flex: none; font-family: var(--font-alt); font-size: 14px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--color-oro-claro); }
 .ll-op[hidden] { display: none; }
-.ll-nota-boton { display: inline-flex; align-items: center; min-width: 0; min-height: 44px; font-size: 14px; color: var(--color-niebla); text-align: left; }
-.ll-nota-boton > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-decoration: underline; text-decoration-color: rgb(174 139 61 / 0.7); text-decoration-thickness: 1px; text-underline-offset: 4px; }
+.ll-nota-boton { display: inline-flex; align-items: center; gap: 8px; min-width: 0; min-height: 44px; font-size: 15px; color: var(--color-niebla); text-align: left; }
+.ll-nota-boton > :is(.ll-nota, .ll-nota-rotulo) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-decoration: underline; text-decoration-color: rgb(174 139 61 / 0.7); text-decoration-thickness: 1px; text-underline-offset: 4px; }
 .ll-nota { font-style: italic; color: var(--color-hueso); }
 .ll-nota[hidden] { display: none; }
 .ll-nota-boton:has(.ll-nota:not([hidden])) .ll-nota-rotulo { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
-.ll-estado { font-size: 13px; color: #ffb4a3; }
-.ll-editar { flex: 1; min-width: 0; }
+.ll-estado { font-size: 14px; color: #ffb4a3; }
+.ll-estado[hidden] { display: none; }
+.ll-editar { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; }
 .ll-editar[hidden] { display: none; }
-.ll-editar .pd-escribir { min-height: 40px; border-bottom: 1.5px solid var(--color-oro); }
+.ll-editar .pd-escribir { flex: 1; min-height: 44px; border-bottom: 1.5px solid var(--color-oro); }
+.ll-editar .pd-enlace { min-width: 44px; justify-content: center; }
+.linea-lista.editando :is(.ll-meta, .lc-texto, .pd-stepper) { display: none; }
+.linea-corta.editando .ll-editar { grid-column: 1 / 3; }
 .linea-lista.agotada :is(.ll-nombre, .ll-precio) { opacity: 0.55; text-decoration: line-through; }
-.pd-stepper { display: inline-flex; flex: none; align-items: center; height: 44px; border: 1px solid rgb(174 139 61 / 0.85); border-radius: 4px; }
-.pd-stepper button { display: grid; place-items: center; width: 42px; height: 42px; color: var(--color-oro-claro); }
+/* Cantidad: − 1 + sobre el renglón, sin caja (glifos dorados de 44 px). */
+.pd-stepper { display: inline-flex; flex: none; align-items: center; height: 44px; margin-right: -10px; }
+.pd-stepper button { display: grid; place-items: center; width: 44px; height: 44px; color: var(--color-oro-claro); border-radius: 4px; }
 .pd-stepper button:disabled { opacity: 0.35; }
-.pd-stepper output { min-width: 22px; text-align: center; font-size: 16px; font-weight: 700; }
+.pd-stepper output { min-width: 18px; text-align: center; font-size: 17px; font-weight: 700; }
 .pd-stepper .ll-bote, .linea-lista.uno .pd-stepper .ll-menos { display: none; }
 .linea-lista.uno .pd-stepper .ll-bote { display: block; }
 @media (hover: hover) and (pointer: fine) { .pd-stepper button:hover:not(:disabled) { background: rgb(174 139 61 / 0.16); } .ll-nota-boton:hover { color: var(--color-hueso); } }
-.pd-ver-todo { min-height: 44px; font-size: 14px; font-weight: 600; text-align: left; color: var(--color-oro-claro); text-decoration: underline; text-decoration-color: var(--color-oro); text-decoration-thickness: 1.5px; text-underline-offset: 5px; border-top: 1px dotted var(--pd-renglon); }
+/* Quitado: el renglón queda tachado en su lugar con «Deshacer» (6 s). */
+.linea-quitada { display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 2px 0; border-bottom: 1px dotted var(--pd-renglon); font-size: 15px; color: var(--color-niebla); }
+.linea-quitada:last-child { border-bottom: 0; }
+.linea-quitada s { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-decoration-color: var(--color-oro); }
+.linea-quitada .pd-enlace { color: var(--color-oro-claro); }
+.pd-ver-todo { display: flex; align-items: center; min-height: 44px; font-size: 15px; font-weight: 600; text-align: left; color: var(--color-oro-claro); text-decoration: underline; text-decoration-color: var(--color-oro); text-decoration-thickness: 1.5px; text-underline-offset: 5px; border-top: 1px dotted var(--pd-renglon); }
 .pd-ver-todo[hidden] { display: none; }
 @media (hover: hover) and (pointer: fine) { .pd-ver-todo:hover { color: var(--color-hueso); } .pd-enviado-banda:hover { background: rgb(174 139 61 / 0.16); } }
-.pd-renglon-total { display: grid; grid-template-columns: auto minmax(12px, 1fr) auto; align-items: baseline; column-gap: 8px; padding-top: 8px; margin-top: 2px; border-top: 1.5px dashed rgb(174 139 61 / 0.4); }
-.pd-total { font-size: 20px; font-weight: 700; letter-spacing: -0.01em; white-space: nowrap; }
-.pd-total small { font-size: 12px; font-weight: 500; color: var(--color-niebla); }
+.pd-renglon-total { display: grid; grid-template-columns: auto minmax(12px, 1fr) auto; align-items: baseline; column-gap: 8px; padding-top: 8px; margin-top: 2px; border-top: 1.5px dashed var(--pd-corte); }
+.pd-total { font-size: 21px; font-weight: 700; letter-spacing: -0.01em; white-space: nowrap; }
+.pd-total small { font-size: 14px; font-weight: 600; color: var(--color-niebla); }
 .pd-total-num { display: inline-block; font-variant-numeric: tabular-nums; }
-.pd-legal { margin-top: 2px; font-size: 12.5px; line-height: 1.35; color: var(--color-niebla); }
+.pd-legal { margin-top: 3px; font-size: 14px; line-height: 1.35; color: var(--color-niebla); }
 dialog.lista.entrando .linea-lista { animation: pd-entra 320ms var(--ease-salida) both; animation-delay: calc(var(--k, 0) * 35ms + 140ms); }
 @keyframes pd-entra { from { opacity: 0; transform: translateY(10px); } }
 
-/* "Ver todo": la comanda ocupa el cuerpo y solo sus líneas se desplazan (su propia capa). */
-dialog.lista.todo .lista-scroll { overflow: hidden; }
-dialog.lista.todo :is(#pd-hay-enviado, #lista-avisos) { display: none; }
-dialog.lista.todo .pd-vista-pedido { flex: 1 1 auto; min-height: 0; }
-dialog.lista.todo .pd-comanda-pedido { flex: 1; min-height: 0; }
-dialog.lista.todo .pd-lineas { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: rgb(174 139 61 / 0.5) transparent; -webkit-mask: linear-gradient(#000 calc(100% - 28px), rgb(0 0 0 / 0.25)); mask: linear-gradient(#000 calc(100% - 28px), rgb(0 0 0 / 0.25)); }
-
 /* Avisos (precio cambió, agotado) */
 .pd-avisos { display: grid; gap: 6px; }
-.aviso { padding: 6px 10px; border-left: 2px solid var(--color-oro); background: rgb(174 139 61 / 0.1); font-size: 13px; line-height: 1.35; }
+.aviso { padding: 6px 10px; border-left: 2px solid var(--color-oro); background: rgb(174 139 61 / 0.1); font-size: 14px; line-height: 1.35; }
 
 /* Vacío: isotipo dentro de un ensō */
-.pd-vacia:not([hidden]) { display: grid; justify-items: center; align-content: center; gap: 8px; flex: 1; padding: 12px 8px; text-align: center; }
+.pd-vacia:not([hidden]) { display: grid; justify-items: center; align-content: center; gap: 8px; padding: 18px 8px 20px; text-align: center; }
 .pd-vacia-enso { position: relative; display: grid; place-items: center; width: 92px; height: 92px; margin-bottom: 4px; }
 .pd-vacia-enso::before { content: ""; position: absolute; inset: 0; border-radius: 50%; border: 3px solid var(--color-oro); -webkit-mask: conic-gradient(#000 0 318deg, transparent 318deg); mask: conic-gradient(#000 0 318deg, transparent 318deg); transform: rotate(-24deg); }
 .pd-vacia-enso img { width: 46px; height: auto; opacity: 0.9; }
 .pd-vacia-t { font-size: 19px; font-weight: 600; }
 .pd-vacia-s { max-width: 19rem; font-size: 15px; color: var(--color-niebla); }
+.pd-vacia-deshacer { display: inline-flex; align-items: center; gap: 10px; font-size: 15px; color: var(--color-niebla); }
+.pd-vacia-deshacer[hidden] { display: none; }
+.pd-vacia-deshacer .pd-enlace { color: var(--color-oro-claro); }
 .pd-vacia .pd-boton { margin-top: 8px; min-width: 12rem; }
 
 /* Pedido enviado antes */
-.pd-enviado-banda { display: flex; flex: none; align-items: center; gap: 10px; width: 100%; min-height: 44px; padding: 0 12px; border: 1px solid rgb(174 139 61 / 0.5); border-radius: 4px; background: rgb(174 139 61 / 0.08); font-size: 14px; color: var(--color-hueso); }
+.pd-enviado-banda { display: flex; flex: none; align-items: center; gap: 10px; width: 100%; min-height: 44px; padding: 0 12px; border-left: 2px solid var(--color-oro); background: rgb(174 139 61 / 0.1); font-size: 15px; color: var(--color-hueso); }
 .pd-enviado-banda[hidden] { display: none; }
-.pd-enviado-ping { position: relative; flex: none; width: 8px; height: 8px; border-radius: 50%; background: #25d366; }
-.pd-enviado-ping::after { content: ""; position: absolute; inset: 0; border-radius: 50%; background: #25d366; animation: pd-ping 1.8s var(--ease-salida) infinite; }
+.pd-enviado-ping { position: relative; flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--color-oro-claro); }
+.pd-enviado-ping::after { content: ""; position: absolute; inset: 0; border-radius: 50%; background: var(--color-oro-claro); animation: pd-ping 1.8s var(--ease-salida) infinite; }
 @keyframes pd-ping { from { opacity: 0.7; transform: scale(1); } to { opacity: 0; transform: scale(2.8); } }
 
 /* ── Renglones de la comanda (campos escritos a mano sobre la línea) ── */
@@ -202,40 +213,50 @@ dialog.lista.todo .pd-lineas { flex: 1; min-height: 0; overflow-y: auto; overscr
 .pd-escribir-mesa { width: 4.5rem; font-size: 18px; font-weight: 700; color: var(--color-oro-claro); font-variant-numeric: tabular-nums; }
 .pd-renglon .pd-escribir-mesa { grid-column: 2; }
 .pd-renglon > .pd-enlace { justify-self: end; }
+.pd-fijo { display: flex; align-items: center; font-weight: 600; }
+.pd-fijo[hidden], .pd-select[hidden] { display: none; }
 .pd-bloque { display: block; }
 .pd-bloque[hidden], [data-campo][hidden] { display: none !important; }
 .pd-bloque > .pd-detalle, .pd-bloque > .error { padding-left: calc(var(--pd-rotulo-ancho) + 10px); }
-.pd-bloque > .pd-detalle { padding-top: 4px; }
+.pd-bloque > .pd-detalle { padding-top: 3px; }
 .pd-bloque > .pd-detalle:empty { display: none; }
+.pd-bloque > .pd-detalle[hidden] { display: none; }
 .pd-select { position: relative; display: flex; align-items: center; padding: 0; }
 .pd-select select { width: 100%; min-height: 44px; padding: 0 28px 0 2px; border: 0; background: transparent; color: var(--color-hueso); font: inherit; font-size: 16px; font-weight: 600; -webkit-appearance: none; appearance: none; cursor: pointer; }
 .pd-select select option, .pd-select select optgroup { background: #141413; color: var(--color-hueso); }
 .pd-select svg { position: absolute; right: 2px; pointer-events: none; color: var(--color-oro-claro); }
 .pd-moneda { display: flex; align-items: center; gap: 4px; }
 .pd-moneda > span { font-weight: 700; color: var(--color-oro-claro); }
-.pd-moneda input { flex: 1; min-width: 0; min-height: 44px; border: 0; background: transparent; color: var(--color-hueso); font: inherit; font-size: 16px; }
-.pd-renglon-ubic { grid-template-columns: var(--pd-rotulo-ancho) minmax(0, 1fr) auto; }
-.pd-ubic-resumen { min-width: 0; overflow: hidden; font-size: 14px; color: var(--color-niebla); white-space: nowrap; text-overflow: ellipsis; }
-.pd-ubic-resumen.ok { color: #8fd9ad; }
-.pd-ubic-acciones { display: flex; align-items: center; gap: 12px; }
-.pd-aviso-cerrado { padding: 6px 10px; border-left: 2px solid #e0795e; background: rgb(224 121 94 / 0.08); font-size: 13px; line-height: 1.35; }
+.pd-moneda input { flex: 1; min-width: 0; min-height: 44px; border: 0; background: transparent; color: var(--color-hueso); font: inherit; font-size: 16px; font-weight: 600; }
+.pd-ubic-resumen { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.pd-ubic-resumen.ok { color: var(--color-oro-claro); font-weight: 600; }
+.pd-ubic-acciones { grid-column: 2 / -1; display: flex; align-items: center; gap: 0 22px; min-width: 0; }
+.pd-aviso-cerrado { padding: 6px 10px; border-left: 2px solid #e0795e; background: rgb(224 121 94 / 0.08); font-size: 14px; line-height: 1.35; }
 .pd-aviso-cerrado[hidden] { display: none; }
 
-/* Casillas impresas de la comanda (modalidad y forma de pago): radio real, palomita a mano. */
-.pd-casillas-campo { border-bottom: 1.5px dashed rgb(174 139 61 / 0.4); padding-bottom: 2px; }
-.pd-casillas-campo > legend { float: left; width: 100%; padding-top: 2px; }
-.pd-casillas-campo > legend + * { clear: both; }
+/* Opciones de una sola elección (modalidad y forma de pago): pregunta visible y redondel;
+   al elegir, el ensō de la marca se traza alrededor y queda un punto de tinta dorada. */
+.pd-opciones-campo { border-bottom: 1.5px dashed var(--pd-corte); padding-bottom: 2px; }
+.pd-pregunta { float: left; width: 100%; padding-top: 2px; font-size: 16px; font-weight: 600; line-height: 1.3; color: var(--color-hueso); }
+.pd-pregunta + * { clear: both; }
+.pd-pregunta-nota { font-size: 14px; font-weight: 400; color: var(--color-niebla); }
+.pd-pregunta-nota::before { content: "· "; }
 .modos, .pagos { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0 4px; }
-.pagos { justify-content: flex-start; gap: 0 36px; }
-.pd-casilla-op { position: relative; display: inline-flex; align-items: center; gap: 9px; min-height: 46px; font-size: 15px; font-weight: 600; color: var(--color-niebla); cursor: pointer; transition: color 160ms ease; }
-.pd-casilla { position: relative; flex: none; width: 20px; height: 20px; border: 1.5px solid rgb(244 241 234 / 0.5); border-radius: 3px; transition: border-color 160ms ease; }
-.pd-casilla svg { position: absolute; left: -3px; top: -8px; width: 28px; height: 28px; overflow: visible; fill: none; stroke: var(--color-oro-claro); stroke-width: 2.8; stroke-linecap: round; stroke-linejoin: round; }
-.pd-casilla path { stroke-dasharray: 1; stroke-dashoffset: 1; opacity: 0; transition: stroke-dashoffset 240ms var(--ease-salida), opacity 0ms 240ms; }
-.pd-casilla-op:has(input:checked) { color: var(--color-hueso); }
-.pd-casilla-op:has(input:checked) .pd-casilla { border-color: var(--color-oro-claro); }
-.pd-casilla-op:has(input:checked) .pd-casilla path { stroke-dashoffset: 0; opacity: 1; transition: stroke-dashoffset 240ms var(--ease-salida); }
-.pd-casilla-op:has(input:focus-visible) { outline: 2px solid var(--color-oro-claro); outline-offset: 2px; }
-@media (hover: hover) and (pointer: fine) { .pd-casilla-op:hover { color: var(--color-hueso); } .pd-casilla-op:hover .pd-casilla { border-color: var(--color-oro-claro); } }
+.pagos { justify-content: flex-start; gap: 0 40px; }
+.pd-opcion { position: relative; display: inline-flex; align-items: center; gap: 10px; min-height: 48px; font-size: 16px; font-weight: 600; color: var(--color-niebla); cursor: pointer; transition: color 160ms ease; }
+.pd-redondel { position: relative; flex: none; width: 24px; height: 24px; }
+.pd-redondel svg { width: 100%; height: 100%; overflow: visible; fill: none; }
+.pd-redondel-aro { stroke: rgb(244 241 234 / 0.55); stroke-width: 1.5; transition: opacity 160ms ease; }
+.pd-redondel-enso { stroke: var(--color-oro-claro); stroke-width: 2.6; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; opacity: 0; transition: stroke-dashoffset 260ms var(--ease-salida), opacity 0ms 260ms; }
+.pd-redondel-punto { fill: var(--color-oro-claro); transform-origin: 12px 12px; transform: scale(0); transition: transform 200ms var(--ease-salida); }
+.pd-opcion:has(input:checked) { color: var(--color-hueso); }
+.pd-opcion:has(input:checked) .pd-redondel-aro { opacity: 0; }
+.pd-opcion:has(input:checked) .pd-redondel-enso { stroke-dashoffset: 0; opacity: 1; transition: stroke-dashoffset 260ms var(--ease-salida); }
+.pd-opcion:has(input:checked) .pd-redondel-punto { transform: scale(1); }
+.pd-opcion:has(input:focus-visible) { outline: 2px solid var(--color-oro-claro); outline-offset: 2px; }
+@media (hover: hover) and (pointer: fine) { .pd-opcion:hover { color: var(--color-hueso); } .pd-opcion:hover .pd-redondel-aro { stroke: var(--color-oro-claro); } }
+.pd-opciones-campo:has([aria-invalid="true"]) .pd-redondel-aro, .pd-opciones-campo.falta .pd-redondel-aro { stroke: #e0795e; }
+.pd-opciones-campo > .error { padding-bottom: 6px; }
 .pd-comanda-form, .pd-comanda-pago { display: flex; flex-direction: column; gap: 0; }
 .pd-comanda-form > .pd-aviso-cerrado { margin-bottom: 4px; }
 
@@ -243,42 +264,44 @@ dialog.lista.todo .pd-lineas { flex: 1; min-height: 0; overflow-y: auto; overscr
 .pd-renglon-entrega { grid-template-columns: minmax(0, 1fr) auto; padding-block: 4px; }
 .pd-renglon-entrega > p { display: grid; line-height: 1.3; }
 .pd-renglon-entrega > p > span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-.pd-entrega-t { font-size: 15px; font-weight: 600; }
-.pd-entrega-d { font-size: 13px; color: var(--color-niebla); }
-.pd-comanda-pago .pd-casillas-campo { padding-top: 2px; }
-.pd-comanda-pago .pd-casillas-campo > :is(.pd-detalle, .error) { padding-bottom: 6px; }
-.pd-comanda-pago .pd-casillas-campo > .pd-detalle { margin-top: -6px; }
-.pd-comanda-pago > .pd-bloque { padding-top: 8px; }
-.pd-comanda-pago > .pd-bloque > :is(.pd-detalle, .error) { padding-left: 0; }
-.pd-comanda-pago > #pd-tarjeta { padding-top: 8px; }
-.pd-billetes { display: grid; grid-template-columns: repeat(var(--n, 5), minmax(0, 1fr)); margin-top: 6px; border: 1px solid rgb(174 139 61 / 0.85); border-radius: 4px; overflow: hidden; }
-.pd-chip { position: relative; display: grid; place-items: center; min-height: 44px; padding: 0 2px; border-left: 1px dashed rgb(174 139 61 / 0.4); font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; cursor: pointer; transition: background-color 160ms ease, color 160ms ease; }
-.pd-chip:first-child { border-left: 0; }
+.pd-entrega-t { font-size: 16px; font-weight: 600; }
+.pd-entrega-d { font-size: 14px; color: var(--color-niebla); }
+.pd-comanda-pago .pd-opciones-campo { padding-top: 6px; }
+.pd-efectivo { padding-top: 8px; }
+.pd-efectivo > :is(.pd-detalle, .error) { padding-left: 0; }
+.pd-efectivo > .pd-detalle { padding-top: 0; }
+.pd-tarjeta { padding-top: 8px; color: var(--color-hueso); }
+.pd-tarjeta[hidden] { display: none; }
+/* Billetes: papeletas con su marco interior (no un control segmentado). */
+.pd-billetes { display: grid; grid-template-columns: repeat(var(--n, 5), minmax(0, 1fr)); gap: 6px; margin-top: 6px; }
+.pd-chip { position: relative; display: grid; place-items: center; min-height: 44px; padding: 0 2px; border: 1px solid rgb(174 139 61 / 0.75); border-radius: 2px; background: rgb(174 139 61 / 0.06); font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; cursor: pointer; transition: background-color 160ms ease, color 160ms ease; }
+.pd-chip::before { content: ""; position: absolute; inset: 3px; border: 1px dotted rgb(174 139 61 / 0.5); border-radius: 1px; pointer-events: none; }
 .pd-chip:has(input:checked) { background: var(--color-oro); color: #0a0a0a; }
-.pd-chip:has(input:focus-visible) { outline: 2px solid var(--color-oro-claro); outline-offset: -4px; }
-@media (hover: hover) and (pointer: fine) { .pd-chip:not(:has(input:checked)):hover { background: rgb(174 139 61 / 0.14); } }
-#pd-otro { margin-top: 2px; }
-.pd-cambio { padding-top: 6px; font-size: 14px; }
-.pd-cambio strong { color: #8fd9ad; font-variant-numeric: tabular-nums; }
+.pd-chip:has(input:checked)::before { border-color: rgb(10 10 10 / 0.45); }
+.pd-chip:has(input:focus-visible) { outline: 2px solid var(--color-oro-claro); outline-offset: 2px; }
+@media (hover: hover) and (pointer: fine) { .pd-chip:not(:has(input:checked)):hover { background: rgb(174 139 61 / 0.16); } }
+.pd-renglon-otro { margin-top: 2px; grid-template-columns: minmax(5rem, 1fr) auto; }
+.pd-renglon-otro > .pd-escribir { grid-column: 1; }
+.pd-renglon-otro[hidden] { display: none; }
+.pd-renglon-otro .pd-cambio { padding: 0; justify-self: end; white-space: nowrap; }
+.pd-cambio { padding-top: 6px; font-size: 15px; color: var(--color-niebla); }
+.pd-cambio[hidden] { display: none; }
+.pd-cambio strong { color: var(--color-oro-claro); font-variant-numeric: tabular-nums; }
 .pd-renglon-total-pago { margin-top: 8px; }
+/* Sin bloque de pago a la vista, la raya del total ya separa: la del campo sobra. */
+.pd-comanda-pago:has(#pd-efectivo[hidden]):has(#pd-tarjeta[hidden]) .pd-opciones-campo { border-bottom: 0; }
 
-/* ── Pie: atrás (aro) y la acción principal ── */
+/* ── Pie: volver (texto) y la acción principal ── */
 .lista-pie { position: relative; flex: none; padding: 10px var(--pd-x) max(10px, env(safe-area-inset-bottom)); border-top: 1px solid rgb(174 139 61 / 0.25); background: rgb(10 10 9 / 0.96); }
-.pd-errores { margin-bottom: 8px; padding: 6px 10px; border-left: 2px solid #e0795e; background: rgb(224 121 94 / 0.1); font-size: 13px; line-height: 1.35; }
+.pd-errores { margin-bottom: 8px; padding: 6px 10px; border-left: 2px solid #e0795e; background: rgb(224 121 94 / 0.1); font-size: 14px; line-height: 1.35; }
 .pd-errores:focus { outline: none; }
-.pd-pie-botones { display: flex; gap: 10px; }
+.pd-pie-botones { display: flex; align-items: center; gap: 16px; }
 .pd-pie-botones > [hidden] { display: none !important; }
-.pd-atras { width: 52px; height: 52px; }
+.pd-atras { flex: none; min-height: 48px; padding-inline: 4px; }
 dialog.lista.entrando .lista-pie { animation: pd-entra 360ms 100ms var(--ease-salida) both; }
 
-/* Deshacer: barra sobre el pie */
-.pd-deshacer { position: absolute; left: var(--pd-x); right: var(--pd-x); bottom: max(10px, env(safe-area-inset-bottom)); z-index: 6; display: flex; align-items: center; gap: 12px; min-height: 52px; padding: 0 10px 0 14px; border: 1px solid rgb(174 139 61 / 0.6); border-radius: 6px; background: #151513; font-size: 14px; box-shadow: 0 14px 30px rgb(0 0 0 / 0.55); animation: pd-deshacer-entra 240ms var(--ease-salida); }
-.pd-deshacer[hidden] { display: none; }
-.pd-deshacer.sale { opacity: 0; transform: translateY(8px); transition: opacity 160ms ease-out, transform 160ms ease-out; }
-@keyframes pd-deshacer-entra { from { opacity: 0; transform: translateY(10px); } }
-
-/* ── Capas (plano de mesas, mapa): cubren el panel; se cierran con Volver o Escape ── */
-.pd-capa { position: absolute; inset: 0; z-index: 8; display: flex; flex-direction: column; gap: 10px; padding: 6px var(--pd-x) max(12px, env(safe-area-inset-bottom)); background: linear-gradient(rgb(12 12 11 / 0.95), rgb(10 10 9 / 0.97)), var(--marmol) center / cover no-repeat, #0e0e0d; }
+/* ── Capas (comanda completa, plano, mapa): cubren el panel; se cierran con Volver o Escape ── */
+.pd-capa { position: absolute; inset: 0; z-index: 8; display: flex; flex-direction: column; gap: 10px; padding: 4px var(--pd-x) max(12px, env(safe-area-inset-bottom)); background: linear-gradient(rgb(12 12 11 / 0.95), rgb(10 10 9 / 0.97)), var(--marmol) center / cover no-repeat, #0e0e0d; }
 .pd-capa[hidden] { display: none; }
 .pd-capa.entra { animation: pd-capa-entra 240ms var(--ease-salida); }
 .pd-capa.sale { animation: pd-capa-sale 160ms ease-out forwards; }
@@ -288,16 +311,35 @@ dialog.lista.entrando .lista-pie { animation: pd-entra 360ms 100ms var(--ease-sa
 .pd-capa-titulo { font-size: 20px; font-weight: 600; letter-spacing: -0.01em; }
 .pd-capa-titulo:focus { outline: none; }
 .pd-capa > .pd-boton { flex: none; }
-.pd-capa-acciones { display: flex; flex: none; flex-wrap: wrap; align-items: center; gap: 4px 20px; }
+.pd-capa-acciones { display: flex; flex: none; flex-wrap: wrap; align-items: center; gap: 0 22px; }
+
+/* Comanda completa: una fila por platillo (nombre y nota | − n + | precio), por páginas. */
+.pd-todo-lineas { flex: 1; min-height: 0; overflow: hidden; display: flex; flex-direction: column; min-width: 0; }
+.pd-todo-lineas > * { min-width: 0; }
+.linea-corta { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(3.2rem, auto); align-items: center; column-gap: 8px; padding: 4px 0; flex: none; }
+.linea-corta .lc-texto { display: grid; align-content: center; gap: 1px; min-width: 0; min-height: 48px; color: var(--color-hueso); }
+.linea-corta .ll-nombre { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 16px; }
+.linea-corta .lc-sub { display: flex; gap: 8px; min-width: 0; overflow: hidden; font-size: 14px; color: var(--color-niebla); white-space: nowrap; }
+.linea-corta .lc-sub > :is(.ll-nota, .ll-nota-rotulo) { overflow: hidden; text-overflow: ellipsis; text-decoration: underline; text-decoration-color: rgb(174 139 61 / 0.7); text-underline-offset: 3px; }
+.linea-corta .lc-sub > [hidden] { display: none; }
+.linea-corta .lc-texto:has(.ll-nota:not([hidden])) .ll-nota-rotulo { display: none; }
+.linea-corta .ll-op { font-size: 14px; }
+.linea-corta .ll-editar { grid-column: 1; }
+.linea-corta .ll-precio { text-align: right; }
+.linea-corta .pd-stepper { margin-right: 0; }
+.pd-paginas { display: flex; flex: none; align-items: center; justify-content: space-between; gap: 12px; font-size: 15px; color: var(--color-niebla); border-top: 1px dotted var(--pd-renglon); }
+.pd-paginas[hidden] { display: none; }
+.pd-paginas .pd-enlace:disabled { opacity: 0.35; text-decoration-color: transparent; }
+.pd-capa-todo > .pd-renglon-total { flex: none; }
 
 /* ── Plano de mesas (en su capa) ── */
-.pd-nota-plano { flex: none; font-size: 13px; line-height: 1.35; color: var(--color-niebla); }
+.pd-nota-plano { flex: none; font-size: 14px; line-height: 1.35; color: var(--color-niebla); }
 .pd-plano-caja { flex: 1; min-height: 0; display: grid; place-items: center; container-type: size; }
 .pd-plano { position: relative; width: min(100cqw, 72cqh); aspect-ratio: var(--ar); container-type: inline-size; }
 .pd-plano-dibujo { position: absolute; inset: 0; width: 100%; height: 100%; }
 .pd-sillas rect { fill: #5c3c22; stroke: rgb(0 0 0 / 0.45); stroke-width: 1; transition: fill 240ms ease; }
 .pd-sillas.sel rect { fill: var(--color-oro-claro); }
-.pd-plano-rotulos li { position: absolute; transform: translate(-50%, -50%); font-family: var(--font-alt); font-size: 12px; font-weight: 500; letter-spacing: 0.06em; color: var(--color-niebla); white-space: nowrap; pointer-events: none; text-shadow: 0 1px 6px #000; }
+.pd-plano-rotulos li { position: absolute; transform: translate(-50%, -50%); font-family: var(--font-alt); font-size: 14px; font-weight: 500; letter-spacing: 0.04em; color: var(--color-niebla); white-space: nowrap; pointer-events: none; text-shadow: 0 1px 6px #000; }
 .pd-mesa { position: absolute; display: grid; place-items: center; width: max(44px, calc(var(--tw) * 1cqw + 8px)); height: max(44px, calc(var(--th) * 1cqw + 8px)); transform: translate(-50%, -50%); border-radius: 12px; cursor: pointer; }
 .pd-mesa.presionable:active { transform: translate(-50%, -50%) scale(0.95); }
 .pd-mesa:focus-visible { outline: none; }
@@ -317,7 +359,7 @@ dialog.lista.entrando .lista-pie { animation: pd-entra 360ms 100ms var(--ease-sa
 .pd-mesa[aria-pressed="true"] .pd-mesa-tapa { background: var(--color-oro-claro); box-shadow: 0 0 0 3px #0c0c0b, 0 0 0 5px var(--color-oro-claro), 0 0 24px 4px rgb(210 178 106 / 0.45); }
 .pd-mesa[aria-pressed="true"] .pd-mesa-num { color: #0a0a0a; text-shadow: none; }
 .pd-mesa-onda { position: absolute; left: 50%; top: 50%; width: 100%; aspect-ratio: 1; border-radius: 50%; border: 2px solid var(--color-oro-claro); pointer-events: none; opacity: 0; }
-.pd-leyenda { display: flex; flex: none; flex-wrap: wrap; align-items: center; gap: 4px 18px; font-size: 13px; color: var(--color-niebla); }
+.pd-leyenda { display: flex; flex: none; flex-wrap: wrap; align-items: center; gap: 4px 18px; font-size: 14px; color: var(--color-niebla); }
 .pd-leyenda li { display: inline-flex; align-items: center; gap: 6px; }
 .pd-ley { width: 14px; height: 14px; border-radius: 3px; }
 .pd-ley-libre { background: linear-gradient(135deg, #b88452, #6f4527); }
@@ -326,14 +368,14 @@ dialog.lista.entrando .lista-pie { animation: pd-entra 360ms 100ms var(--ease-sa
 
 /* ── Mapa (en su capa) ── */
 /* translateZ(0): en Safari, sin capa propia el redondeo no recorta las teselas. */
-.pd-mapa-marco { position: relative; flex: 1; min-height: 0; isolation: isolate; overflow: hidden; border: 1px solid rgb(174 139 61 / 0.5); border-radius: 4px; transform: translateZ(0); }
+.pd-mapa-marco { position: relative; flex: 1; min-height: 0; isolation: isolate; overflow: hidden; border: 1px solid rgb(174 139 61 / 0.5); border-radius: 3px; transform: translateZ(0); }
 .pd-mapa { height: 100%; background: var(--marmol) center / cover no-repeat, #0c0c0b; }
-.pd-mapa-cargando { display: grid; place-items: center; align-content: center; gap: 12px; height: 100%; padding: 16px; font-size: 14px; color: var(--color-niebla); text-align: center; }
+.pd-mapa-cargando { display: grid; place-items: center; align-content: center; gap: 12px; height: 100%; padding: 16px; font-size: 15px; color: var(--color-niebla); text-align: center; }
 .pd-mapa.leaflet-container { background: #0c0c0b; font-family: var(--font-sans); touch-action: none; }
-.pd-mapa.leaflet-container .leaflet-bar { border: 1px solid rgb(174 139 61 / 0.6); border-radius: 4px; overflow: hidden; box-shadow: 0 6px 18px rgb(0 0 0 / 0.5); }
+.pd-mapa.leaflet-container .leaflet-bar { border: 1px solid rgb(174 139 61 / 0.6); border-radius: 3px; overflow: hidden; box-shadow: 0 6px 18px rgb(0 0 0 / 0.5); }
 .pd-mapa.leaflet-container .leaflet-bar a { width: 44px; height: 44px; line-height: 44px; font-size: 20px; background: rgb(12 12 11 / 0.92); color: var(--color-oro-claro); border-bottom-color: rgb(174 139 61 / 0.3); }
 @media (hover: hover) and (pointer: fine) { .pd-mapa.leaflet-container .leaflet-bar a:hover { background: #1b1b19; } }
-.pd-mapa.leaflet-container .leaflet-control-attribution { padding: 2px 8px; border-radius: 4px 0 0 0; background: rgb(5 5 5 / 0.8); color: var(--color-niebla); font-size: 12px; }
+.pd-mapa.leaflet-container .leaflet-control-attribution { padding: 2px 8px; border-radius: 3px 0 0 0; background: rgb(5 5 5 / 0.8); color: var(--color-niebla); font-size: 12px; }
 .pd-mapa.leaflet-container .leaflet-control-attribution a { color: var(--color-oro-claro); }
 .pd-mapa .pd-teselas-osm { filter: invert(1) hue-rotate(180deg) brightness(0.85) contrast(0.9) saturate(0.6); }
 .pd-icono-pin, .pd-icono-local { background: none; border: 0; }
@@ -344,11 +386,11 @@ dialog.lista.entrando .lista-pie { animation: pd-entra 360ms 100ms var(--ease-sa
 .pd-local { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: #050505; box-shadow: 0 0 0 2px var(--color-oro), 0 0 18px rgb(210 178 106 / 0.55); }
 .pd-local img { width: 22px; height: 22px; }
 @keyframes pd-pin-cae { 0% { transform: translateY(-24px) scale(0.92); opacity: 0.4; } 55% { transform: translateY(0) scale(1.04, 0.9); opacity: 1; } 100% { transform: none; } }
-.pd-mapa-estado { flex: none; font-size: 13px; line-height: 1.35; color: var(--color-niebla); }
-.pd-mapa-estado.ok { color: #8fd9ad; }
+.pd-mapa-estado { flex: none; font-size: 14px; line-height: 1.35; color: var(--color-niebla); }
+.pd-mapa-estado.ok { color: var(--color-oro-claro); }
 
 /* ── Seguimiento ── */
-.pd-seguimiento:not([hidden]) { flex: 1 0 auto; gap: 10px; }
+.pd-seguimiento:not([hidden]) { gap: 10px; }
 .pd-sello { display: flex; align-items: center; gap: 14px; }
 .pd-sello-enso { flex: none; width: 58px; height: 58px; overflow: visible; }
 .pd-sello-aro { fill: none; stroke: var(--color-oro-claro); stroke-width: 6; stroke-linecap: round; stroke-dasharray: 90 100; transform: rotate(-70deg); transform-origin: 60px 60px; }
@@ -370,88 +412,102 @@ dialog.lista.enviado .pd-sello-check { animation: pd-check 420ms 520ms var(--eas
 .pd-etapa[data-estado="actual"] .pd-etapa-punto { background: var(--color-oro-claro); box-shadow: 0 0 0 3px rgb(210 178 106 / 0.2); }
 .pd-etapa[data-estado="actual"] .pd-etapa-punto::after { content: ""; position: absolute; inset: 0; border-radius: 50%; box-shadow: 0 0 0 2px var(--color-oro-claro); animation: pd-ping-chico 1.8s var(--ease-salida) infinite; }
 @keyframes pd-ping-chico { from { opacity: 0.7; transform: scale(1); } to { opacity: 0; transform: scale(1.8); } }
-.pd-etapa-t { font-size: 15px; font-weight: 600; line-height: 1.35; overflow-wrap: anywhere; }
-.pd-etapa-d { font-size: 13px; line-height: 1.35; color: var(--color-niebla); }
+.pd-etapa-t { font-size: 16px; font-weight: 600; line-height: 1.35; overflow-wrap: anywhere; }
+.pd-etapa-d { font-size: 14px; line-height: 1.35; color: var(--color-niebla); }
 .pd-etapa:not([data-estado="actual"]) .pd-etapa-d { display: none; }
-.pd-etapa-h { padding-top: 2px; font-size: 13px; color: var(--color-humo); white-space: nowrap; text-align: right; }
+.pd-etapa-h { padding-top: 2px; font-size: 14px; color: var(--color-humo); white-space: nowrap; text-align: right; }
 .pd-etapa[data-estado="pendiente"] .pd-etapa-t { color: var(--color-niebla); font-weight: 500; }
 .pd-etapa[data-estado="actual"] .pd-etapa-h { color: var(--color-oro-claro); }
 dialog.lista.enviado .pd-etapa { animation: pd-entra 320ms var(--ease-salida) both; animation-delay: calc(var(--k, 0) * 70ms + 560ms); }
-.pd-aviso-seg { padding-left: 10px; border-left: 2px solid var(--color-oro); font-size: 13px; line-height: 1.35; color: var(--color-niebla); }
+.pd-aviso-seg { padding-left: 10px; border-left: 2px solid var(--color-oro); font-size: 14px; line-height: 1.35; color: var(--color-niebla); }
 .pd-seg-resumen { display: grid; gap: 2px; padding-top: 12px; }
-.pd-seg-lineas { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; font-size: 14px; line-height: 1.35; color: var(--color-niebla); }
+.pd-seg-lineas { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; font-size: 15px; line-height: 1.35; color: var(--color-niebla); }
 .pd-seg-lineas li { display: inline; }
 .pd-seg-lineas li + li::before { content: ", "; }
-.pd-seg-acciones { display: grid; gap: 2px; margin-top: auto; }
+.pd-seg-acciones { display: grid; gap: 2px; }
 .pd-seg-acciones .pd-boton { min-height: 52px; }
 .pd-enlaces { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0 12px; }
 
 /* ── Pantallas bajas (iPhone SE y similares): menos aire, mismas piezas ── */
-@media (max-height: 40rem) {
+@media (max-height: 42rem) {
   .pd-asa { display: none; }
-  .lista-cabeza { padding-top: 4px; }
+  .lista-cabeza { padding-top: 2px; }
   .pd-cabeza-fila { min-height: 46px; }
   .pd-titulo { font-size: 19px; }
   .lista-scroll { padding-block: 8px; }
   .pd-comanda { padding-top: 12px; padding-bottom: 10px; }
   .linea-lista { padding-top: 4px; }
   .ll-fila { min-height: 44px; }
+  .pd-renglon { min-height: 44px; }
+  .pd-opcion { min-height: 44px; }
+  .modos .pd-opcion { min-height: 52px; gap: 2px; padding-block: 2px; }
+  .pd-efectivo, .pd-tarjeta { padding-top: 4px; }
+  .pd-seg-lineas { -webkit-line-clamp: 1; }
+  .pd-aviso-seg { line-height: 1.3; }
   .pd-renglon-total { padding-top: 6px; }
   .pd-boton-grande { min-height: 48px; }
-  .pd-atras { width: 48px; height: 48px; }
   .pd-vista:not([hidden]) { gap: 8px; }
-  .lista-pie { padding-top: 8px; }
-  .pd-seguimiento:not([hidden]) { gap: 8px; }
-  .pd-sello-enso { width: 50px; height: 50px; }
+  .lista-pie { padding-top: 8px; padding-bottom: max(8px, env(safe-area-inset-bottom)); }
+  .pd-seguimiento:not([hidden]) { gap: 6px; }
+  .pd-sello-enso { width: 48px; height: 48px; }
   .pd-folio { font-size: 23px; }
   /* La hora de envío ya está en la primera etapa; el detalle de cada etapa se omite. */
   #pd-seg-hora, .pd-etapa-d { display: none; }
-  .pd-seguimiento:not([hidden]) { gap: 6px; }
   .pd-seg-resumen { padding-top: 11px; }
   .pd-etapa { padding-bottom: 6px; }
+  .pd-seg-acciones .pd-boton { min-height: 48px; }
 }
-/* Teléfono (< 480 px): la modalidad como tres celdas de formulario impreso, casilla sobre el
-   texto, separadas por líneas punteadas: nunca se confunde qué casilla va con qué palabra. */
+/* Teléfono (< 480 px): la modalidad en tres celdas de formulario impreso, redondel sobre el
+   texto, separadas por líneas punteadas: nunca se confunde qué redondel va con qué palabra. */
 @media (max-width: 29.99rem) {
   .modos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; margin-inline: -4px; }
-  .modos .pd-casilla-op { flex-direction: column; justify-content: center; gap: 7px; min-height: 64px; padding: 6px 2px; font-size: 14px; text-align: center; }
-  .modos .pd-casilla-op + .pd-casilla-op { border-left: 1px dashed rgb(174 139 61 / 0.32); }
-  .modos .pd-casilla-op:has(input:focus-visible) { outline-offset: -2px; }
+  .modos .pd-opcion { flex-direction: column; justify-content: center; gap: 4px; min-height: 60px; padding: 4px 2px; font-size: 15px; text-align: center; }
+  .modos .pd-opcion + .pd-opcion { border-left: 1px dashed rgb(174 139 61 / 0.32); }
+  .modos .pd-opcion:has(input:focus-visible) { outline-offset: -2px; }
 }
-/* Angosto (≤ 360 px): rótulos más cortos. */
+/* Angosto (≤ 360 px): rótulos más cortos y comanda con menos margen. */
 @media (max-width: 22.5rem) {
-  dialog.lista { --pd-rotulo-ancho: 4.9rem; --pd-x: 14px; }
-  .pd-comanda { padding-inline: 12px; }
-  .pd-resumen { font-size: 13px; }
-  .pd-chip { font-size: 13px; }
-}
-/* Muy angosto (≤ 340 px, iPhone SE de 1.ª generación): casillas más chicas, mismo renglón. */
-@media (max-width: 21.25rem) {
-  .pd-comanda { padding-inline: 10px; }
-  .modos .pd-casilla-op { font-size: 13px; }
+  dialog.lista { --pd-rotulo-ancho: 5.4rem; --pd-x: 12px; }
+  html[lang="en"] dialog.lista { --pd-rotulo-ancho: 5rem; }
+  .pd-comanda { padding-inline: 11px; }
+  .pd-resumen { font-size: 14px; }
+  .pd-chip { font-size: 14px; }
+  .pd-billetes { gap: 4px; }
+  .pagos { gap: 0 28px; }
+  .modos .pd-opcion { font-size: 14px; }
+  .pd-ubic-acciones { gap: 0 16px; }
+  .pd-ubic-acciones .pd-enlace, .pd-comanda-cabeza .pd-enlace, .pd-enlaces .pd-enlace { font-size: 14px; }
+  .pd-comanda-cabeza { gap: 12px; }
+  .pd-boton-grande { padding-inline: 12px; gap: 8px; font-size: 15px; }
+  .pd-pie-botones { gap: 12px; }
+  .pd-chip::before { inset: 2px; }
 }
 
 /* Teléfono en horizontal: título, pasos y cerrar en un renglón. */
 @media (max-height: 32rem) and (orientation: landscape) {
-  dialog.lista { height: calc(100dvh - 6px); }
   .lista-cabeza { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; column-gap: 14px; }
   .pd-cabeza-fila { display: contents; }
   .pd-titulo { grid-column: 1; grid-row: 1; }
   .pd-resumen { display: none; }
-  .pd-cerrar { grid-column: 3; grid-row: 1; }
+  .pd-cabeza-fila > .pd-x { grid-column: 3; grid-row: 1; }
   .pd-pasos { grid-column: 2; grid-row: 1; }
 }
 
 /* Teclado abierto (lo marca lista.ts con visualViewport): queda lo esencial —
-   título, el campo enfocado y el botón para seguir o enviar. */
-dialog.lista.teclado-vv { top: var(--vv-arriba, 0px); bottom: auto; height: var(--vv-alto, 100dvh); }
+   título, el campo enfocado con sus vecinos y el botón para seguir o enviar.
+   Lo ya elegido (modalidad, forma de pago) y los textos legales se ocultan mientras se escribe. */
+dialog.lista.teclado-vv { bottom: var(--vv-abajo, 0px); --pd-alto-max: var(--vv-alto, 100dvh); }
 dialog.lista.teclado-vv .lista-panel { border-radius: 0; }
 dialog.lista.teclado :is(.pd-asa, .pd-pasos, .pd-resumen) { display: none; }
 dialog.lista.teclado .pd-cabeza-fila { min-height: 44px; }
 dialog.lista.teclado .pd-titulo { font-size: 17px; }
+dialog.lista.teclado .lista-scroll { padding-block: 6px; }
 dialog.lista.teclado .lista-pie { padding-block: 6px; }
 dialog.lista.teclado .pd-boton-grande { min-height: 46px; }
-dialog.lista.teclado .pd-atras { width: 46px; height: 46px; }
+dialog.lista.teclado :is(.pd-opciones-campo, .pd-aviso-cerrado, .pd-legal, .pd-renglon-ubic, #pd-hay-enviado, #lista-avisos, .pd-renglon-entrega, #t-paga, .pd-billetes, .pd-tarjeta, .pd-bloque > .pd-detalle) { display: none !important; }
+dialog.lista.teclado .pd-renglon { min-height: 44px; }
+/* Editando una nota: solo esa línea, con su «Listo». */
+dialog.lista.teclado:has(.linea-lista.editando) :is(.linea-lista:not(.editando), .linea-quitada, .pd-comanda-cabeza, .pd-ver-todo, .pd-renglon-total, .pd-paginas) { display: none !important; }
 
 /* ── Preferencias ── */
 @media (prefers-reduced-motion: reduce) {
@@ -460,15 +516,16 @@ dialog.lista.teclado .pd-atras { width: 46px; height: 46px; }
   .pd-capa.entra { animation: pd-velo 160ms ease-out; }
   .pd-capa.sale { animation: none; }
   .pd-etapa-punto::after, .pd-enviado-ping::after { display: none; }
-  .pd-pasos-relleno, .pd-pasos-punto, .pd-casilla path { transition: none; }
+  .pd-pasos-relleno, .pd-pasos-punto, .pd-redondel-enso, .pd-redondel-punto { transition: none; }
   dialog.lista.entrando :is(.linea-lista, .lista-pie), dialog.lista.enviado .pd-etapa { animation: none; }
+  dialog.lista.enviado :is(.pd-sello-aro, .pd-sello-check) { animation: none; }
 }
 @media (prefers-reduced-transparency: reduce) { .lista-pie { background: #0c0c0b; } }
 @media (prefers-contrast: more) {
   dialog.lista { --pd-renglon: rgb(244 241 234 / 0.45); --pd-filete: rgb(210 178 106 / 0.9); }
-  .pd-casilla { border-color: var(--color-hueso); }
+  .pd-redondel-aro { stroke: var(--color-hueso); }
 }
 /* Táctil: sin desenfoque sobre el fondo fijo de mármol (es lo que más cuesta en el teléfono). */
 @media (pointer: coarse) { dialog.lista::backdrop { backdrop-filter: none; -webkit-backdrop-filter: none; background: rgb(0 0 0 / 0.78); } }
 /* Los radios ocultos (sr-only) quedan dentro de su etiqueta: al enfocarlos no se desplaza el panel. */
-:is(.pd-chip, .pd-casilla-op) { position: relative; }
+:is(.pd-chip, .pd-opcion) { position: relative; }

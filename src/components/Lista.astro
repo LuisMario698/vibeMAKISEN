@@ -1,8 +1,8 @@
 ---
 // "Mi pedido" como una COMANDA: tres pasos (Pedido → Entrega → Pago) y el seguimiento al enviar.
-// Cada paso cabe sin desplazarse (teléfono de 320×568 en adelante); lo que no cabe se abre en
-// su propia capa: el plano de mesas, el mapa de entrega y "ver todo" cuando el pedido es largo.
-// Teléfono y tablet: hoja desde abajo. Computadora: cajón a la derecha.
+// Ningún paso se desplaza: la hoja mide lo que mide su contenido (hasta el alto de la pantalla)
+// y lo que no cabe se abre en su propia capa a todo el panel: la comanda completa (paginada),
+// el plano de mesas y el mapa de entrega. Teléfono y tablet: hoja desde abajo. Computadora: cajón.
 // Lógica pura en src/lib/ (pedido, pago, plano, ubicacion, seguimiento); interfaz en src/scripts/lista.ts.
 import '../styles/pedido.css';
 import PedidoPlano from './PedidoPlano.astro';
@@ -16,14 +16,19 @@ const modos = [
   { id: 'llevar', es: 'Para llevar', en: 'Pickup' },
   { id: 'domicilio', es: 'A domicilio', en: 'Delivery' },
 ] as const;
+const pagos = [
+  { id: 'efectivo', es: 'Efectivo', en: 'Cash' },
+  { id: 'tarjeta', es: 'Tarjeta', en: 'Card' },
+] as const;
 const pasos = [
   { n: 1, es: 'Pedido', en: 'Order' },
   { n: 2, es: 'Entrega', en: 'Delivery' },
   { n: 3, es: 'Pago', en: 'Payment' },
 ];
 const WA = 'M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.7.8-.8 1-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.2-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.8 11.9 11.9 0 0 0 4.6 4c1.7.7 2.4.8 3.2.7a2.8 2.8 0 0 0 1.8-1.3 2.3 2.3 0 0 0 .2-1.3c-.1-.1-.3-.2-.5-.3z';
-// Palomita a mano (trazo del ensō): se dibuja al marcar una casilla de la comanda.
-const PALOMITA = 'M4.5 12.8c2 1.4 3.4 3 4.6 5.2 2.4-5.4 5.8-9.4 10.6-12.6';
+// Redondel de una sola opción: aro impreso que, al elegir, se cubre con el trazo del ensō de la marca.
+const ENSO = 'M10.26 2.15A10 10 0 1 1 4.34 5.57';
+const CERRAR = 'M7 7l10 10M17 7 7 17';
 ---
 <dialog id="lista" class="lista" aria-labelledby="lista-titulo" data-paso="1">
   <div class="lista-panel">
@@ -35,11 +40,11 @@ const PALOMITA = 'M4.5 12.8c2 1.4 3.4 3 4.6 5.2 2.4-5.4 5.8-9.4 10.6-12.6';
           <span data-titulo="enviado" hidden><span lang="es">Pedido enviado</span><span lang="en">Order sent</span></span>
         </h2>
         <p id="lista-resumen" class="pd-resumen tabular-nums" aria-live="polite"></p>
-        <button type="button" data-lista-cerrar class="pd-aro pd-cerrar presionable" aria-label="Cerrar / Close">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M7 7l10 10M17 7 7 17" /></svg>
+        <button type="button" data-lista-cerrar class="pd-x presionable" aria-label="Cerrar" data-aria-es="Cerrar" data-aria-en="Close">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d={CERRAR} /></svg>
         </button>
       </div>
-      <nav class="pd-pasos" aria-label="Pasos del pedido / Order steps">
+      <nav class="pd-pasos" aria-label="Pasos del pedido" data-aria-es="Pasos del pedido" data-aria-en="Order steps">
         <ol>
           {pasos.map((p) => (
             <li>
@@ -58,7 +63,7 @@ const PALOMITA = 'M4.5 12.8c2 1.4 3.4 3 4.6 5.2 2.4-5.4 5.8-9.4 10.6-12.6';
       <!-- Pedido enviado antes (sigue vivo 12 h) -->
       <button type="button" id="pd-hay-enviado" class="pd-enviado-banda presionable" hidden>
         <span class="pd-enviado-ping" aria-hidden="true"></span>
-        <span class="min-w-0 flex-1 truncate text-left"><span data-folio class="tabular-nums"></span> <span lang="es">enviado</span><span lang="en">sent</span></span>
+        <span class="min-w-0 flex-1 truncate text-left"><span lang="es">Pedido</span><span lang="en">Order</span> <span data-folio class="tabular-nums"></span> <span lang="es">enviado</span><span lang="en">sent</span></span>
         <span class="pd-enlace-falso"><span lang="es">Ver seguimiento</span><span lang="en">See progress</span></span>
       </button>
 
@@ -68,22 +73,23 @@ const PALOMITA = 'M4.5 12.8c2 1.4 3.4 3 4.6 5.2 2.4-5.4 5.8-9.4 10.6-12.6';
         <div id="lista-avisos" class="pd-avisos empty:hidden" role="status"></div>
         <div class="pd-comanda pd-comanda-pedido" data-con-lineas>
           <div class="pd-comanda-cabeza">
-            <p class="pd-rotulo"><span class="sr-only"><span lang="es">Comanda</span><span lang="en">Order ticket</span></span> <span id="pd-folio" class="pd-folio-chico tabular-nums"></span></p>
+            <p id="pd-cuenta" class="pd-rotulo tabular-nums"></p>
             <button type="button" data-lista-cerrar class="pd-enlace"><span lang="es">Agregar más</span><span lang="en">Add more</span></button>
             <button type="button" id="lista-vaciar" class="pd-enlace"><span lang="es">Vaciar</span><span lang="en">Clear</span></button>
           </div>
           <ul id="lista-lineas" class="pd-lineas"></ul>
-          <button type="button" id="pd-ver-todo" class="pd-ver-todo" aria-expanded="false" hidden></button>
+          <button type="button" id="pd-ver-todo" class="pd-ver-todo" data-abrir-capa="todo" aria-haspopup="dialog" hidden></button>
           <div class="pd-renglon-total">
             <span class="pd-rotulo"><span lang="es">Total</span><span lang="en">Total</span></span>
             <span class="pd-guia" aria-hidden="true"></span>
             <span class="pd-total"><span class="pd-total-num" id="lista-subtotal"></span> <small>MXN</small></span>
           </div>
-          <p class="pd-legal"><span id="lista-usd" class="tabular-nums"></span> <span lang="es">referencia · IVA incluido. Precio final lo confirma el restaurante.</span><span lang="en">reference · Tax included. Final price confirmed by the restaurant.</span></p>
+          <p class="pd-legal"><span id="lista-usd" class="tabular-nums"></span> <span lang="es">de referencia. IVA incluido; el precio final lo confirma el restaurante.</span><span lang="en">for reference. Tax included; the restaurant confirms the final price.</span></p>
         </div>
         <div id="lista-vacia" class="pd-vacia" hidden>
           <span class="pd-vacia-enso" aria-hidden="true"><img src="/brand/isotipo.svg" width="579" height="599" alt="" /></span>
           <p class="pd-vacia-t"><span lang="es">Tu pedido está vacío</span><span lang="en">Your order is empty</span></p>
+          <p id="pd-vacia-deshacer" class="pd-vacia-deshacer" hidden><span lang="es">Vaciaste tu pedido.</span><span lang="en">You cleared your order.</span> <button type="button" data-deshacer class="pd-enlace"><span lang="es">Deshacer</span><span lang="en">Undo</span></button></p>
           <p class="pd-vacia-s"><span lang="es">Abre un platillo y toca «Agregar». Aquí armas la comanda y la mandas por WhatsApp.</span><span lang="en">Open a dish and tap “Add”. Build your order here and send it on WhatsApp.</span></p>
           <button type="button" data-lista-cerrar class="pd-boton pd-boton-oro presionable"><span lang="es">Ver el menú</span><span lang="en">Browse the menu</span></button>
         </div>
@@ -94,17 +100,18 @@ const PALOMITA = 'M4.5 12.8c2 1.4 3.4 3 4.6 5.2 2.4-5.4 5.8-9.4 10.6-12.6';
         <h3 id="t-paso2-h" tabindex="-1" class="sr-only"><span lang="es">Paso 2 de 3: entrega</span><span lang="en">Step 2 of 3: delivery</span></h3>
         <form id="lista-form" class="pd-comanda pd-comanda-form" novalidate>
           <p id="lista-cerrado" class="pd-aviso-cerrado" hidden></p>
-          <fieldset class="pd-casillas-campo">
-            <legend id="t-paso2" class="sr-only"><span lang="es">¿Cómo lo quieres?</span><span lang="en">How would you like it?</span></legend>
+          <fieldset class="pd-opciones-campo" aria-describedby="err-modo">
+            <legend id="t-paso2" class="pd-pregunta"><span lang="es">¿Cómo lo quieres?</span><span lang="en">How would you like it?</span></legend>
             <div class="modos">
               {modos.map((m) => (
-                <label class="modo pd-casilla-op">
+                <label class="modo pd-opcion">
                   <input type="radio" name="modo" value={m.id} class="sr-only" />
-                  <span class="pd-casilla" aria-hidden="true"><svg viewBox="0 0 24 24"><path d={PALOMITA} pathLength="1" /></svg></span>
+                  <span class="pd-redondel" aria-hidden="true"><svg viewBox="0 0 24 24"><circle class="pd-redondel-aro" cx="12" cy="12" r="7.5" /><path class="pd-redondel-enso" d={ENSO} pathLength="1" /><circle class="pd-redondel-punto" cx="12" cy="12" r="3.4" /></svg></span>
                   <span><span lang="es">{m.es}</span><span lang="en">{m.en}</span></span>
                 </label>
               ))}
             </div>
+            <p id="err-modo" class="error" hidden></p>
           </fieldset>
 
           <!-- En mesa: número y plano en su capa -->
@@ -129,41 +136,39 @@ const PALOMITA = 'M4.5 12.8c2 1.4 3.4 3 4.6 5.2 2.4-5.4 5.8-9.4 10.6-12.6';
             <p id="err-nombre" class="error" hidden></p>
           </div>
 
-          <!-- Para llevar: hora de hoy -->
+          <!-- Para llevar: hora de hoy (o un texto fijo si hoy ya no hay horas) -->
           <div data-campo="hora" class="pd-bloque">
             <div class="pd-renglon">
               <label for="lista-hora" class="pd-rotulo" id="t-hora"><span lang="es">Hora</span><span lang="en">Time</span></label>
-              <span class="pd-escribir pd-select">
+              <span class="pd-escribir pd-select" id="pd-hora-elegir">
                 <select id="lista-hora" name="hora" aria-describedby="pd-hora-lectura err-hora lista-cerrado"></select>
                 <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7 10 5 5 5-5" /></svg>
               </span>
+              <output id="pd-hora-fija" class="pd-escribir pd-fijo" aria-labelledby="t-hora" hidden></output>
             </div>
             <p id="pd-hora-lectura" class="pd-detalle" aria-live="polite"></p>
             <p id="err-hora" class="error" hidden></p>
           </div>
 
-          <!-- A domicilio: dirección, referencias y ubicación -->
+          <!-- A domicilio: dirección, señas y ubicación (opcional) -->
           <div data-campo="direccion" class="pd-bloque">
             <div class="pd-renglon">
               <label for="lista-direccion" class="pd-rotulo"><span lang="es">Dirección</span><span lang="en">Address</span></label>
-              <input id="lista-direccion" class="pd-escribir" type="text" maxlength={LIMITES.direccion} autocomplete="street-address" enterkeyhint="next" aria-describedby="err-direccion" data-ph-es="Calle, número y colonia…" data-ph-en="Street, number, area…" />
+              <input id="lista-direccion" class="pd-escribir" type="text" maxlength={LIMITES.direccion} autocomplete="street-address" enterkeyhint="next" aria-describedby="err-direccion" data-ph-es="Calle, número y colonia" data-ph-en="Street, number, area" />
             </div>
             <p id="err-direccion" class="error" hidden></p>
             <div class="pd-renglon">
-              <label for="lista-referencias" class="pd-rotulo"><span lang="es">Señas</span><span lang="en">Landmarks</span></label>
+              <label for="lista-referencias" class="pd-rotulo"><span lang="es">Señas</span><span lang="en">Hints</span></label>
               <input id="lista-referencias" class="pd-escribir" type="text" maxlength={LIMITES.referencias} autocomplete="off" enterkeyhint="done" data-ph-es="Opcional: portón negro…" data-ph-en="Optional: black gate…" />
             </div>
             <div class="pd-renglon pd-renglon-ubic">
               <span class="pd-rotulo" id="t-ubic"><span lang="es">Mapa</span><span lang="en">Map</span></span>
-              <p id="pd-ubic-resumen" class="pd-ubic-resumen" aria-live="polite"></p>
               <span class="pd-ubic-acciones">
-                <button type="button" id="pd-abrir-mapa" class="pd-enlace" data-abrir-capa="mapa" aria-haspopup="dialog" aria-describedby="t-ubic"><span data-sin-pin><span lang="es">Marcar</span><span lang="en">Pin it</span></span><span data-con-pin hidden><span lang="es">Ajustar</span><span lang="en">Adjust</span></span></button>
-                <button type="button" id="pd-mi-ubicacion" data-mi-ubicacion class="pd-aro pd-aro-chico presionable" aria-label="Usar mi ubicación / Use my location">
-                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="3.5" /><path d="M12 3v3M12 18v3M3 12h3M18 12h3" /></svg>
-                </button>
+                <button type="button" id="pd-abrir-mapa" class="pd-enlace" data-abrir-capa="mapa" aria-haspopup="dialog" aria-describedby="pd-ubic-resumen"><span data-sin-pin><span lang="es">Marcar</span><span lang="en">Pin it</span></span><span data-con-pin hidden><span lang="es">Ajustar</span><span lang="en">Adjust</span></span></button>
+                <button type="button" id="pd-mi-ubicacion" data-mi-ubicacion class="pd-enlace" aria-describedby="pd-ubic-resumen" data-aria-es="Usar mi ubicación" data-aria-en="Use my location"><span lang="es">Mi ubicación</span><span lang="en">My location</span></button>
               </span>
             </div>
-            <p class="pd-detalle"><span lang="es">El envío te lo confirma el restaurante por WhatsApp.</span><span lang="en">The restaurant confirms the delivery fee on WhatsApp.</span></p>
+            <p id="pd-ubic-resumen" class="pd-detalle pd-ubic-resumen" aria-live="polite"></p>
           </div>
         </form>
       </section>
@@ -177,42 +182,39 @@ const PALOMITA = 'M4.5 12.8c2 1.4 3.4 3 4.6 5.2 2.4-5.4 5.8-9.4 10.6-12.6';
             <button type="button" data-ir-paso="2" class="pd-enlace"><span lang="es">Cambiar</span><span lang="en">Change</span></button>
           </div>
 
-          <fieldset class="pd-casillas-campo" aria-describedby="t-paso3-sub err-pago">
-            <legend id="t-paso3" class="sr-only"><span lang="es">¿Cómo pagas?</span><span lang="en">How will you pay?</span></legend>
+          <fieldset class="pd-opciones-campo" aria-describedby="err-pago">
+            <legend id="t-paso3" class="pd-pregunta"><span lang="es">¿Cómo pagas?</span><span lang="en">How will you pay?</span> <span class="pd-pregunta-nota"><span lang="es">Al recibir, nunca en línea</span><span lang="en">On pickup or delivery, never online</span></span></legend>
             <div class="pagos">
-              <label class="modo pago pd-casilla-op">
-                <input type="radio" name="pago" value="efectivo" class="sr-only" />
-                <span class="pd-casilla" aria-hidden="true"><svg viewBox="0 0 24 24"><path d={PALOMITA} pathLength="1" /></svg></span>
-                <span><span lang="es">Efectivo</span><span lang="en">Cash</span></span>
-              </label>
-              <label class="modo pago pd-casilla-op">
-                <input type="radio" name="pago" value="tarjeta" class="sr-only" />
-                <span class="pd-casilla" aria-hidden="true"><svg viewBox="0 0 24 24"><path d={PALOMITA} pathLength="1" /></svg></span>
-                <span><span lang="es">Tarjeta</span><span lang="en">Card</span></span>
-              </label>
+              {pagos.map((p) => (
+                <label class="modo pago pd-opcion">
+                  <input type="radio" name="pago" value={p.id} class="sr-only" />
+                  <span class="pd-redondel" aria-hidden="true"><svg viewBox="0 0 24 24"><circle class="pd-redondel-aro" cx="12" cy="12" r="7.5" /><path class="pd-redondel-enso" d={ENSO} pathLength="1" /><circle class="pd-redondel-punto" cx="12" cy="12" r="3.4" /></svg></span>
+                  <span><span lang="es">{p.es}</span><span lang="en">{p.en}</span></span>
+                </label>
+              ))}
             </div>
-            <p id="t-paso3-sub" class="pd-detalle"><span lang="es">Pagas al recibir, nunca en línea.</span><span lang="en">You pay when you get it, never online.</span></p>
             <p id="err-pago" class="error" hidden></p>
           </fieldset>
 
-          <div id="pd-efectivo" class="pd-bloque" hidden>
-            <p id="t-paga" class="pd-detalle pd-detalle-fuerte"><span lang="es">¿Con cuánto pagas? (opcional)</span><span lang="en">Paying with? (optional)</span></p>
+          <div id="pd-efectivo" class="pd-bloque pd-efectivo" hidden>
+            <p id="t-paga" class="pd-detalle"><span lang="es">¿Con cuánto pagas? (opcional)</span><span lang="en">Paying with? (optional)</span></p>
             <div id="pd-montos" class="pd-billetes" role="radiogroup" aria-labelledby="t-paga" aria-describedby="err-paga"></div>
-            <div class="pd-renglon" id="pd-otro" hidden>
-              <label for="pd-paga-otro" class="pd-rotulo"><span lang="es">Monto</span><span lang="en">Amount</span></label>
-              <span class="pd-escribir pd-moneda"><span aria-hidden="true">$</span><input id="pd-paga-otro" type="number" inputmode="numeric" min="1" step="1" autocomplete="off" enterkeyhint="done" aria-describedby="err-paga" /></span>
+            <div class="pd-renglon pd-renglon-otro" id="pd-otro" hidden>
+              <label for="pd-paga-otro" class="sr-only"><span lang="es">Monto con que pagas</span><span lang="en">Amount you pay with</span></label>
+              <span class="pd-escribir pd-moneda"><span aria-hidden="true">$</span><input id="pd-paga-otro" type="number" data-ph-es="Monto" data-ph-en="Amount" inputmode="numeric" min="1" step="1" autocomplete="off" enterkeyhint="done" aria-describedby="pd-cambio-otro err-paga" /></span>
+              <p id="pd-cambio-otro" class="pd-cambio" aria-live="polite" hidden></p>
             </div>
             <p id="pd-cambio" class="pd-cambio" aria-live="polite" hidden></p>
             <p id="err-paga" class="error" hidden></p>
           </div>
-          <p id="pd-tarjeta" class="pd-detalle pd-detalle-fuerte" hidden><span id="pd-tarjeta-texto"></span></p>
+          <p id="pd-tarjeta" class="pd-detalle pd-tarjeta" hidden><span id="pd-tarjeta-texto"></span></p>
 
           <div class="pd-renglon-total pd-renglon-total-pago">
             <span class="pd-rotulo"><span lang="es">Total</span><span lang="en">Total</span></span>
             <span class="pd-guia" aria-hidden="true"></span>
             <span class="pd-total"><span id="pd-total-pago" class="pd-total-num"></span> <small>MXN</small></span>
           </div>
-          <p class="pd-legal"><span lang="es">IVA incluido. Precio final lo confirma el restaurante.</span><span lang="en">Tax included. Final price confirmed by the restaurant.</span></p>
+          <p id="pd-legal-pago" class="pd-legal"></p>
         </div>
       </section>
 
@@ -229,8 +231,8 @@ const PALOMITA = 'M4.5 12.8c2 1.4 3.4 3 4.6 5.2 2.4-5.4 5.8-9.4 10.6-12.6';
             <p id="pd-seg-hora" class="pd-detalle"></p>
           </div>
         </div>
-        <ol id="pd-linea-tiempo" class="pd-tiempo" aria-label="Estado estimado / Estimated progress"></ol>
-        <p class="pd-aviso-seg"><span lang="es">Horas estimadas. El estado real te lo confirma el restaurante por WhatsApp.</span><span lang="en">Estimated times. The restaurant confirms the real status on WhatsApp.</span></p>
+        <ol id="pd-linea-tiempo" class="pd-tiempo" aria-label="Estado estimado" data-aria-es="Estado estimado" data-aria-en="Estimated progress"></ol>
+        <p class="pd-aviso-seg"><span lang="es">Horas estimadas. El restaurante te confirma el estado real por WhatsApp.</span><span lang="en">Estimated times. The restaurant confirms the real status on WhatsApp.</span></p>
         <div class="pd-comanda pd-seg-resumen">
           <p id="pd-seg-entrega" class="pd-entrega-t"></p>
           <ul id="pd-seg-lineas" class="pd-seg-lineas"></ul>
@@ -242,53 +244,64 @@ const PALOMITA = 'M4.5 12.8c2 1.4 3.4 3 4.6 5.2 2.4-5.4 5.8-9.4 10.6-12.6';
           <p id="pd-seg-pago" class="pd-detalle"></p>
         </div>
         <div class="pd-seg-acciones">
-          <a id="pd-preguntar" href="#" target="_blank" rel="noopener" class="pd-boton boton-whatsapp presionable">
+          <a id="pd-preguntar" href="#" target="_blank" rel="noopener" class="pd-boton pd-boton-oro presionable">
             <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path d={WA} /></svg>
             <span><span lang="es">Preguntar por mi pedido</span><span lang="en">Ask about my order</span></span>
           </a>
           <div class="pd-enlaces">
             <a id="pd-reenviar" href="#" target="_blank" rel="noopener" class="pd-enlace"><span lang="es">Volver a enviar</span><span lang="en">Send again</span></a>
             <button type="button" id="pd-nuevo" class="pd-enlace"><span lang="es">Nuevo pedido</span><span lang="en">New order</span></button>
-            <a href={`tel:${n.telefonoFijo}`} class="pd-enlace" aria-label={`Llamar al ${n.telefonoFijoTexto} / Call ${n.telefonoFijoTexto}`}><span lang="es">Llamar</span><span lang="en">Call</span></a>
+            <a href={`tel:${n.telefonoFijo}`} class="pd-enlace" aria-label={`Llamar al ${n.telefonoFijoTexto}`} data-aria-es={`Llamar al ${n.telefonoFijoTexto}`} data-aria-en={`Call ${n.telefonoFijoTexto}`}><span lang="es">Llamar</span><span lang="en">Call</span></a>
           </div>
         </div>
       </section>
     </div>
 
-    <!-- Deshacer (quitar o vaciar) -->
-    <div id="pd-deshacer" class="pd-deshacer" hidden>
-      <p id="pd-deshacer-texto" class="min-w-0 flex-1"></p>
-      <button type="button" id="pd-deshacer-boton" class="pd-enlace pd-enlace-claro"><span lang="es">Deshacer</span><span lang="en">Undo</span></button>
-    </div>
-
     <footer class="lista-pie">
       <div id="lista-errores" class="pd-errores" role="alert" tabindex="-1" hidden></div>
       <div class="pd-pie-botones">
-        <button type="button" id="pd-atras" class="pd-aro pd-atras presionable" aria-label="Paso anterior / Previous step">
-          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14.5 6-6 6 6 6" /></svg>
-        </button>
-        <button type="button" id="pd-seguir" class="pd-boton pd-boton-oro pd-boton-grande presionable">
-          <span id="pd-seguir-texto"></span>
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
-        </button>
-        <a id="lista-enviar" href="#" target="_blank" rel="noopener" class="pd-boton pd-boton-grande boton-whatsapp presionable" hidden>
+        <button type="button" id="pd-atras" class="pd-enlace pd-atras"><span lang="es">Volver</span><span lang="en">Back</span></button>
+        <button type="button" id="pd-seguir" class="pd-boton pd-boton-oro pd-boton-grande presionable"><span id="pd-seguir-texto"></span></button>
+        <a id="lista-enviar" href="#" target="_blank" rel="noopener" class="pd-boton pd-boton-oro pd-boton-grande presionable" hidden>
           <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><path d={WA} /></svg>
           <span><span lang="es">Enviar por WhatsApp</span><span lang="en">Send on WhatsApp</span></span>
         </a>
       </div>
     </footer>
 
+    <!-- Capa: la comanda completa (pedidos largos), una línea por platillo y por páginas -->
+    <section class="pd-capa pd-capa-todo" data-capa="todo" role="dialog" aria-modal="true" aria-labelledby="t-todo" hidden>
+      <div class="pd-capa-cabeza">
+        <h3 id="t-todo" tabindex="-1" class="pd-capa-titulo"><span lang="es">Comanda completa</span><span lang="en">Full order</span></h3>
+        <button type="button" data-cerrar-capa class="pd-x presionable" aria-label="Volver" data-aria-es="Volver" data-aria-en="Back">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d={CERRAR} /></svg>
+        </button>
+      </div>
+      <ul id="pd-todo-lineas" class="pd-todo-lineas"></ul>
+      <div class="pd-paginas" id="pd-paginas" hidden>
+        <button type="button" class="pd-enlace" data-pagina="-1"><span lang="es">Anteriores</span><span lang="en">Previous</span></button>
+        <p id="pd-paginas-texto" class="tabular-nums" aria-live="polite"></p>
+        <button type="button" class="pd-enlace" data-pagina="1"><span lang="es">Siguientes</span><span lang="en">Next</span></button>
+      </div>
+      <div class="pd-renglon-total">
+        <span class="pd-rotulo"><span lang="es">Total</span><span lang="en">Total</span></span>
+        <span class="pd-guia" aria-hidden="true"></span>
+        <span class="pd-total"><span id="pd-todo-total" class="pd-total-num"></span> <small>MXN</small></span>
+      </div>
+      <button type="button" data-cerrar-capa class="pd-boton pd-boton-oro pd-boton-grande presionable"><span lang="es">Listo</span><span lang="en">Done</span></button>
+    </section>
+
     <!-- Capa: plano de mesas (ilustrativo) -->
     <section class="pd-capa" data-capa="plano" role="dialog" aria-modal="true" aria-labelledby="t-plano" hidden>
       <div class="pd-capa-cabeza">
         <h3 id="t-plano" tabindex="-1" class="pd-capa-titulo"><span lang="es">Elige tu mesa</span><span lang="en">Pick your table</span></h3>
-        <button type="button" data-cerrar-capa class="pd-aro presionable" aria-label="Volver / Back">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M7 7l10 10M17 7 7 17" /></svg>
+        <button type="button" data-cerrar-capa class="pd-x presionable" aria-label="Volver" data-aria-es="Volver" data-aria-en="Back">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d={CERRAR} /></svg>
         </button>
       </div>
       <p class="pd-nota-plano"><span lang="es">Plano ilustrativo: mesas y disponibilidad de demostración, por confirmar con el restaurante.</span><span lang="en">Illustrative plan: tables and availability are a demo, to be confirmed by the restaurant.</span></p>
       <div class="pd-plano-caja"><PedidoPlano /></div>
-      <ul class="pd-leyenda" aria-label="Leyenda / Legend">
+      <ul class="pd-leyenda" aria-label="Leyenda" data-aria-es="Leyenda" data-aria-en="Legend">
         <li><span class="pd-ley pd-ley-libre" aria-hidden="true"></span><span lang="es">Libre</span><span lang="en">Free</span></li>
         <li><span class="pd-ley pd-ley-ocupada" aria-hidden="true"></span><span lang="es">Ocupada</span><span lang="en">Taken</span></li>
         <li><span class="pd-ley pd-ley-tuya" aria-hidden="true"></span><span lang="es">Tu mesa</span><span lang="en">Your table</span></li>
@@ -300,8 +313,8 @@ const PALOMITA = 'M4.5 12.8c2 1.4 3.4 3 4.6 5.2 2.4-5.4 5.8-9.4 10.6-12.6';
     <section class="pd-capa" data-capa="mapa" role="dialog" aria-modal="true" aria-labelledby="t-mapa" hidden>
       <div class="pd-capa-cabeza">
         <h3 id="t-mapa" tabindex="-1" class="pd-capa-titulo"><span lang="es">Marca tu puerta</span><span lang="en">Mark your door</span></h3>
-        <button type="button" data-cerrar-capa class="pd-aro presionable" aria-label="Volver / Back">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M7 7l10 10M17 7 7 17" /></svg>
+        <button type="button" data-cerrar-capa class="pd-x presionable" aria-label="Volver" data-aria-es="Volver" data-aria-en="Back">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d={CERRAR} /></svg>
         </button>
       </div>
       <div class="pd-mapa-marco">
@@ -319,6 +332,7 @@ const PALOMITA = 'M4.5 12.8c2 1.4 3.4 3 4.6 5.2 2.4-5.4 5.8-9.4 10.6-12.6';
   </div>
 </dialog>
 
+<!-- Línea de la comanda (paso 1) -->
 <template id="tpl-linea">
   <li class="linea-lista">
     <p class="ll-nombre"></p>
@@ -333,16 +347,40 @@ const PALOMITA = 'M4.5 12.8c2 1.4 3.4 3 4.6 5.2 2.4-5.4 5.8-9.4 10.6-12.6';
       <div class="ll-editar" hidden>
         <label class="sr-only"><span lang="es">Nota para cocina</span><span lang="en">Note for the kitchen</span></label>
         <input type="text" class="pd-escribir" maxlength={LIMITES.nota} enterkeyhint="done" autocomplete="off" />
+        <button type="button" data-l="nota-listo" class="pd-enlace"><span lang="es">Listo</span><span lang="en">Done</span></button>
       </div>
       <div class="pd-stepper" role="group">
         <button type="button" data-l="menos" class="presionable">
           <svg class="ll-menos" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 12h12" /></svg>
-          <svg class="ll-bote" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 7h14M10 11v6M14 11v6M7 7l1 12h8l1-12M9.5 7V5h5v2" /></svg>
+          <svg class="ll-bote" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 7h14M10 11v6M14 11v6M7 7l1 12h8l1-12M9.5 7V5h5v2" /></svg>
         </button>
         <output class="tabular-nums"></output>
         <button type="button" data-l="mas" class="presionable"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 12h12M12 6v12" /></svg></button>
       </div>
     </div>
+  </li>
+</template>
+<!-- Línea compacta (capa "comanda completa"): una sola fila por platillo -->
+<template id="tpl-linea-corta">
+  <li class="linea-lista linea-corta">
+    <button type="button" data-l="nota" class="ll-nota-boton lc-texto" aria-expanded="false">
+      <span class="ll-nombre"></span>
+      <span class="lc-sub"><span class="ll-op" hidden></span><span class="ll-nota" hidden></span><span class="ll-nota-rotulo"></span><span class="ll-estado" hidden></span></span>
+    </button>
+    <div class="ll-editar" hidden>
+      <label class="sr-only"><span lang="es">Nota para cocina</span><span lang="en">Note for the kitchen</span></label>
+      <input type="text" class="pd-escribir" maxlength={LIMITES.nota} enterkeyhint="done" autocomplete="off" />
+      <button type="button" data-l="nota-listo" class="pd-enlace"><span lang="es">Listo</span><span lang="en">Done</span></button>
+    </div>
+    <div class="pd-stepper" role="group">
+      <button type="button" data-l="menos" class="presionable">
+        <svg class="ll-menos" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 12h12" /></svg>
+        <svg class="ll-bote" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 7h14M10 11v6M14 11v6M7 7l1 12h8l1-12M9.5 7V5h5v2" /></svg>
+      </button>
+      <output class="tabular-nums"></output>
+      <button type="button" data-l="mas" class="presionable"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 12h12M12 6v12" /></svg></button>
+    </div>
+    <p class="ll-precio tabular-nums"></p>
   </li>
 </template>
 <div id="anuncio" class="sr-only" aria-live="polite"></div>

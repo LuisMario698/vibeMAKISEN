@@ -10,8 +10,9 @@ const BASE = process.env.BASE ?? 'http://localhost:4329';
 const TAMANOS = [['telefono', 390, 844], ['tablet', 820, 1180], ['computadora', 1440, 900]];
 let fallas = 0;
 const ok = (cond, msg) => { console.log(`${cond ? '  ✓' : '  ✗'} ${msg}`); if (!cond) fallas++; };
-// "Mi pedido" no se desplaza: el cuerpo del panel cabe en su alto.
-const sinScroll = (page) => page.evaluate(() => { const e = document.querySelector('#lista .lista-scroll'); return e.scrollHeight <= e.clientHeight + 1; });
+// "Mi pedido" no se desplaza: ni el cuerpo del panel ni la capa abierta (ni su lista) pasan de su alto.
+const sinScroll = (page) => page.evaluate(() => [...document.querySelectorAll('#lista .lista-scroll, #lista .pd-capa:not([hidden]), #lista .pd-capa:not([hidden]) #pd-todo-lineas')]
+  .every((e) => e.scrollHeight <= e.clientHeight + 1));
 
 const browser = await chromium.launch();
 for (const [nombre, w, h] of TAMANOS) {
@@ -80,9 +81,10 @@ for (const [nombre, w, h] of TAMANOS) {
   ok((await page.locator('.linea-lista').nth(1).locator('output').textContent()) === '1', 'el stepper resta');
   ok(await page.locator('.linea-lista').nth(1).evaluate((li) => li.classList.contains('uno')), 'con 1 pieza el «−» se vuelve bote');
   await page.locator('.linea-lista').nth(1).locator('[data-l="menos"]').click();
-  await page.waitForSelector('#pd-deshacer:not([hidden])');
+  await page.waitForSelector('.linea-quitada [data-deshacer]');
   ok(await page.locator('.linea-lista').count() === 1, 'quitar una línea (bote en el stepper)');
-  await page.locator('#pd-deshacer-boton').click();
+  ok(await page.locator('#pd-seguir').isVisible() && await page.evaluate(() => { const b = document.querySelector('#pd-seguir').getBoundingClientRect(); const e = document.elementFromPoint(b.x + b.width / 2, b.y + b.height / 2); return !!e?.closest('#pd-seguir'); }), '«Deshacer» queda en el renglón y no tapa «Continuar»');
+  await page.locator('.linea-quitada [data-deshacer]').click();
   await page.waitForTimeout(300);
   ok(await page.locator('.linea-lista').count() === 2, '«Deshacer» la regresa');
   await page.locator('.linea-lista').nth(1).locator('[data-l="nota"]').click();
@@ -108,10 +110,11 @@ for (const [nombre, w, h] of TAMANOS) {
   ok((await page.locator('#pd-plano-listo').textContent())?.includes('mesa 5'), 'botón «Usar mesa 5»');
   await page.locator('#pd-plano-listo').click();
   await page.waitForSelector('[data-capa="plano"]', { state: 'hidden' });
-  ok((await page.locator('#pd-mesa-elegida').textContent())?.includes('Mesa 5') && (await page.inputValue('#lista-mesa')) === '5', 'resumen de la mesa elegida');
+  ok((await page.locator('#pd-mesa-elegida').textContent())?.includes('personas') && (await page.inputValue('#lista-mesa')) === '5', 'resumen de la mesa elegida');
   await page.locator('#pd-seguir').click();
   await page.waitForTimeout(300);
   ok(await sinScroll(page), 'paso 3 sin desplazamiento');
+  ok((await page.locator('.pd-renglon-entrega').textContent())?.includes('Mesa 5'), 'paso 3: la entrega dice «Mesa 5»');
   // Sin forma de pago no se envía.
   await page.locator('#lista-enviar').click();
   ok(await page.locator('#err-pago').isVisible(), 'pide elegir efectivo o tarjeta');
@@ -122,7 +125,7 @@ for (const [nombre, w, h] of TAMANOS) {
   await page.locator('#lista-enviar').click();
   ok(await page.locator('#err-paga').isVisible(), 'un monto menor al total no se acepta');
   await page.fill('#pd-paga-otro', '1000');
-  ok(await page.locator('#pd-cambio').isVisible(), 'muestra el cambio');
+  ok(await page.locator('#pd-cambio-otro').isVisible(), 'muestra el cambio en el renglón del monto');
   let t = await texto();
   ok(t.includes('Pago: efectivo, paga con $1,000 (cambio: $'), 'mensaje con efectivo y cambio');
   await page.locator('label.pago:has(input[value="tarjeta"])').click();
@@ -140,9 +143,16 @@ for (const [nombre, w, h] of TAMANOS) {
   if (await page.locator('#lista-hora optgroup option').count()) await page.selectOption('#lista-hora', { index: 1 });
   await page.locator('#pd-seguir').click();
   await page.waitForTimeout(300);
+  ok((await page.locator('.pd-renglon-entrega').textContent())?.includes('Para llevar · Ana'), 'paso 3: la entrega muestra el nombre recién escrito');
+  await page.locator('#pd-atras').click();
+  await page.waitForTimeout(300);
+  await page.fill('#lista-nombre', 'Beto');
+  await page.locator('#pd-seguir').click();
+  await page.waitForTimeout(300);
+  ok((await page.locator('.pd-renglon-entrega').textContent())?.includes('Para llevar · Beto'), 'paso 3: la entrega se actualiza al cambiar el nombre');
   await page.locator('label.pago:has(input[value="efectivo"])').click();
   t = await texto();
-  ok(t.includes('Para llevar: Ana') && t.includes('Pago: efectivo'), 'mensaje para llevar con nombre, hora y efectivo');
+  ok(t.includes('Para llevar: Beto') && t.includes('Pago: efectivo'), 'mensaje para llevar con nombre, hora y efectivo');
 
   // A domicilio: dirección obligatoria y mapa.
   await page.locator('#pd-atras').click();
@@ -168,6 +178,7 @@ for (const [nombre, w, h] of TAMANOS) {
   ok(await page.locator('#pd-ubic-resumen.ok').count() === 1, 'el renglón del mapa dice que el punto quedó fijado');
   await page.locator('#pd-seguir').click();
   await page.waitForTimeout(300);
+  ok((await page.locator('.pd-renglon-entrega').textContent())?.includes('Calle 13 #45, Centro'), 'paso 3: la entrega muestra la dirección escrita');
   t = await texto();
   ok(t.includes('Envío: lo confirma el restaurante.'), 'mensaje a domicilio con aviso de envío');
   ok(/Ubicación: https:\/\/maps\.google\.com\/\?q=-?\d+\.\d{6},-?\d+\.\d{6}/.test(t), 'mensaje con el enlace de ubicación (6 decimales)');
@@ -231,11 +242,21 @@ for (const [nombre, w, h] of TAMANOS) {
   await page.locator('[data-abrir-lista]').first().click();
   await page.waitForSelector('#lista[open]');
   await page.waitForTimeout(400);
-  ok(await sinScroll(page) && await page.locator('#pd-ver-todo').isVisible() && await page.locator('.linea-lista:visible').count() < 12, '12 líneas: sin desplazamiento y con «ver todo»');
+  ok(await sinScroll(page) && await page.locator('#pd-ver-todo').isVisible() && await page.locator('#lista-lineas .linea-lista:visible').count() < 12, '12 líneas: sin desplazamiento y con «ver todo»');
   await page.locator('#pd-ver-todo').click();
-  ok(await page.locator('.linea-lista:not([hidden])').count() === 12 && await page.evaluate(() => document.querySelector('#lista').classList.contains('todo')), '«ver todo» muestra las 12 líneas en su capa');
+  await page.waitForSelector('[data-capa="todo"]:not([hidden])');
+  await page.waitForTimeout(300);
+  const filas = await page.locator('#pd-todo-lineas .linea-corta').count();
+  ok(filas === 12 && await sinScroll(page), '«ver todo» abre la comanda completa en su capa, sin desplazamiento');
+  const visibles = await page.locator('#pd-todo-lineas .linea-corta:visible').count();
+  if (visibles < 12) {
+    await page.locator('[data-pagina="1"]').click();
+    await page.waitForTimeout(200);
+    ok((await page.locator('#pd-paginas-texto').textContent())?.includes('de 12') && await page.locator('#pd-todo-lineas .linea-corta:visible').count() > 0, 'la capa pasa de página («… de 12»)');
+  } else ok(true, 'las 12 líneas caben en la capa');
   await page.keyboard.press('Escape');
-  ok(await page.evaluate(() => !document.querySelector('#lista').classList.contains('todo') && document.querySelector('#lista').open), 'Escape cierra «ver todo» sin cerrar el panel');
+  await page.waitForTimeout(300);
+  ok(await page.evaluate(() => document.querySelector('[data-capa="todo"]').hidden && document.querySelector('#lista').open), 'Escape cierra «ver todo» sin cerrar el panel');
   await page.keyboard.press('Escape');
   await page.waitForTimeout(400);
   await page.locator('#entradas').scrollIntoViewIfNeeded();
@@ -279,17 +300,33 @@ for (const [nombre, w, h] of TAMANOS) {
   ok(errores.length === 0, `sin errores de consola${errores.length ? ': ' + errores.join(' | ') : ''}`);
   await ctx.close();
 
-  // Ubicación permitida.
+  // Un borrador «para llevar» guardado no le gana al QR de la mesa recién escaneado.
+  ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' });
+  ({ page, errores } = await preparar(ctx, BASE));
+  await page.evaluate((l) => localStorage.setItem('makizen-lista', JSON.stringify({ ...l, modo: 'llevar', t: Date.now() })), base);
+  await page.goto(`${BASE}/?src=qr-mesa-7`, { waitUntil: 'networkidle' });
+  await page.locator('[data-abrir-lista]').first().click();
+  await page.waitForSelector('#lista[open]');
+  await page.locator('#pd-seguir').click();
+  ok(await page.locator('input[name="modo"][value="mesa"]').isChecked() && (await page.inputValue('#lista-mesa')) === '7', 'QR de mesa con borrador «para llevar»: queda en mesa 7');
+  await ctx.close();
+
+  // Ubicación permitida. Sin QR la modalidad no viene marcada: hay que elegirla.
   ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, serviceWorkers: 'block', permissions: ['geolocation'], geolocation: { latitude: 31.3201234, longitude: -113.5409876 } });
   ({ page, errores } = await preparar(ctx, BASE));
   ctx.on('page', (p) => p.close().catch(() => {}));
   await page.locator('[data-abrir-lista]').first().click();
   await page.waitForSelector('#lista[open]');
   await page.locator('#pd-seguir').click();
+  ok((await page.locator('input[name="modo"]:checked').count()) === 0 && await page.locator('#t-paso2').isVisible(), 'sin QR: la modalidad no viene marcada y la pregunta se ve');
+  await page.locator('#pd-seguir').click({ force: true });
+  ok(await page.locator('#err-modo').isVisible() && await page.locator('[data-vista="2"]').isVisible(), 'sin modalidad no avanza y lo pide junto a las opciones');
+  await page.locator('label.modo:has(input[value="domicilio"])').click();
   await page.waitForSelector('#pd-mapa.leaflet-container', { timeout: 8000 }).catch(() => {});
   await page.locator('#pd-mi-ubicacion').click();
   await page.waitForSelector('#pd-mapa-estado.ok', { timeout: 5000 }).catch(() => {});
   ok(await page.locator('#pd-mapa .pd-icono-pin').count() === 1, '«Usar mi ubicación» coloca el pin');
+  ok((await page.locator('#pd-ubic-resumen').textContent())?.includes('Tu ubicación ✓') && await page.evaluate(() => document.activeElement?.id === 'pd-mi-ubicacion'), 'confirma que usó la ubicación del teléfono y conserva el foco');
   await page.locator('#pd-seguir').click();
   await page.locator('label.pago:has(input[value="efectivo"])').click();
   await page.locator('label.pd-chip:has(input[value="exacto"])').click();
@@ -314,6 +351,7 @@ for (const [nombre, w, h] of TAMANOS) {
   await page.locator('[data-abrir-lista]').first().click();
   await page.waitForSelector('#lista[open]');
   await page.locator('#pd-seguir').click();
+  await page.locator('label.modo:has(input[value="domicilio"])').click();
   await page.waitForSelector('#pd-mapa.leaflet-container', { timeout: 8000 }).catch(() => {});
   await page.evaluate(() => { navigator.geolocation.getCurrentPosition = (_ok, mal) => mal({ code: 1, message: 'denied', PERMISSION_DENIED: 1, POSITION_UNAVAILABLE: 2, TIMEOUT: 3 }); });
   await page.locator('#pd-mi-ubicacion').click();
@@ -321,6 +359,35 @@ for (const [nombre, w, h] of TAMANOS) {
   await page.locator('#pd-seguir').click();
   ok(await page.locator('[data-vista="3"]').isVisible(), 'sin ubicación igual se puede seguir (con movimiento reducido)');
   ok(errores.length === 0, `sin errores de consola${errores.length ? ': ' + errores.join(' | ') : ''}`);
+  await ctx.close();
+}
+
+// iPhone SE (320×568) en inglés: el paso 3 con «Other» y el monto sigue sin desplazarse.
+{
+  console.log('\niPhone SE en inglés');
+  const ctx = await browser.newContext({ viewport: { width: 320, height: 568 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, serviceWorkers: 'block' });
+  const page = await ctx.newPage();
+  await page.goto(`${BASE}/en/`, { waitUntil: 'networkidle' });
+  await page.evaluate(() => localStorage.setItem('makizen-lista', JSON.stringify({ v: 1, t: Date.now(), modo: 'llevar', nombre: 'John', hora: 'pronto', direccion: '', referencias: '', lineas: [{ id: 'sopa-vietnamita', op: 'camaron', n: 2, nota: 'no onion please' }, { id: 'aguachile-mixto', n: 1 }, { id: 'pacifico-clara', n: 1 }] })));
+  await page.reload({ waitUntil: 'networkidle' });
+  await page.locator('[data-abrir-lista]').first().click();
+  await page.waitForSelector('#lista[open]');
+  await page.waitForTimeout(400);
+  ok(await sinScroll(page), 'SE · paso 1 (3 líneas) sin desplazamiento');
+  await page.locator('#pd-seguir').click();
+  await page.locator('label.modo:has(input[value="domicilio"])').click();
+  await page.fill('#lista-direccion', '13th St #45, Downtown');
+  ok(await sinScroll(page), 'SE · paso 2 a domicilio sin desplazamiento');
+  await page.locator('label.modo:has(input[value="llevar"])').click();
+  ok(await sinScroll(page), 'SE · paso 2 para llevar sin desplazamiento');
+  await page.locator('#pd-seguir').click();
+  await page.waitForTimeout(300);
+  await page.locator('label.pago:has(input[value="efectivo"])').click();
+  await page.locator('label.pd-chip:has(input[value="otro"])').click();
+  await page.fill('#pd-paga-otro', '2000');
+  await page.locator('#pd-paga-otro').blur();
+  await page.waitForTimeout(200);
+  ok(await sinScroll(page) && await page.locator('#pd-cambio-otro').isVisible(), 'SE · paso 3 con «Other» y cambio sin desplazamiento');
   await ctx.close();
 }
 

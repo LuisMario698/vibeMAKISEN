@@ -43,12 +43,11 @@ export function pintarHoras(o: {
 /** Lectura bajo el renglón: "Hoy · en 1 h 5 min" o, si ya no hay horas, por qué. */
 export function lectura(o: { lectura: HTMLElement; actual: string; ahora: Ahora; ranuras: string[]; sinHoras?: Txt | null }) {
   if (o.sinHoras) {
-    ponerBi(o.lectura, `Hoy ya no hay horas para recoger (${o.sinHoras.es.toLowerCase()}). El restaurante te confirma por WhatsApp.`,
-      `No pickup times left today (${o.sinHoras.en.toLowerCase()}). The restaurant will confirm on WhatsApp.`);
+    ponerBi(o.lectura, 'Ya no hay horas para hoy; el restaurante te confirma por WhatsApp.', 'No pickup times left today; the restaurant will confirm on WhatsApp.');
     return;
   }
   if (o.actual === 'pronto' || !o.ranuras.includes(o.actual)) {
-    ponerBi(o.lectura, 'Hoy, listo en unos 25 min. Te avisamos por WhatsApp.', 'Today, ready in about 25 min. We’ll message you on WhatsApp.');
+    ponerBi(o.lectura, 'Hoy, listo en unos 25 min.', 'Today, ready in about 25 min.');
     return;
   }
   const f = falta(Math.max(0, minutos(o.actual) - o.ahora.min));
