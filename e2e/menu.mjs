@@ -43,7 +43,7 @@ for (const [nombre, w, h] of TAMANOS) {
   await page.waitForTimeout(500);
   const guardada = await page.evaluate(() => JSON.parse(localStorage.getItem('makizen-lista') ?? 'null'));
   ok(guardada?.v === 1 && guardada.lineas[0]?.n === 2 && guardada.lineas[0]?.op === 'camaron', 'lista guardada: 2 sopas de camarón');
-  ok((await page.locator('.isla-lista .contador').textContent()) === '2', 'la isla cuenta 2');
+  ok((await page.locator('#nav .nav-contador').textContent()) === '2', 'Mi pedido (arriba) cuenta 2');
   ok((await page.locator('#morfo:not([hidden]), .vuelo').count()) === 0, 'no quedan capas de animación');
   ok(!(await page.evaluate(() => document.documentElement.classList.contains('bloqueo'))), 'la página no queda bloqueada');
 
@@ -60,7 +60,7 @@ for (const [nombre, w, h] of TAMANOS) {
   await page.locator('#cervezas').scrollIntoViewIfNeeded();
   await page.locator('[data-agregar]').first().click();
   await page.waitForTimeout(200);
-  ok((await page.locator('.isla-lista .contador').textContent()) === '3', 'bebida agregada con un toque');
+  ok((await page.locator('#nav .nav-contador').textContent()) === '3', 'bebida agregada con un toque');
 
   // Mi pedido: paso 1 → 2 (entrega). Mesa 7 del QR preseleccionada en el plano.
   ctx.on('page', (p) => p.close().catch(() => {}));
