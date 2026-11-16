@@ -1,10 +1,11 @@
-// Interfaz de "Mi pedido" (antes "Mi lista"): tres pasos (pedido, entrega, pago),
-// comanda por WhatsApp y vista de seguimiento. La lógica (agregar, sanear, validar,
-// mensaje, pago, folio, etapas) está en src/lib/; aquí solo se guarda, se pinta y se
-// conecta con el DOM. Nunca se usa innerHTML con texto del cliente.
+// Interfaz de "Mi pedido": una comanda en tres pasos (pedido, entrega, pago), envío por
+// WhatsApp y vista de seguimiento. Ningún paso se desplaza: si el pedido es largo la comanda
+// se resume ("y 3 más · ver todo") y el plano de mesas y el mapa se abren en su propia capa.
+// La lógica (agregar, sanear, validar, mensaje, pago, folio, etapas) está en src/lib/; aquí
+// solo se guarda, se pinta y se conecta con el DOM. Nunca se usa innerHTML con texto del cliente.
 import { ahoraEn, estadoLocal, h12, minutos, ranurasHoy } from '../lib/horario';
 import { leerMesa, sinMesa } from '../lib/mesa';
-import { cambio, dondeTerminal, montosSugeridos, montoValido, sanearPaga, type FormaPago } from '../lib/pago';
+import { cambio, montosSugeridos, montoValido, sanearPaga, type FormaPago } from '../lib/pago';
 import {
   agregar as agregarLinea, cambiar, cambiarNota, clave, enlaceWhatsApp, LIMITES, MENSAJES_ERROR, PASO_DE, piezas, restaurar,
   sanear, subtotal, validar, vigentes, type Aviso, type Campo, type Catalogo, type ErrorAgregar, type Errores, type Linea, type Lista, type Modo,
@@ -13,7 +14,7 @@ import { estadoMesa, mesaDePlano, mesaValida, puedeElegir } from '../lib/plano';
 import { precio, usd } from '../lib/precios';
 import { crearFolio, esFolio, HORAS_PEDIDO, sanearPedido, type PedidoEnviado } from '../lib/seguimiento';
 import { distanciaKm, lejos, redondear, type Coordenada } from '../lib/ubicacion';
-import { $, $$, anunciar, avisar, datos, guardar, html, idioma, miniRecorte, ponerBi, reducir } from './comun';
+import { $, $$, anunciar, avisar, datos, guardar, html, idioma, ponerBi, reducir } from './comun';
 import type { Agregado } from './hoja';
 import { lectura as lecturaHora, pintarHoras } from './pedido/horas';
 import type { Mapa } from './pedido/mapa';
@@ -32,15 +33,10 @@ type Vista = Paso | 'seguimiento';
 const CAMPOS_ENTREGA = ['mesa', 'nombre', 'hora', 'direccion'] as const;
 
 const azar = () => { try { return crypto.getRandomValues(new Uint32Array(1))[0]! / 2 ** 32; } catch { return Math.random(); } };
-const ICONOS_ENTREGA: Record<Modo, string> = {
-  mesa: 'M5 11h14M7 11v8M17 11v8M9 7.5h6M12 7.5V11M4 21h4M16 21h4',
-  llevar: 'M5.5 8.5h13l-1 11.5h-11zM9 8.5V7a3 3 0 0 1 6 0v1.5M9.5 13.5h5',
-  domicilio: 'M6 18.5a2.2 2.2 0 1 0 0-.1M17.5 18.5a2.2 2.2 0 1 0 0-.1M8.2 18.5h7.1l2.1-5.5h-4.6l-1.6 3.4H4.4M16.3 13l-1.1-4h-2.4M3 8.5h6V13H3z',
-};
+type Capa = 'plano' | 'mapa';
 
 export function crearLista(o: { alCambiar: (piezas: number, total: number) => void }) {
   const catalogo: Catalogo = new Map(datos.platillos.map((p) => [p.id, { nombre: p.nombre, precio: p.precio, agotado: p.agotado, opciones: p.opciones }]));
-  const porId = new Map(datos.platillos.map((p) => [p.id, p]));
   const dlg = $<HTMLDialogElement>('#lista')!;
   const panel = $('.lista-panel', dlg)!;
   const scroll = $('.lista-scroll', dlg)!;
@@ -56,14 +52,20 @@ export function crearLista(o: { alCambiar: (piezas: number, total: number) => vo
   const seguir = $<HTMLButtonElement>('#pd-seguir', dlg)!;
   const atras = $<HTMLButtonElement>('#pd-atras', dlg)!;
   const pie = $('.lista-pie', dlg)!;
+  const cabeza = $('.lista-cabeza', dlg)!;
   const tpl = $<HTMLTemplateElement>('#tpl-linea')!;
+  const folioEl = $('#pd-folio', dlg)!;
+  const verTodo = $<HTMLButtonElement>('#pd-ver-todo', dlg)!;
+  const totalPago = $('#pd-total-pago', dlg)!;
+  const ubicResumen = $('#pd-ubic-resumen', dlg)!;
+  const planoListo = $<HTMLButtonElement>('#pd-plano-listo', dlg)!;
   const bandaEnviado = $<HTMLButtonElement>('#pd-hay-enviado', dlg)!;
   const barraDeshacer = $('#pd-deshacer', dlg)!;
   const inp = {
     mesa: $<HTMLInputElement>('#lista-mesa', dlg)!,
     nombre: $<HTMLInputElement>('#lista-nombre', dlg)!,
-    hora: $('#lista-hora', dlg)!,
-    direccion: $<HTMLTextAreaElement>('#lista-direccion', dlg)!,
+    hora: $<HTMLSelectElement>('#lista-hora', dlg)!,
+    direccion: $<HTMLInputElement>('#lista-direccion', dlg)!,
     referencias: $<HTMLInputElement>('#lista-referencias', dlg)!,
     otro: $<HTMLInputElement>('#pd-paga-otro', dlg)!,
   };
@@ -117,15 +119,6 @@ export function crearLista(o: { alCambiar: (piezas: number, total: number) => vo
     return [MENSAJES_ERROR[c].es, MENSAJES_ERROR[c].en];
   };
 
-  /* ── Miniatura de cada línea: recorte de la cartilla, foto real o icono de su categoría ── */
-  function miniatura(img: HTMLImageElement, id: string) {
-    const p = porId.get(id);
-    const marco = img.parentElement!;
-    if (p?.foto && datos.fotos[p.foto]) { img.src = miniRecorte(p.foto); marco.dataset.modo = 'recorte'; }
-    else if (datos.reales[id]) { img.src = datos.reales[id]!.src; marco.dataset.modo = 'foto'; }
-    else { img.src = (p && datos.iconos[p.catId]) || '/brand/isotipo.svg'; marco.dataset.modo = 'icono'; }
-  }
-
   /* ── Pintar ── */
   function textoAviso(a: Aviso): [string, string] {
     const c = catalogo.get(a.id);
@@ -156,12 +149,14 @@ export function crearLista(o: { alCambiar: (piezas: number, total: number) => vo
       li.dataset.k = clave(l);
       li.style.setProperty('--k', String(i));
       li.classList.toggle('agotada', c.agotado);
-      miniatura($<HTMLImageElement>('.ll-foto img', li)!, l.id);
+      li.classList.toggle('uno', l.n <= 1);
       ponerBi($('.ll-nombre', li)!, c.nombre.es, c.nombre.en);
       const op = l.op ? c.opciones?.valores.find((v) => v.id === l.op) : undefined;
       if (op) { const e = $('.ll-op', li)!; e.hidden = false; ponerBi(e, op.nombre.es, op.nombre.en); }
+      const bNota = $<HTMLButtonElement>('[data-l="nota"]', li)!;
       if (l.nota) { const e = $('.ll-nota', li)!; e.hidden = false; e.textContent = `“${l.nota}”`; }
-      if (c.agotado) { const e = $('.ll-estado', li)!; e.hidden = false; ponerBi(e, 'Agotado hoy · no entra al pedido', 'Sold out today · not included'); }
+      ponerBi($('.ll-nota-rotulo', li)!, l.nota ? 'Editar nota' : '+ Nota', l.nota ? 'Edit note' : '+ Note');
+      if (c.agotado) { const e = $('.ll-estado', li)!; e.hidden = false; bNota.hidden = true; ponerBi(e, 'Agotado hoy · no entra', 'Sold out today · not included'); }
       $('.ll-precio', li)!.textContent = precio(c.precio * l.n);
       $('output', li)!.textContent = String(l.n);
       const nombre = c.nombre[idioma()];
@@ -172,22 +167,50 @@ export function crearLista(o: { alCambiar: (piezas: number, total: number) => vo
       const mas = $<HTMLButtonElement>('[data-l="mas"]', li)!;
       mas.setAttribute('aria-label', ing ? 'One more' : 'Uno más');
       mas.disabled = l.n >= LIMITES.cantidad || c.agotado;
-      $('[data-l="quitar"]', li)!.setAttribute('aria-label', ing ? `Remove ${nombre}` : `Quitar ${nombre}`);
-      const bNota = $<HTMLButtonElement>('[data-l="nota"]', li)!;
-      ponerBi($('.ll-nota-rotulo', li)!, l.nota ? 'Editar nota' : 'Agregar nota', l.nota ? 'Edit note' : 'Add note');
-      bNota.setAttribute('aria-label', `${l.nota ? (ing ? 'Edit note for' : 'Editar nota de') : (ing ? 'Add a note for' : 'Agregar nota a')} ${nombre}`);
+      bNota.setAttribute('aria-label', `${l.nota ? (ing ? `Edit note “${l.nota}” for` : `Editar nota «${l.nota}» de`) : (ing ? 'Add a note for' : 'Agregar nota a')} ${nombre}`);
       const editor = $('.ll-editar', li)!;
       const campoNota = $<HTMLInputElement>('input', editor)!;
       campoNota.id = `ll-nota-${i}`;
       $('label', editor)!.setAttribute('for', campoNota.id);
-      campoNota.placeholder = ing ? 'E.g. no onion, sauce on the side' : 'Ej. sin cebolla, salsa aparte';
-      if (notaAbierta === li.dataset.k) { editor.hidden = false; campoNota.value = l.nota ?? ''; bNota.setAttribute('aria-expanded', 'true'); }
+      campoNota.placeholder = ing ? 'E.g. no onion…' : 'Ej. sin cebolla…';
+      if (notaAbierta === li.dataset.k) { editor.hidden = false; $('.ll-meta', li)!.hidden = true; campoNota.value = l.nota ?? ''; bNota.setAttribute('aria-expanded', 'true'); }
       frag.append(li);
     });
     ul.replaceChildren(frag);
   }
 
+  /** Sin desplazamiento: si la comanda no cabe, se ocultan las últimas líneas y aparece
+   *  "y N más · ver todo", que abre la comanda completa en su propia capa (solo ahí se desplaza). */
+  function ajustarLineas() {
+    const items = [...ul.children] as HTMLElement[];
+    const todo = dlg.classList.contains('todo');
+    for (const li of items) li.hidden = false;
+    let ocultas = 0;
+    const rotular = () => {
+      verTodo.hidden = !todo && ocultas === 0;
+      verTodo.setAttribute('aria-expanded', String(todo));
+      if (todo) ponerBi(verTodo, 'Ver menos', 'Show less');
+      else ponerBi(verTodo, `y ${ocultas} más · ver todo`, `and ${ocultas} more · see all`);
+    };
+    rotular();
+    if (todo || !dlg.open || vista !== 1 || dlg.classList.contains('teclado') || items.length < 2) return;
+    const sobra = () => scroll.scrollHeight > scroll.clientHeight + 1;
+    for (let k = items.length - 1; k >= 1 && sobra(); k--) {
+      if (items[k]!.contains(document.activeElement)) continue;
+      items[k]!.hidden = true; ocultas++;
+      rotular();
+    }
+  }
+  function verTodoAlternar(abrir: boolean) {
+    dlg.classList.toggle('todo', abrir);
+    ajustarLineas();
+    if (abrir) { ul.scrollTop = 0; entrarVista(ul, 1); }
+    verTodo.focus({ preventScroll: true });
+  }
+  verTodo.addEventListener('click', () => verTodoAlternar(!dlg.classList.contains('todo')));
+
   /** Hora para llevar: ranuras de hoy; una hora elegida que venció se queda visible para explicar el error. */
+  let horasSin: ReturnType<typeof estadoLocal>['texto'] | null = null;
   function pintarHora(conservar = false) {
     const r = ranuras();
     const ahora = ahoraEn();
@@ -197,29 +220,24 @@ export function crearLista(o: { alCambiar: (piezas: number, total: number) => vo
     if (!vigente && conservar && /^\d{2}:\d{2}$/.test(actual)) vencida = actual;
     else if (!vigente) lista = { ...lista, hora: 'pronto' };
     const est = estadoLocal(datos.horario, ahora);
-    pintarHoras({ cont: inp.hora, lectura: $('#pd-hora-lectura', dlg)!, ranuras: r, actual: lista.hora, ahora, vencida, sinHoras: r.length ? null : est.texto });
+    horasSin = r.length ? null : est.texto;
+    pintarHoras({ cont: inp.hora, lectura: $('#pd-hora-lectura', dlg)!, ranuras: r, actual: lista.hora, ahora, vencida, sinHoras: horasSin });
   }
 
   function pintarMesa() {
     planoUI.marcar(mesa, mesaDeQR);
-    if (document.activeElement !== inp.mesa) inp.mesa.value = mesa && !mesaDePlano(plano, mesa) ? String(mesa) : '';
-    const chip = $('#pd-mesa-elegida', dlg)!;
+    if (document.activeElement !== inp.mesa) inp.mesa.value = mesa ? String(mesa) : '';
+    const det = $('#pd-mesa-elegida', dlg)!;
     const ayuda = $('#ayuda-mesa', dlg)!;
     const m = mesa ? mesaDePlano(plano, mesa) : undefined;
-    chip.hidden = !mesa;
-    if (mesa) {
-      const fuerte = document.createElement('strong');
-      ponerBi(fuerte, `Mesa ${mesa}`, `Table ${mesa}`);
-      const det = document.createElement('span');
-      if (m) ponerBi(det, `${m.personas} personas · ${m.zona.es}`, `Seats ${m.personas} · ${m.zona.en}`);
-      else ponerBi(det, 'Fuera del plano ilustrativo', 'Not on the illustrative plan');
-      const parts: Node[] = [fuerte, det];
-      if (mesaDeQR) { const q = document.createElement('span'); q.className = 'pd-insignia'; ponerBi(q, 'Desde el QR', 'From the QR'); parts.push(q); }
-      chip.replaceChildren(...parts);
-    }
+    const qr = mesaDeQR ? [' · desde el QR', ' · from the QR'] : ['', ''];
+    if (!mesa) ponerBi(det, 'Escribe su número o elígela en el plano.', 'Type its number or pick it on the plan.');
+    else if (m) ponerBi(det, `Mesa ${mesa} · ${m.zona.es} · ${m.personas} personas${qr[0]}`, `Table ${mesa} · ${m.zona.en} · seats ${m.personas}${qr[1]}`);
+    else det.replaceChildren();
     ayuda.hidden = !(mesa && !m);
     if (mesa && !m) ponerBi(ayuda, mesaDeQR ? `La mesa ${mesa} no aparece en el plano ilustrativo; la tomamos del QR de tu mesa.` : `La mesa ${mesa} no aparece en el plano ilustrativo; el restaurante la confirma.`,
       mesaDeQR ? `Table ${mesa} isn't on the illustrative plan; we took it from your table's QR.` : `Table ${mesa} isn't on the illustrative plan; the restaurant will confirm it.`);
+    if (mesa) ponerBi(planoListo, `Usar mesa ${mesa}`, `Use table ${mesa}`); else ponerBi(planoListo, 'Volver', 'Back');
   }
 
   function pintarFormulario() {
@@ -236,7 +254,7 @@ export function crearLista(o: { alCambiar: (piezas: number, total: number) => vo
     const est = estadoLocal(datos.horario, ahoraEn());
     const cerrado = $('#lista-cerrado', form)!;
     cerrado.hidden = est.abierto;
-    if (!est.abierto) ponerBi(cerrado, `Ahora estamos cerrados (${est.texto.es.replace('Cerrado · ', '')}). Puedes mandar tu pedido y te contestamos al abrir.`, `We're closed right now (${est.texto.en.replace('Closed · ', '')}). You can send your order and we'll reply when we open.`);
+    if (!est.abierto) ponerBi(cerrado, `Cerrado ahora (${est.texto.es.replace('Cerrado · ', '')}). Puedes mandarlo y te contestan al abrir.`, `Closed now (${est.texto.en.replace('Closed · ', '')}). Send it and they'll reply when they open.`);
     pintarUbicacion();
     $$<HTMLInputElement | HTMLTextAreaElement>('[data-ph-es]', dlg).forEach((e) => (e.placeholder = en() ? e.dataset.phEn! : e.dataset.phEs!));
   }
@@ -244,28 +262,29 @@ export function crearLista(o: { alCambiar: (piezas: number, total: number) => vo
   /* ── Paso 3: resumen de la entrega y pago ── */
   function pintarPago() {
     const total = subtotal(lista, catalogo);
+    totalPago.textContent = precio(total);
     $$<HTMLInputElement>('input[name="pago"]', dlg).forEach((r) => (r.checked = r.value === lista.pago));
-    const dondeEs = dondeTerminal(lista.modo, 'es'); const dondeEn = dondeTerminal(lista.modo, 'en');
-    ponerBi($('[data-sub-tarjeta]', dlg)!, dondeEs[0]!.toUpperCase() + dondeEs.slice(1), dondeEn[0]!.toUpperCase() + dondeEn.slice(1));
     const efe = $('#pd-efectivo', dlg)!; const tar = $('#pd-tarjeta', dlg)!;
     efe.hidden = lista.pago !== 'efectivo';
     tar.hidden = lista.pago !== 'tarjeta';
-    const tt = { mesa: ['Llevamos la terminal a tu mesa cuando pidas la cuenta.', 'We bring the card terminal to your table when you ask for the check.'],
-      llevar: ['Pagas con tarjeta en caja al recoger tu pedido.', 'Pay by card at the counter when you pick it up.'],
-      domicilio: ['El repartidor lleva la terminal para cobrar al entregar.', 'The driver brings a card terminal and charges on delivery.'] }[lista.modo];
+    const tt = { mesa: ['Te llevamos la terminal a la mesa al pedir la cuenta.', 'We bring the card terminal when you ask for the check.'],
+      llevar: ['Pagas con tarjeta en caja al recoger.', 'Pay by card at the counter when you pick it up.'],
+      domicilio: ['El repartidor lleva terminal y cobra al entregar.', 'The driver brings a card terminal and charges on delivery.'] }[lista.modo];
     ponerBi($('#pd-tarjeta-texto', dlg)!, tt[0]!, tt[1]!);
 
-    // ¿Con cuánto pagas? Exacto, montos redondos y Otro.
+    // ¿Con cuánto pagas? Exacto, montos redondos y Otro, como billetes en una tira.
     const sugeridos = montosSugeridos(total);
     const esOtro = typeof lista.paga === 'number' && !sugeridos.includes(lista.paga);
-    const chips = $('#pd-montos', dlg)!;
-    const opciones: [string, string, string][] = [['exacto', 'Exacto', 'Exact'], ...sugeridos.map((m) => [String(m), precio(m), precio(m)] as [string, string, string]), ['otro', 'Otro monto', 'Other amount']];
-    chips.replaceChildren(...opciones.map(([v, es, ing]) => {
+    const tira = $('#pd-montos', dlg)!;
+    const opciones: [string, string, string][] = [['exacto', 'Exacto', 'Exact'], ...sugeridos.map((m) => [String(m), precio(m), precio(m)] as [string, string, string]), ['otro', 'Otro', 'Other']];
+    tira.style.setProperty('--n', String(opciones.length));
+    tira.replaceChildren(...opciones.map(([v, es, ing]) => {
       const l = document.createElement('label');
-      l.className = 'pd-chip presionable';
+      l.className = 'pd-chip';
       const r = document.createElement('input');
       r.type = 'radio'; r.name = 'paga'; r.value = v; r.className = 'sr-only';
-      r.checked = v === 'otro' ? esOtro : v === String(lista.paga);
+      r.checked = v === 'otro' ? esOtro || (otroAbierto && lista.paga === null) : v === String(lista.paga);
+      if (v === 'otro') r.setAttribute('aria-label', en() ? 'Other amount' : 'Otro monto');
       const s = document.createElement('span'); ponerBi(s, es, ing);
       l.append(r, s);
       return l;
@@ -273,32 +292,32 @@ export function crearLista(o: { alCambiar: (piezas: number, total: number) => vo
     const otro = $('#pd-otro', dlg)!;
     otro.hidden = !esOtro && !otroAbierto;
     if (document.activeElement !== inp.otro) inp.otro.value = typeof lista.paga === 'number' && esOtro ? String(lista.paga) : inp.otro.value;
-    const c = cambio(lista.paga, total);
-    const cEl = $('#pd-cambio', dlg)!;
-    cEl.hidden = !c;
-    if (c) {
-      const f = document.createElement('strong'); f.textContent = precio(c);
-      const a = document.createElement('span'); ponerBi(a, lista.modo === 'domicilio' ? 'Cambio aproximado (sin envío): ' : 'Tu cambio: ', lista.modo === 'domicilio' ? 'Approx. change (before delivery fee): ' : 'Your change: ');
-      cEl.replaceChildren(a, f);
-    }
+    pintarCambio();
     pintarResumenEntrega();
   }
   let otroAbierto = false;
+  function pintarCambio() {
+    const c = cambio(lista.paga, subtotal(lista, catalogo));
+    const cEl = $('#pd-cambio', dlg)!;
+    cEl.hidden = !c;
+    if (!c) return;
+    const f = document.createElement('strong'); f.textContent = precio(c);
+    const a = document.createElement('span'); ponerBi(a, lista.modo === 'domicilio' ? 'Cambio aprox. (sin envío): ' : 'Tu cambio: ', lista.modo === 'domicilio' ? 'Approx. change (before delivery fee): ' : 'Your change: ');
+    cEl.replaceChildren(a, f);
+  }
 
   function pintarResumenEntrega() {
-    $('[data-icono-entrega]', dlg)!.setAttribute('d', ICONOS_ENTREGA[lista.modo]);
     const t = $('#pd-entrega-titulo', dlg)!; const d = $('#pd-entrega-detalle', dlg)!;
     if (lista.modo === 'mesa') {
       const m = mesa ? mesaDePlano(plano, mesa) : undefined;
       ponerBi(t, mesa ? `En mesa · Mesa ${mesa}` : 'En mesa', mesa ? `Dine-in · Table ${mesa}` : 'Dine-in');
-      ponerBi(d, m ? m.zona.es : 'Elige tu mesa', m ? m.zona.en : 'Pick your table');
+      ponerBi(d, m ? m.zona.es : '', m ? m.zona.en : '');
     } else if (lista.modo === 'llevar') {
       ponerBi(t, `Para llevar${lista.nombre ? ` · ${lista.nombre}` : ''}`, `Pickup${lista.nombre ? ` · ${lista.nombre}` : ''}`);
-      ponerBi(d, lista.hora === 'pronto' ? 'Hoy, lo antes posible' : `Hoy a las ${h12(lista.hora, true)}`, lista.hora === 'pronto' ? 'Today, as soon as possible' : `Today at ${h12(lista.hora, true)}`);
+      ponerBi(d, lista.hora === 'pronto' ? 'hoy, lo antes posible' : `hoy a las ${h12(lista.hora, true)}`, lista.hora === 'pronto' ? 'today, as soon as possible' : `today at ${h12(lista.hora, true)}`);
     } else {
       ponerBi(t, `A domicilio${lista.nombre ? ` · ${lista.nombre}` : ''}`, `Delivery${lista.nombre ? ` · ${lista.nombre}` : ''}`);
-      const pin = lista.ubic ? ' · con punto en el mapa' : '';
-      ponerBi(d, (lista.direccion || 'Sin dirección') + pin, (lista.direccion || 'No address') + (lista.ubic ? ' · pinned on the map' : ''));
+      ponerBi(d, (lista.direccion || 'sin dirección') + (lista.ubic ? ' · con punto en el mapa' : ''), (lista.direccion || 'no address') + (lista.ubic ? ' · pinned on the map' : ''));
     }
   }
 
@@ -313,16 +332,18 @@ export function crearLista(o: { alCambiar: (piezas: number, total: number) => vo
       const campo = c === 'pago' ? null : c === 'paga' ? inp.otro : c === 'hora' ? inp.hora : inp[c];
       campo?.setAttribute('aria-invalid', String(mostrar));
     }
+    // Con el error de mesa a la vista, la ayuda ("escribe su número…") sobra.
+    $('#pd-mesa-elegida', dlg)!.hidden = !mesa && !$('#err-mesa', dlg)!.hidden;
     let enlace: ReturnType<typeof enlaceWhatsApp>;
     try { enlace = enlaceWhatsApp(datos.whatsapp, lista, catalogo, entrega(), idioma()); } catch { enlace = { ok: false, motivo: 'larga' }; }
     const hay = Object.keys(err).length > 0;
     const listo = !hay && enlace.ok;
     enviar.href = enlace.ok && !hay ? enlace.url : '#';
-    // Mensajes del paso visible (y del 2 si ya se intentó enviar desde el 3).
+    // En el pie solo van los avisos sin renglón propio (los de cada campo se ven junto al campo).
     const mensajes: [string, string][] = [];
     const v = vista;
-    if (typeof v === "number" && intentado.has(v)) {
-      (Object.keys(err) as Campo[]).filter((c) => PASO_DE[c] <= v && intentado.has(PASO_DE[c])).forEach((c) => mensajes.push(mensajeError(c, err)));
+    if (typeof v === 'number' && intentado.has(v)) {
+      if (err.lista && v > 1) mensajes.push(mensajeError('lista', err));
       if (v === 3 && !enlace.ok && enlace.motivo === 'larga') mensajes.push(['Tu pedido es muy largo para un solo mensaje. Divídelo en dos o llámanos.', 'Your order is too long for one message. Split it in two or call us.']);
     }
     errores.hidden = mensajes.length === 0;
@@ -349,9 +370,10 @@ export function crearLista(o: { alCambiar: (piezas: number, total: number) => vo
       b.dataset.estado = typeof vista === 'number' && p < vista ? 'hecho' : p === vista ? 'actual' : 'pendiente';
     });
     panel.style.setProperty('--paso', String(typeof vista === 'number' ? vista - 1 : 2));
-    const fol = vista === 3 && esFolio(lista.folio) ? lista.folio : '';
-    if (vista === 'seguimiento' && enviado) resumen.textContent = enviado.folio;
-    else ponerBi(resumen, `${n === 1 ? '1 artículo' : `${n} artículos`}${fol ? ` · folio ${fol}` : ''}`, `${n === 1 ? '1 item' : `${n} items`}${fol ? ` · order ${fol}` : ''}`);
+    folioEl.textContent = esFolio(lista.folio) ? lista.folio : '';
+    const total = precio(subtotal(lista, catalogo));
+    if (vista === 'seguimiento' || sinLineas) resumen.replaceChildren();
+    else ponerBi(resumen, `${n === 1 ? '1 artículo' : `${n} artículos`} · ${total}`, `${n === 1 ? '1 item' : `${n} items`} · ${total}`);
     $('[data-titulo="pedido"]', dlg)!.hidden = vista === 'seguimiento';
     $('[data-titulo="enviado"]', dlg)!.hidden = vista !== 'seguimiento';
     bandaEnviado.hidden = !(enviado && vista === 1);
@@ -368,7 +390,6 @@ export function crearLista(o: { alCambiar: (piezas: number, total: number) => vo
     $$('[data-con-lineas]', dlg).forEach((e) => (e.hidden = !hay));
     pintarAvisos();
     pintarLineas();
-    animarLista(ul, antes);
     pintarFormulario();
     pintarPago();
     const total = subtotal(lista, catalogo);
@@ -379,6 +400,8 @@ export function crearLista(o: { alCambiar: (piezas: number, total: number) => vo
     pintarPie();
     pintarErrores();
     mostrarVista(false);
+    ajustarLineas();
+    animarLista(ul, antes);
     o.alCambiar(n, total);
   }
 
@@ -391,7 +414,8 @@ export function crearLista(o: { alCambiar: (piezas: number, total: number) => vo
       s.hidden = !ver;
       if (ver && cambia && animar) entrarVista(s, dir);
     });
-    if (vista === 2 && lista.modo === 'domicilio') prepararMapa();
+    if (vista !== 1 && dlg.classList.contains('todo')) dlg.classList.remove('todo');
+    if (vista === 2 && lista.modo === 'domicilio') void prepararMapa();
   }
 
   /** Primer paso con errores entre `desde` y `hasta` (para no saltarse validaciones). */
@@ -422,6 +446,7 @@ export function crearLista(o: { alCambiar: (piezas: number, total: number) => vo
     pintarErrores();
     mostrarVista(true, p > desde ? 1 : -1);
     scroll.scrollTop = 0; scroll.scrollLeft = 0;
+    ajustarLineas();
     if (enfocar) $<HTMLElement>(`#t-paso${p}-h`, dlg)?.focus({ preventScroll: true });
   }
 
@@ -430,14 +455,14 @@ export function crearLista(o: { alCambiar: (piezas: number, total: number) => vo
     if (p === 1) { sacudir(seguir); return; }
     const c = (Object.keys(err) as Campo[]).find((k) => PASO_DE[k] === p);
     if (!c) return;
-    const destino = c === 'mesa' ? (mesa === null ? $<HTMLElement>('.pd-mesa:not([aria-disabled])', dlg) : inp.mesa)
-      : c === 'hora' ? $<HTMLElement>('input[name="hora"]:checked:not(:disabled), input[name="hora"]:not(:disabled)', dlg)
+    const destino = c === 'mesa' ? inp.mesa
+      : c === 'hora' ? inp.hora
       : c === 'pago' ? $<HTMLElement>('input[name="pago"]', dlg)
       : c === 'paga' ? (otroAbierto ? inp.otro : $<HTMLElement>('input[name="paga"]', dlg))
       : inp[c as 'nombre' | 'direccion'];
     destino?.focus({ preventScroll: true });
-    const caja = destino?.closest<HTMLElement>('.campo, .pd-bloque, fieldset');
-    if (caja) { caja.scrollIntoView({ block: 'center', behavior: reducir() ? 'auto' : 'smooth' }); sacudir(caja); }
+    const caja = destino?.closest<HTMLElement>('.pd-renglon, .pd-bloque, fieldset');
+    if (caja) { caja.scrollIntoView({ block: 'nearest', behavior: reducir() ? 'auto' : 'smooth' }); sacudir(caja); }
   }
 
   /* ── Mapa de entrega (Leaflet bajo demanda) ── */
@@ -445,14 +470,23 @@ export function crearLista(o: { alCambiar: (piezas: number, total: number) => vo
   let cargandoMapa = false;
   const estadoMapa = $('#pd-mapa-estado', dlg)!;
   let mensajeMapa: [string, string] | null = null;
+  let mensajeCorto: [string, string] | null = null;
+  const avisoMapa = (largo: [string, string] | null, corto: [string, string] | null = null) => { mensajeMapa = largo; mensajeCorto = largo ? corto ?? largo : null; pintarUbicacion(); };
   function pintarUbicacion() {
     $('#pd-quitar-pin', dlg)!.hidden = !lista.ubic;
+    const km = lista.ubic && lejos(lista.ubic, centro) ? Math.round(distanciaKm(lista.ubic, centro)) : 0;
     const [es, ing] = mensajeMapa ?? (lista.ubic
-      ? [`Punto fijado ✓ El repartidor recibe el enlace del mapa${lejos(lista.ubic, centro) ? ` (queda a ${Math.round(distanciaKm(lista.ubic, centro))} km del restaurante: revísalo)` : ''}.`,
-        `Pin set ✓ The driver gets the map link${lejos(lista.ubic, centro) ? ` (it's ${Math.round(distanciaKm(lista.ubic, centro))} km from the restaurant: please check)` : ''}.`]
-      : ['Toca el mapa donde está tu puerta (luego puedes arrastrar el pin) o usa tu ubicación. Si no, basta con tu dirección.', 'Tap the map where your door is (then drag the pin) or use your location. Your address alone also works.']);
+      ? [`Punto fijado ✓ El repartidor recibe el enlace del mapa${km ? ` (queda a ${km} km del restaurante: revísalo)` : ''}.`,
+        `Pin set ✓ The driver gets the map link${km ? ` (it's ${km} km from the restaurant: please check)` : ''}.`]
+      : ['Toca el mapa donde está tu puerta (luego puedes arrastrar el pin) o usa tu ubicación. Es opcional: basta con tu dirección.', 'Tap the map where your door is (then drag the pin) or use your location. It’s optional: your address is enough.']);
     ponerBi(estadoMapa, es, ing);
-    estadoMapa.classList.toggle('ok', !!lista.ubic && !mensajeMapa);
+    const ok = !!lista.ubic && !mensajeMapa;
+    estadoMapa.classList.toggle('ok', ok);
+    const [ce, ci] = mensajeCorto ?? (lista.ubic ? [`Fijado ✓${km ? ` · a ${km} km` : ''}`, `Pinned ✓${km ? ` · ${km} km away` : ''}`] : ['Opcional', 'Optional']);
+    ponerBi(ubicResumen, ce, ci);
+    ubicResumen.classList.toggle('ok', ok);
+    $('[data-sin-pin]', dlg)!.hidden = !!lista.ubic;
+    $('[data-con-pin]', dlg)!.hidden = !lista.ubic;
   }
   // El módulo del mapa se pide una vez más si falla (red que parpadea). Si vuelve a fallar
   // suele ser una pestaña abierta desde una versión anterior del sitio: sus archivos ya no
@@ -476,7 +510,7 @@ export function crearLista(o: { alCambiar: (piezas: number, total: number) => vo
     });
     caja.append(p, b);
     mapaEl.append(caja);
-    if (!lista.ubic) { mensajeMapa = ['Sin el mapa, basta con tu dirección y referencias.', 'Without the map, your address and landmarks are enough.']; pintarUbicacion(); }
+    if (!lista.ubic) avisoMapa(['Sin el mapa, basta con tu dirección y señas.', 'Without the map, your address and landmarks are enough.'], ['Mapa no disponible', 'Map unavailable']);
   }
   async function prepararMapa() {
     if (mapa) { requestAnimationFrame(() => mapa?.ajustar()); return; }
@@ -487,12 +521,11 @@ export function crearLista(o: { alCambiar: (piezas: number, total: number) => vo
       mapa = await crearMapa(mapaEl, {
         centro, inicial: lista.ubic,
         etiquetas: en() ? { pin: 'Delivery point', local: 'MAKIZEN (approximate)' } : { pin: 'Punto de entrega', local: 'MAKIZEN (aproximado)' },
-        alMover: (c) => { mensajeMapa = null; actualizar({ ubic: redondear(c) }); pintarUbicacion(); pintarErrores(); anunciar('Punto de entrega fijado en el mapa.', 'Delivery pin set on the map.'); },
+        alMover: (c) => { actualizar({ ubic: redondear(c) }); avisoMapa(null); pintarErrores(); anunciar('Punto de entrega fijado en el mapa.', 'Delivery pin set on the map.'); },
         alFallarTeselas: () => {
           if (mapaEl.dataset.sinTeselas) return;
           mapaEl.dataset.sinTeselas = '1';
-          mensajeMapa = ['El mapa no cargó con tu conexión. Usa tu ubicación o escribe tu dirección y referencias.', "The map didn't load on your connection. Use your location or type your address and landmarks."];
-          pintarUbicacion();
+          avisoMapa(['El mapa no cargó con tu conexión. Usa tu ubicación o escribe tu dirección y señas.', "The map didn't load on your connection. Use your location or type your address and landmarks."], ['Mapa no disponible', 'Map unavailable']);
         },
       });
       requestAnimationFrame(() => mapa?.ajustar());
@@ -500,45 +533,72 @@ export function crearLista(o: { alCambiar: (piezas: number, total: number) => vo
       mapaNoCargo();
     } finally { cargandoMapa = false; }
   }
-  const btnUbic = $<HTMLButtonElement>('#pd-mi-ubicacion', dlg)!;
-  btnUbic.addEventListener('click', () => {
-    if (!('geolocation' in navigator)) { mensajeMapa = ['Tu navegador no permite compartir la ubicación. Mueve el pin a mano.', "Your browser can't share location. Move the pin by hand."]; pintarUbicacion(); return; }
-    btnUbic.setAttribute('aria-busy', 'true');
-    btnUbic.disabled = true;
-    mensajeMapa = ['Buscando tu ubicación…', 'Finding your location…'];
-    pintarUbicacion();
+  // "Usar mi ubicación": en el renglón del paso 2 (aro) y dentro de la capa del mapa.
+  const btnsUbic = $$<HTMLButtonElement>('[data-mi-ubicacion]', dlg);
+  const ocupado = (si: boolean) => btnsUbic.forEach((b) => { b.disabled = si; if (si) b.setAttribute('aria-busy', 'true'); else b.removeAttribute('aria-busy'); });
+  function usarUbicacion() {
+    if (!('geolocation' in navigator)) { avisoMapa(['Tu navegador no permite compartir la ubicación. Mueve el pin a mano.', "Your browser can't share location. Move the pin by hand."], ['Tu navegador no comparte ubicación', "Browser can't share location"]); return; }
+    ocupado(true);
+    avisoMapa(['Buscando tu ubicación…', 'Finding your location…']);
     navigator.geolocation.getCurrentPosition((pos) => {
-      btnUbic.removeAttribute('aria-busy'); btnUbic.disabled = false;
+      ocupado(false);
       const c = redondear({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-      mensajeMapa = null;
       actualizar({ ubic: c });
       mapa?.mover(c, true);
-      pintarUbicacion(); pintarErrores();
+      avisoMapa(null); pintarErrores();
       anunciar('Usamos tu ubicación actual para la entrega.', 'We used your current location for delivery.');
     }, (e) => {
-      btnUbic.removeAttribute('aria-busy'); btnUbic.disabled = false;
-      mensajeMapa = e.code === 1
-        ? ['No diste permiso de ubicación. Puedes activarlo en tu navegador o mover el pin a mano.', 'Location permission was denied. Turn it on in your browser or move the pin by hand.']
-        : e.code === 3
-          ? ['Tardó demasiado en ubicarte. Inténtalo otra vez o mueve el pin.', 'Finding you took too long. Try again or move the pin.']
-          : ['No pudimos ubicarte. Mueve el pin a mano o escribe referencias.', "We couldn't find you. Move the pin by hand or add landmarks."];
-      pintarUbicacion();
+      ocupado(false);
+      if (e.code === 1) avisoMapa(['No diste permiso de ubicación. Puedes activarlo en tu navegador o mover el pin a mano.', 'Location permission was denied. Turn it on in your browser or move the pin by hand.'], ['Sin permiso de ubicación', 'Location permission denied']);
+      else if (e.code === 3) avisoMapa(['Tardó demasiado en ubicarte. Inténtalo otra vez o mueve el pin.', 'Finding you took too long. Try again or move the pin.'], ['No te ubicamos, intenta otra vez', "Couldn't find you, try again"]);
+      else avisoMapa(['No pudimos ubicarte. Mueve el pin a mano o escribe señas.', "We couldn't find you. Move the pin by hand or add landmarks."], ['No pudimos ubicarte', "Couldn't find you"]);
     }, { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 });
-  });
+  }
+  btnsUbic.forEach((b) => b.addEventListener('click', usarUbicacion));
   $('#pd-quitar-pin', dlg)!.addEventListener('click', () => {
-    mensajeMapa = null;
     actualizar({ ubic: null });
     mapa?.quitar();
-    pintarUbicacion(); pintarErrores();
-    btnUbic.focus();
+    avisoMapa(null); pintarErrores();
+    btnsUbic[btnsUbic.length - 1]?.focus();
   });
+
+  /* ── Capas (plano de mesas y mapa): cubren el panel; el resto queda inerte ── */
+  let capa: HTMLElement | null = null;
+  let focoCapa: HTMLElement | null = null;
+  function abrirCapa(nombre: Capa) {
+    const c = $<HTMLElement>(`[data-capa="${nombre}"]`, dlg);
+    if (!c || capa === c) return;
+    focoCapa = document.activeElement as HTMLElement | null;
+    capa = c;
+    c.hidden = false;
+    c.classList.remove('sale');
+    c.classList.add('entra');
+    setTimeout(() => c.classList.remove('entra'), 260);
+    for (const el of [cabeza, scroll, pie]) el.inert = true;
+    if (nombre === 'mapa') { void prepararMapa(); requestAnimationFrame(() => mapa?.ajustar()); }
+    if (nombre === 'plano') pintarMesa();
+    $<HTMLElement>('.pd-capa-titulo', c)?.focus({ preventScroll: true });
+  }
+  async function cerrarCapa(devolver = true) {
+    const c = capa;
+    if (!c) return;
+    capa = null;
+    for (const el of [cabeza, scroll, pie]) el.inert = false;
+    if (!reducir() && dlg.open) {
+      c.classList.add('sale');
+      await new Promise((r) => setTimeout(r, 160));
+    }
+    c.hidden = true;
+    c.classList.remove('sale');
+    if (devolver) focoCapa?.focus({ preventScroll: true });
+  }
 
   /* ── Plano de mesas ── */
   const planoUI = crearPlano(planoEl, (n) => {
     mesa = n; mesaDeQR = false;
     guardar.borrar(CLAVE_MESA_QR, true);
     guardar.escribir(CLAVE_MESA, String(n), true);
-    inp.mesa.value = '';
+    inp.mesa.value = String(n);
     pintarMesa(); pintarErrores();
     const m = mesaDePlano(plano, n)!;
     anunciar(`Mesa ${n} elegida: ${m.personas} personas, ${m.zona.es}.`, `Table ${n} selected: seats ${m.personas}, ${m.zona.en}.`);
@@ -556,6 +616,10 @@ export function crearLista(o: { alCambiar: (piezas: number, total: number) => vo
     vista = lista.lineas.length === 0 && enviado ? 'seguimiento' : 1;
     intentado.clear();
     otroAbierto = false;
+    dlg.classList.remove('todo');
+    for (const c of $$<HTMLElement>('.pd-capa', dlg)) c.hidden = true;
+    capa = null;
+    for (const el of [cabeza, scroll, pie]) el.inert = false;
     pintarHora();
     if (vista === 'seguimiento') pintarSeguimientoVista();
     totalPrevio = subtotal(lista, catalogo);
@@ -565,6 +629,7 @@ export function crearLista(o: { alCambiar: (piezas: number, total: number) => vo
     dlg.showModal();
     html.classList.add('bloqueo');
     scroll.scrollTop = 0;
+    ajustarLineas();
   }
   async function cerrar() {
     if (!dlg.open) return;
@@ -574,6 +639,7 @@ export function crearLista(o: { alCambiar: (piezas: number, total: number) => vo
       dlg.classList.remove('cerrando');
     }
     dlg.close();
+    void cerrarCapa(false);
     ocultarDeshacer();
     if (!document.querySelector('dialog[open]')) html.classList.remove('bloqueo');
     foco?.focus({ preventScroll: true });
@@ -629,6 +695,9 @@ export function crearLista(o: { alCambiar: (piezas: number, total: number) => vo
   dlg.addEventListener('click', (e) => {
     const t = e.target as HTMLElement;
     if (t === dlg || t.closest('[data-lista-cerrar]')) { cerrar(); return; }
+    const abreCapa = t.closest<HTMLElement>('[data-abrir-capa]');
+    if (abreCapa) { abrirCapa(abreCapa.dataset.abrirCapa as Capa); return; }
+    if (t.closest('[data-cerrar-capa]')) { void cerrarCapa(); return; }
     const paso = t.closest<HTMLElement>('[data-ir-paso]');
     if (paso) { irPaso(Number(paso.dataset.irPaso) as Paso); return; }
     const b = t.closest<HTMLButtonElement>('[data-l]');
@@ -644,6 +713,7 @@ export function crearLista(o: { alCambiar: (piezas: number, total: number) => vo
       notaAbierta = abierta ? null : li.dataset.k!;
       const editor = $('.ll-editar', li)!;
       editor.hidden = abierta;
+      $('.ll-meta', li)!.hidden = !abierta;
       b.setAttribute('aria-expanded', String(!abierta));
       if (!abierta) { const c = $<HTMLInputElement>('input', editor)!; c.value = l.nota ?? ''; c.focus(); }
       return;
@@ -680,7 +750,13 @@ export function crearLista(o: { alCambiar: (piezas: number, total: number) => vo
     if (t.closest('.ll-editar') && !(e.relatedTarget as HTMLElement | null)?.closest?.('[data-l="nota"]')) guardarNota(t);
   });
 
-  dlg.addEventListener('cancel', (e) => { e.preventDefault(); cerrar(); });
+  // Escape: primero cierra la capa o el "ver todo"; luego el panel.
+  dlg.addEventListener('cancel', (e) => {
+    e.preventDefault();
+    if (capa) { void cerrarCapa(); return; }
+    if (dlg.classList.contains('todo')) { verTodoAlternar(false); return; }
+    cerrar();
+  });
   form.addEventListener('change', (e) => {
     const t = e.target as HTMLInputElement;
     if (t.name === 'modo') {
@@ -693,8 +769,8 @@ export function crearLista(o: { alCambiar: (piezas: number, total: number) => vo
     }
     if (t.name === 'hora') {
       actualizar({ hora: t.value });
-      lecturaHora({ lectura: $('#pd-hora-lectura', dlg)!, actual: lista.hora, ahora: ahoraEn(), ranuras: ranuras() });
-      $$('.pd-hora-chip.vencida', dlg).forEach((v) => v.closest('.pd-hora-grupo')?.remove());
+      lecturaHora({ lectura: $('#pd-hora-lectura', dlg)!, actual: lista.hora, ahora: ahoraEn(), ranuras: ranuras(), sinHoras: horasSin });
+      inp.hora.querySelector('option:disabled')?.remove();
       pintarErrores();
     }
   });
@@ -720,7 +796,7 @@ export function crearLista(o: { alCambiar: (piezas: number, total: number) => vo
   // El campo enfocado queda visible sobre el teclado del teléfono.
   dlg.addEventListener('focusin', (e) => {
     const t = e.target as HTMLElement;
-    if (t.matches('input:not([type="radio"]), textarea')) setTimeout(() => t.scrollIntoView({ block: 'center', inline: 'nearest', behavior: reducir() ? 'auto' : 'smooth' }), 250);
+    if (t.matches('input:not([type="radio"]), textarea') && dlg.classList.contains('teclado')) setTimeout(() => t.scrollIntoView({ block: 'center', inline: 'nearest', behavior: reducir() ? 'auto' : 'smooth' }), 250);
   });
 
   /* ── Teclado del teléfono ──
@@ -741,7 +817,9 @@ export function crearLista(o: { alCambiar: (piezas: number, total: number) => vo
       else base = Math.max(base, innerHeight);
       const sinZoom = Math.abs(vv.scale - 1) < 0.05;
       const teclado = sinZoom && campoTexto() && base - vv.height > 140;
+      const antes = dlg.classList.contains('teclado');
       dlg.classList.toggle('teclado', teclado);
+      if (antes !== teclado) requestAnimationFrame(ajustarLineas);
       // Solo cuando el teclado tapa la página (no la encoge) se ancla el panel al área visible.
       const tapa = teclado && innerHeight - vv.height > 80;
       dlg.classList.toggle('teclado-vv', tapa);
@@ -791,10 +869,7 @@ export function crearLista(o: { alCambiar: (piezas: number, total: number) => vo
     const v = Math.floor(Number(inp.otro.value));
     lista = { ...lista, paga: montoValido(v) ? v : null, t: Date.now() };
     persistir();
-    const c = cambio(lista.paga, subtotal(lista, catalogo));
-    const cEl = $('#pd-cambio', dlg)!;
-    cEl.hidden = !c;
-    if (c) { const a = document.createElement('span'); ponerBi(a, 'Tu cambio: ', 'Your change: '); const f = document.createElement('strong'); f.textContent = precio(c); cEl.replaceChildren(a, f); }
+    pintarCambio();
     pintarErrores();
   });
 
@@ -897,6 +972,12 @@ export function crearLista(o: { alCambiar: (piezas: number, total: number) => vo
     avisos = r.avisos;
     pintar({ animar: true });
   });
+
+  // El panel cambia de alto (giro, barra del navegador, teclado): se recalcula cuántas líneas caben.
+  if ('ResizeObserver' in window) {
+    let alto = 0;
+    new ResizeObserver(() => { const h = scroll.clientHeight; if (h !== alto) { alto = h; requestAnimationFrame(ajustarLineas); } }).observe(scroll);
+  }
 
   pintar();
   // Estado de la mesa del QR que viene ocupada en la demo o fuera del plano: se acepta con aviso.

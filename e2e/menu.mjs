@@ -10,6 +10,8 @@ const BASE = process.env.BASE ?? 'http://localhost:4329';
 const TAMANOS = [['telefono', 390, 844], ['tablet', 820, 1180], ['computadora', 1440, 900]];
 let fallas = 0;
 const ok = (cond, msg) => { console.log(`${cond ? '  ✓' : '  ✗'} ${msg}`); if (!cond) fallas++; };
+// "Mi pedido" no se desplaza: el cuerpo del panel cabe en su alto.
+const sinScroll = (page) => page.evaluate(() => { const e = document.querySelector('#lista .lista-scroll'); return e.scrollHeight <= e.clientHeight + 1; });
 
 const browser = await chromium.launch();
 for (const [nombre, w, h] of TAMANOS) {
@@ -68,16 +70,18 @@ for (const [nombre, w, h] of TAMANOS) {
   await page.locator('[data-abrir-lista]').first().click();
   await page.waitForSelector('#lista[open]');
   await page.waitForTimeout(400);
-  ok(await page.locator('.linea-lista').count() === 2, 'Mi pedido muestra 2 líneas como tarjetas');
+  ok(await page.locator('.linea-lista').count() === 2, 'Mi pedido muestra 2 líneas en la comanda');
+  ok(await sinScroll(page), 'paso 1 sin desplazamiento');
   // Stepper, quitar con "Deshacer" y nota editable.
   const segunda = page.locator('.linea-lista').nth(1);
   await segunda.locator('[data-l="mas"]').click();
   ok((await page.locator('.linea-lista').nth(1).locator('output').textContent()) === '2', 'el stepper suma');
   await page.locator('.linea-lista').nth(1).locator('[data-l="menos"]').click();
   ok((await page.locator('.linea-lista').nth(1).locator('output').textContent()) === '1', 'el stepper resta');
-  await page.locator('.linea-lista').nth(1).locator('[data-l="quitar"]').click();
+  ok(await page.locator('.linea-lista').nth(1).evaluate((li) => li.classList.contains('uno')), 'con 1 pieza el «−» se vuelve bote');
+  await page.locator('.linea-lista').nth(1).locator('[data-l="menos"]').click();
   await page.waitForSelector('#pd-deshacer:not([hidden])');
-  ok(await page.locator('.linea-lista').count() === 1, 'quitar una línea (botón con icono de bote)');
+  ok(await page.locator('.linea-lista').count() === 1, 'quitar una línea (bote en el stepper)');
   await page.locator('#pd-deshacer-boton').click();
   await page.waitForTimeout(300);
   ok(await page.locator('.linea-lista').count() === 2, '«Deshacer» la regresa');
@@ -90,14 +94,24 @@ for (const [nombre, w, h] of TAMANOS) {
   await page.waitForTimeout(300);
   ok(await page.locator('input[name="modo"][value="mesa"]').isChecked(), 'modalidad en mesa por el QR');
   ok(await page.locator('.pd-mesa[data-mesa="7"][aria-pressed="true"]').count() === 1, 'mesa 7 marcada en el plano');
+  ok((await page.inputValue('#lista-mesa')) === '7', 'mesa 7 escrita en la comanda');
+  ok(await sinScroll(page), 'paso 2 (en mesa) sin desplazamiento');
+  // El plano se abre en su propia capa, con el rótulo de ilustrativo.
+  await page.locator('#pd-abrir-plano').click();
+  await page.waitForSelector('[data-capa="plano"]:not([hidden])');
+  ok((await page.locator('[data-capa="plano"] .pd-nota-plano').textContent())?.includes('ilustrativo'), 'plano en su capa con rótulo «ilustrativo»');
   // Mesa ocupada (demostración): no se elige. Mesa libre: sí.
   await page.locator('.pd-mesa[data-mesa="3"]').click({ force: true });
   ok(await page.locator('.pd-mesa[data-mesa="3"][aria-pressed="true"]').count() === 0, 'mesa ocupada no se elige');
   await page.locator('.pd-mesa[data-mesa="5"]').click();
   ok(await page.locator('.pd-mesa[data-mesa="5"][aria-pressed="true"]').count() === 1, 'mesa 5 elegida en el plano');
-  ok((await page.locator('#pd-mesa-elegida').textContent())?.includes('Mesa 5'), 'resumen de la mesa elegida');
+  ok((await page.locator('#pd-plano-listo').textContent())?.includes('mesa 5'), 'botón «Usar mesa 5»');
+  await page.locator('#pd-plano-listo').click();
+  await page.waitForSelector('[data-capa="plano"]', { state: 'hidden' });
+  ok((await page.locator('#pd-mesa-elegida').textContent())?.includes('Mesa 5') && (await page.inputValue('#lista-mesa')) === '5', 'resumen de la mesa elegida');
   await page.locator('#pd-seguir').click();
   await page.waitForTimeout(300);
+  ok(await sinScroll(page), 'paso 3 sin desplazamiento');
   // Sin forma de pago no se envía.
   await page.locator('#lista-enviar').click();
   ok(await page.locator('#err-pago').isVisible(), 'pide elegir efectivo o tarjeta');
@@ -123,7 +137,7 @@ for (const [nombre, w, h] of TAMANOS) {
   await page.locator('#pd-seguir').click();
   ok(await page.locator('#err-nombre').isVisible(), 'pide el nombre para llevar');
   await page.fill('#lista-nombre', 'Ana');
-  if (await page.locator('.pd-hora-chip:not(.vencida)').count()) await page.locator('.pd-hora-chip:not(.vencida)').first().click();
+  if (await page.locator('#lista-hora optgroup option').count()) await page.selectOption('#lista-hora', { index: 1 });
   await page.locator('#pd-seguir').click();
   await page.waitForTimeout(300);
   await page.locator('label.pago:has(input[value="efectivo"])').click();
@@ -140,11 +154,18 @@ for (const [nombre, w, h] of TAMANOS) {
   await page.waitForSelector('#pd-mapa.leaflet-container', { timeout: 8000 }).catch(() => {});
   ok(await page.locator('#pd-mapa.leaflet-container').count() === 1, 'mapa de entrega cargado');
   ok(await page.locator('#pd-mapa .leaflet-control-attribution').textContent().then((s) => s.includes('OpenStreetMap') && s.includes('CARTO')), 'atribución © OpenStreetMap © CARTO');
-  await page.locator('#pd-mapa').scrollIntoViewIfNeeded();
+  ok(await sinScroll(page), 'paso 2 (a domicilio) sin desplazamiento');
+  // El mapa se abre en su propia capa a todo el panel.
+  await page.locator('#pd-abrir-mapa').click();
+  await page.waitForSelector('[data-capa="mapa"]:not([hidden])');
+  await page.waitForTimeout(400);
   const caja = await page.locator('#pd-mapa').boundingBox();
   await page.mouse.click(caja.x + caja.width * 0.7, caja.y + caja.height * 0.35);
   await page.waitForTimeout(300);
   ok(await page.locator('#pd-mapa .pd-icono-pin').count() === 1 && await page.locator('#pd-mapa-estado.ok').count() === 1, 'tocar el mapa fija el pin dorado');
+  await page.locator('[data-capa="mapa"] .pd-boton').click();
+  await page.waitForSelector('[data-capa="mapa"]', { state: 'hidden' });
+  ok(await page.locator('#pd-ubic-resumen.ok').count() === 1, 'el renglón del mapa dice que el punto quedó fijado');
   await page.locator('#pd-seguir').click();
   await page.waitForTimeout(300);
   t = await texto();
@@ -159,6 +180,7 @@ for (const [nombre, w, h] of TAMANOS) {
   const enviado = await page.evaluate(() => JSON.parse(localStorage.getItem('makizen-pedido') ?? 'null'));
   ok(/^MZ-[2-9A-Z]{4}$/.test(enviado?.folio ?? '') && (await page.locator('#pd-seg-folio').textContent()) === enviado.folio, 'seguimiento con folio guardado');
   ok(await page.locator('.pd-etapa').count() === 4, 'línea de tiempo con 4 etapas');
+  ok(await sinScroll(page), 'seguimiento sin desplazamiento');
   ok((await page.evaluate(() => JSON.parse(localStorage.getItem('makizen-lista') ?? '{"lineas":[]}').lineas.length)) === 0, 'el carrito queda vacío al enviar');
   ok((await page.locator('#pd-reenviar').getAttribute('href')) === enviado.url, '«Volver a enviar» usa el mismo enlace');
   await page.keyboard.press('Escape');
@@ -205,6 +227,17 @@ for (const [nombre, w, h] of TAMANOS) {
     localStorage.setItem('makizen-lista', JSON.stringify({ v: 1, t: Date.now(), lineas, modo: 'mesa', nombre: '', hora: 'pronto', direccion: '', referencias: '' }));
   });
   await page.reload({ waitUntil: 'networkidle' });
+  // Pedido largo: la comanda no crece; se resume con «y N más · ver todo».
+  await page.locator('[data-abrir-lista]').first().click();
+  await page.waitForSelector('#lista[open]');
+  await page.waitForTimeout(400);
+  ok(await sinScroll(page) && await page.locator('#pd-ver-todo').isVisible() && await page.locator('.linea-lista:visible').count() < 12, '12 líneas: sin desplazamiento y con «ver todo»');
+  await page.locator('#pd-ver-todo').click();
+  ok(await page.locator('.linea-lista:not([hidden])').count() === 12 && await page.evaluate(() => document.querySelector('#lista').classList.contains('todo')), '«ver todo» muestra las 12 líneas en su capa');
+  await page.keyboard.press('Escape');
+  ok(await page.evaluate(() => !document.querySelector('#lista').classList.contains('todo') && document.querySelector('#lista').open), 'Escape cierra «ver todo» sin cerrar el panel');
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(400);
   await page.locator('#entradas').scrollIntoViewIfNeeded();
   await page.locator('[data-abrir="camaron-roca"]').click();
   await page.waitForSelector('#hoja[open]', { timeout: 5000 });

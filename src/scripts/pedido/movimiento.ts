@@ -23,11 +23,11 @@ export function animarLista(ul: HTMLElement, antes: Map<string, number>, entrar 
     const y0 = antes.get(li.dataset.k ?? '');
     if (y0 === undefined) {
       if (!entrar) continue;
-      li.animate([{ opacity: 0, transform: 'translateY(12px) scale(0.98)' }, { opacity: 1, transform: 'none' }], { duration: 360, delay: k++ * 40, easing: SALIDA, fill: 'backwards' });
+      li.animate([{ opacity: 0, transform: 'translateY(12px) scale(0.98)' }, { opacity: 1, transform: 'none' }], { duration: 280, delay: k++ * 30, easing: SALIDA, fill: 'backwards' });
       continue;
     }
     const dy = y0 - li.getBoundingClientRect().top;
-    if (Math.abs(dy) > 1) li.animate([{ transform: `translateY(${dy}px)` }, { transform: 'none' }], { duration: 380, easing: SALIDA });
+    if (Math.abs(dy) > 1) li.animate([{ transform: `translateY(${dy}px)` }, { transform: 'none' }], { duration: 300, easing: SALIDA });
   }
 }
 
@@ -35,7 +35,7 @@ export function animarLista(ul: HTMLElement, antes: Map<string, number>, entrar 
 export function salir(li: HTMLElement): Promise<void> {
   if (reducir()) return Promise.resolve();
   li.dataset.saliendo = '1';
-  return li.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateX(-28px) scale(0.96)' }], { duration: 220, easing: 'cubic-bezier(0.4, 0, 1, 1)', fill: 'forwards' })
+  return li.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateX(-20px)' }], { duration: 180, easing: 'cubic-bezier(0.4, 0, 1, 1)', fill: 'forwards' })
     .finished.then(() => undefined, () => undefined);
 }
 
@@ -51,10 +51,11 @@ export function rodar(el: HTMLElement, texto: string, sube = true) {
 /** Entrada de una vista del panel desde la dirección del paso (1 = adelante, -1 = atrás). */
 export function entrarVista(el: HTMLElement, dir: number) {
   if (reducir()) return;
-  const hijos = [...el.children].filter((h) => !(h as HTMLElement).hidden && !h.classList.contains('sr-only')).slice(0, 6) as HTMLElement[];
+  // Sobrio y rápido: 16 px desde el lado del paso, 240 ms, escalonado corto (máx. 4 piezas).
+  const hijos = [...el.children].filter((h) => !(h as HTMLElement).hidden && !h.classList.contains('sr-only')).slice(0, 4) as HTMLElement[];
   hijos.forEach((h, i) => h.animate(
-    [{ opacity: 0, transform: `translateX(${dir * 28}px)` }, { opacity: 1, transform: 'none' }],
-    { duration: 380, delay: i * 35, easing: SALIDA, fill: 'backwards' },
+    [{ opacity: 0, transform: `translateX(${dir * 16}px)` }, { opacity: 1, transform: 'none' }],
+    { duration: 240, delay: i * 30, easing: SALIDA, fill: 'backwards' },
   ));
 }
 
