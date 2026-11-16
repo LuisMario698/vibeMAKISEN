@@ -1,6 +1,7 @@
 // Interacción del menú. Sin librerías: Web Animations API, IntersectionObserver,
 // CSS scroll-driven, transiciones de transform/opacity para la isla y clip-path + FLIP para el detalle.
 // Este archivo solo conecta los módulos: idioma, estado del local, isla, hoja y lista.
+import { etiquetaPedido } from '../lib/detalle';
 import { precio } from '../lib/precios';
 import { normalizar } from '../lib/texto';
 import { avisarAgregado, llevarALaBolsa, ocultarAviso, ponerContador, prepararAviso, reservar, type Destino } from './bolsa';
@@ -21,12 +22,10 @@ function aplicarIdioma() {
   if (input) { input.placeholder = en ? 'Search…' : 'Buscar…'; input.setAttribute('aria-label', en ? 'Search the menu' : 'Buscar en el menú'); }
   const t = en ? html.dataset.tituloEn : html.dataset.tituloEs;
   if (t) document.title = t;
-  // Enlace directo a WhatsApp de la barra superior, con el saludo en el idioma elegido.
-  const wa = $<HTMLAnchorElement>('#nav .nav-wa');
-  if (wa) wa.href = `https://wa.me/${datos.whatsapp}?text=${encodeURIComponent(en ? "Hi MAKIZEN 👋 I saw your digital menu and I'd like to place an order." : 'Hola MAKIZEN 👋 Vi su menú digital y quiero hacer un pedido.')}`;
   pintarEstado();
   hoja.idioma();
   lista.pintar();
+  etiquetaNav();
   isla.idioma();
   requestAnimationFrame(() => espiar());
 }
@@ -208,12 +207,19 @@ secciones.forEach((s) => cruce.observe(s));
 /* ── Mi pedido ─────────────────────────────────────────────────────── */
 let enMenu = false;
 let piezasLista = 0;
+let totalLista = 0;
 const visibilidad = () => isla.mostrar(enMenu || piezasLista > 0);
+function etiquetaNav() {
+  const txt = etiquetaPedido(piezasLista, precio(totalLista), html.lang === 'en' ? 'en' : 'es');
+  $$('#nav [data-abrir-lista]').forEach((b) => b.setAttribute('aria-label', txt));
+}
 const lista = crearLista({
   alCambiar: (n, total) => {
     piezasLista = n;
+    totalLista = total;
     isla.contar(n, precio(total));
     $$('[data-contador-lista]').forEach((el) => { ponerContador(el, n); if (!el.hasAttribute('data-ocultar-cero')) el.hidden = n === 0; });
+    etiquetaNav();
     visibilidad();
   },
 });
@@ -225,8 +231,10 @@ new IntersectionObserver(([e]) => { enMenu = !!e && (e.isIntersecting || e.bound
 function destinoBolsa(): Destino | null {
   const c = isla.destinoBolsa();
   if (c) return { caja: c, el: isla.bolsaEl(), listaEn: isla.bolsaListaEn() };
-  // Sin bolsa a la vista (p. ej. con el panel de la isla abierto) no hay vuelo: solo confirmación.
-  return null;
+  const b = $('#nav [data-abrir-lista]');
+  const ico = b?.querySelector('.bolsa-ico')?.getBoundingClientRect();
+  if (!b || !ico || ico.width === 0 || ico.bottom < 0 || ico.top > innerHeight) return null;
+  return { caja: { x: ico.left - 8, y: ico.top - 8, w: ico.width + 16, h: ico.height + 16 }, el: b };
 }
 /** Foto pequeña para el aviso «Agregado». */
 function miniatura(id: string) {
