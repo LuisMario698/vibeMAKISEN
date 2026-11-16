@@ -14,7 +14,7 @@
 /* Teléfonos muy angostos (320 px): más espacio para el nombre de la sección; toques siguen ≥ 44 px. */
 @media (max-width: 22.4rem) {
   .isla-barra { width: calc(100% - 16px); gap: 8px; }
-  .isla-lupa, .isla-lista, .isla-wa { width: 48px; }
+  .isla-lupa, .isla-lista { width: 48px; }
   .isla-pildora { gap: 8px; padding: 0 10px 0 7px; }
 }
 
@@ -62,7 +62,7 @@
 .isla-pildora .avance { z-index: 1; background: rgb(10 10 10 / 0.7); transform-origin: left center; transform: scaleX(0.05); transition: transform 420ms var(--ease-salida); }
 
 /* 2 · Buscar: círculo de mármol con aro de oro. 3 · Mi pedido: cuadro redondeado de mármol. */
-.isla-lupa, .isla-lista, .isla-wa {
+.isla-lupa, .isla-lista {
   width: 52px; color: var(--color-oro-claro);
   background:
     radial-gradient(120% 90% at 30% 0%, rgb(255 255 255 / 0.08), transparent 60%),
@@ -80,7 +80,7 @@
 }
 .isla-lupa[aria-expanded="true"] { background: var(--color-oro); color: #0a0a0a; }
 @media (hover: hover) and (pointer: fine) {
-  .isla-lupa:hover, .isla-lista:hover, .isla-wa:hover { box-shadow: inset 0 0 0 1.5px var(--color-oro-claro), var(--sombra); }
+  .isla-lupa:hover, .isla-lista:hover { box-shadow: inset 0 0 0 1.5px var(--color-oro-claro), var(--sombra); }
   .isla-pildora:hover .flecha { translate: 0 2px; }
 }
 /* Contador: el texto real queda transparente; lo visible rueda en ::before/::after (detalle.css). */
@@ -169,8 +169,3 @@
   .isla-hoja, .isla-hoja.on { transform: none; }
   .isla-hoja.on .isla-scroll { animation: none; }
 }
-
-/* WhatsApp directo: misma forma que los otros controles, con el glifo verde reconocible. */
-.isla-wa { gap: 8px; border-radius: 17px; text-decoration: none; }
-.isla-wa-ico { color: #25d366; flex: none; filter: drop-shadow(0 0 6px rgb(37 211 102 / 0.35)); }
-@media (min-width: 40rem) { .isla-wa { width: auto; padding: 0 18px 0 15px; } }

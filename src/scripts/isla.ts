@@ -7,7 +7,9 @@
 // que no se traban aunque el hilo principal esté ocupado pintando la sección a la que se salta.
 
 import { normalizar } from '../lib/texto';
-import { datos, miniRecorte } from './comun';
+import { etiquetaPedido } from '../lib/detalle';
+import { ponerContador } from './bolsa';
+import { miniRecorte } from './comun';
 
 type Txt = { es: string; en: string };
 type Cat = { id: string; nombre: Txt };
@@ -46,8 +48,8 @@ export function crearIsla(o: {
   const barra = $('.isla-barra');
   const pildora = $<HTMLButtonElement>('.isla-pildora');
   const lupa = $<HTMLButtonElement>('.isla-lupa');
-  // Botón de la derecha: WhatsApp directo (el pedido se abre desde la barra superior).
-  const btnLista = $<HTMLAnchorElement>('.isla-wa');
+  const btnLista = $<HTMLButtonElement>('.isla-lista');
+  const contador = $('.contador', btnLista);
   const num = $('.num', pildora);
   const texto = $('.isla-texto', pildora);
   const actual = $('.actual', pildora);
@@ -65,6 +67,8 @@ export function crearIsla(o: {
   let estado: Estado = 'oculta';
   let abierto: Panel | null = null;
   let idx = -1;
+  let piezas = 0;
+  let totalTxt = '';
   const filtros = new Set<Filtro>();
   const es = () => html.lang !== 'en';
   /** Cuánto tarda la barra en terminar de subir (la bolsa es el último control, --k: 2). */
@@ -258,16 +262,21 @@ export function crearIsla(o: {
   }));
 
   /* ── Mi pedido: contador y rebote al recibir un platillo ── */
-  function contar(n: number, _total: string) {
+  function contar(n: number, total: string) {
+    piezas = n;
+    totalTxt = total;
+    ponerContador(contador, n);
+    btnLista.setAttribute('aria-label', etiquetaPedido(n, total, es() ? 'es' : 'en'));
     isla.dataset.lista = n > 0 ? 'si' : 'no';
   }
   /** Cuándo termina de subir la bolsa (la barra que aparece). */
   const bolsaListaEn = () => Math.max(0, tLista - performance.now());
   /** Caja final (en pantalla) del botón Mi pedido, aunque la barra aún esté subiendo:
    *  se mide sin la traslación de entrada (offset dentro de la barra, que no se mueve). */
-  function destinoBolsa(): { x: number; y: number; w: number; h: number } | null {
-    // La bolsa ya no está en la isla: el vuelo al agregar va a «Mi pedido» de la barra superior.
-    return null;
+  function destinoBolsa() {
+    if (estado !== 'pildora') return null;
+    const b = barra.getBoundingClientRect();
+    return { x: b.left + btnLista.offsetLeft, y: b.top + btnLista.offsetTop, w: btnLista.offsetWidth, h: btnLista.offsetHeight };
   }
   /** El botón se hincha al recibir un platillo (la bolsa y el contador los anima bolsa.ts).
    *  Si llegan varios seguidos, cada rebote reemplaza al anterior (no se acumulan escalas). */
@@ -275,7 +284,6 @@ export function crearIsla(o: {
   function rebotar(conBoton = true) {
     if (estado === 'oculta') mostrar(true);
     if (o.reducir() || estado !== 'pildora' || !conBoton) return;
-    if (!btnLista.isConnected) return;
     rebote?.cancel();
     rebote = btnLista.animate(
       [{ scale: '1' }, { scale: '1.08', offset: 0.3 }, { scale: '1' }],
@@ -326,6 +334,7 @@ export function crearIsla(o: {
     if (n !== idx) o.ir(o.cats[n]!.id);
   });
   lupa.addEventListener('click', () => { if (abierto === 'busca') cerrar(); else abrir(true); });
+  btnLista.addEventListener('click', () => o.abrirLista());
   velo.addEventListener('click', () => cerrar());
   for (const p of Object.values(paneles)) {
     p.addEventListener('click', (e) => {
@@ -360,9 +369,6 @@ export function crearIsla(o: {
     pintar() {},
     get indice() { return idx; }, get estado() { return estado; }, pildora: () => pildora, bolsaEl: () => btnLista,
     /** Al cambiar de idioma: la etiqueta del botón del pedido. */
-    idioma() {
-      const t = es() ? 'Hola MAKIZEN 👋 Vi su menú digital y quiero hacer un pedido.' : "Hi MAKIZEN 👋 I saw your digital menu and I'd like to place an order.";
-      btnLista.href = `https://wa.me/${datos.whatsapp}?text=${encodeURIComponent(t)}`;
-    },
+    idioma() { btnLista.setAttribute('aria-label', etiquetaPedido(piezas, totalTxt, es() ? 'es' : 'en')); },
   };
 }
