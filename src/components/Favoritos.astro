@@ -3,9 +3,11 @@
 import { menu } from '../data/schema';
 import { favoritos, foto } from '../data/fotos-reales';
 import { precio, usd } from '../lib/precios';
+import mini from '../data/miniaturas.json';
 
 const todos = menu.categorias.flatMap((c) => c.platillos.map((p) => ({ ...p, cat: c.nombre })));
 const items = favoritos.map((d) => ({ ...todos.find((p) => p.id === d.id)!, f: foto(d.foto), forma: d.forma, fotoId: d.foto }));
+const lqip = (id: string) => (mini as unknown as { fotos: Record<string, { lqip: string }> }).fotos[id]?.lqip;
 const forma = { alta: 'row-span-2 sm:row-span-2', normal: '', ancha: 'col-span-2 sm:col-span-2' } as const;
 ---
 <section class="contenedor pt-24" aria-labelledby="t-favoritos">
@@ -24,7 +26,7 @@ const forma = { alta: 'row-span-2 sm:row-span-2', normal: '', ancha: 'col-span-2
       <li class:list={['cortina relative overflow-hidden rounded-3xl bg-pizarra', forma[p.forma]]} style={`--i:${i}`}>
         <article class="producto group h-full cursor-pointer" data-modo="mosaico">
           <img src={p.f.src} srcset={p.f.srcset} sizes={p.forma === 'ancha' ? '(min-width: 640px) 66vw, 100vw' : '(min-width: 640px) 33vw, 50vw'} width={p.f.w} height={p.f.h}
-            alt="" loading="lazy" decoding="async" data-foto={p.id} data-real={p.fotoId} class="cortina-img absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" />
+            alt="" loading="lazy" decoding="async" data-foto={p.id} data-real={p.fotoId} style={lqip(p.fotoId) ? `--lqip:url(${lqip(p.fotoId)})` : undefined} class="cortina-img lqip absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" />
           <div class="pointer-events-none absolute inset-0 bg-[linear-gradient(to_bottom,transparent_45%,rgb(5_5_5/0.88))]"></div>
           <div class="absolute inset-x-0 bottom-0 p-4">
             <h3 class="text-[17px] leading-tight font-semibold">

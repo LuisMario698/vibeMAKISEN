@@ -48,7 +48,8 @@ const { count, size, warnings } = await generateSW({
     {
       urlPattern: ({ url }) => /^\/(fotos|menu|brand|og|fondos)\//.test(url.pathname),
       handler: 'CacheFirst',
-      options: { cacheName: `makizen-fotos-${VERSION}`, expiration: { maxEntries: 120, maxAgeSeconds: 30 * 24 * 3600 }, cacheableResponse: { statuses: [0, 200] } },
+      // Incluye las variantes de public/menu/v/ (scripts/miniaturas.mjs): más entradas.
+      options: { cacheName: `makizen-fotos-${VERSION}`, expiration: { maxEntries: 180, maxAgeSeconds: 30 * 24 * 3600 }, cacheableResponse: { statuses: [0, 200] } },
     },
     {
       urlPattern: ({ url }) => url.pathname.startsWith('/_astro/'),

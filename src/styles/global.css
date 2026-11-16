@@ -127,16 +127,20 @@ html[lang^="es"] [data-ver="en"], html[lang="en"] [data-ver="es"] { display: non
 @keyframes pulso { from { transform: scale(1); opacity: 0.55; } to { transform: scale(3); opacity: 0; } }
 
 /* ── Revelado al hacer scroll ──────────────────────────────────────────── */
-.revela { opacity: 0; transform: translateY(22px); }
-.revela.visto { opacity: 1; transform: none; transition: opacity 800ms var(--ease-salida), transform 900ms var(--ease-salida); transition-delay: calc(min(var(--i, 0), 8) * 60ms); }
+/* Corto (opacidad 260 ms) y escalonado solo entre lo que entra a la vez (--r lo pone src/scripts/app.ts).
+   Lo que ya está dentro de la pantalla al detectarse (salto a una categoría, scroll rápido) recibe
+   .ya y se muestra sin animación: nunca se espera para ver un platillo. */
+.revela { opacity: 0; transform: translateY(14px); }
+.revela.visto { opacity: 1; transform: none; transition: opacity 260ms var(--ease-salida), transform 420ms var(--ease-salida); transition-delay: calc(min(var(--r, 0), 3) * 40ms); }
+.revela.ya, .cortina.ya > :first-child, .cortina.ya .cortina-img { transition: none; }
 .trazo { transform: scaleX(0); transform-origin: left; }
 .visto .trazo, .visto.trazo { transform: scaleX(1); transition: transform 1200ms 150ms var(--ease-salida); }
 
 /* Mosaico y cabeceras con foto: se abren desde abajo como cortina. */
 /* El recorte va en el primer hijo: así el contenedor sigue siendo visible para IntersectionObserver. */
-.cortina > :first-child { clip-path: inset(100% 0 0 0 round 24px); transition: clip-path 1200ms var(--ease-salida); transition-delay: calc(min(var(--i, 0), 6) * 90ms); }
+.cortina > :first-child { clip-path: inset(100% 0 0 0 round 24px); transition: clip-path 700ms var(--ease-salida); transition-delay: calc(min(var(--r, 0), 3) * 70ms); }
 .cortina.visto > :first-child { clip-path: inset(0 0 0 0 round 24px); }
-.cortina .cortina-img { transform: scale(1.18); transition: transform 1800ms var(--ease-salida); transition-delay: inherit; }
+.cortina .cortina-img { transform: scale(1.12); transition: transform 1000ms var(--ease-salida); transition-delay: inherit; }
 .cortina.visto .cortina-img { transform: scale(1.02); }
 @supports (animation-timeline: view()) {
   .paralaje { animation: paralaje linear both; animation-timeline: view(); }
@@ -147,9 +151,21 @@ html[lang^="es"] [data-ver="en"], html[lang="en"] [data-ver="es"] { display: non
 .llega .titulo-sec { animation: destello 1200ms var(--ease-salida); }
 @keyframes destello { 0%, 30% { color: var(--color-oro-claro); } 100% { color: inherit; } }
 
-/* Producto: la foto respira al pasar el cursor. */
+/* Producto: la foto respira al pasar el cursor; su sombra se queda en la mesa y se suaviza. */
 .producto-img { transition: transform 700ms var(--ease-resorte); }
-@media (hover: hover) { .producto:hover .producto-img { transform: translateY(-6px) scale(1.05) rotate(-1.5deg); } }
+@media (hover: hover) {
+  .producto:hover .producto-img { transform: translateY(-6px) scale(1.05) rotate(-1.5deg); }
+  .producto:hover .producto-sombra { transform: scale(calc(var(--k, 1.6) * 1.04)); opacity: 0.8; }
+}
+/* Sombra del platillo pre-renderizada (scripts/miniaturas.mjs): una imagen diminuta en línea con la
+   silueta ya difuminada, en vez de filter: drop-shadow() por imagen (caro de pintar al hacer scroll).
+   Misma caja que la imagen, escalada por el margen del lienzo (--k): la silueta coincide con el platillo. */
+.producto-sombra { position: absolute; inset: 0; margin: auto; width: 84%; height: 84%; background: center / contain no-repeat; transform: scale(var(--k, 1.6)); pointer-events: none; transition: transform 700ms var(--ease-resorte), opacity 700ms ease; }
+/* Relleno provisional: LQIP diminuto en línea hasta que la imagen está decodificada (app.ts pone
+   data-cargada). Así la tarjeta nunca se ve vacía mientras llega la foto. */
+.lqip { background: var(--lqip) center / contain no-repeat; }
+.lqip.object-cover { background-size: cover; }
+.lqip[data-cargada] { background-image: none; }
 
 .chile { transition: transform 300ms var(--ease-resorte); }
 .visto .chile.on { animation: chile 600ms var(--ease-resorte) both; animation-delay: calc(500ms + var(--c) * 110ms); }
@@ -346,6 +362,7 @@ dialog.hoja[data-forma="ventana"].cerrando .hoja-panel { animation: ventana-sale
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 1ms !important; animation-iteration-count: 1 !important; transition-duration: 1ms !important; animation-delay: 0ms !important; transition-delay: 0ms !important; scroll-behavior: auto !important; }
   .revela, .aparece, .hero-media { opacity: 1; transform: none; }
+  .producto:hover .producto-sombra { transform: scale(var(--k, 1.6)); }
   .linea > span, .trazo, .cortina .cortina-img { transform: none; }
   .producto:active .producto-marco { transform: none; }
   .cortina > :first-child { clip-path: none; }

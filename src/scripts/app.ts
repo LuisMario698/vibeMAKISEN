@@ -61,11 +61,76 @@ $$('#inicio, [data-estado-local]').forEach((el) => vigia.observe(el));
 document.addEventListener('visibilitychange', () => html.toggleAttribute('data-pausa', document.hidden));
 
 /* ── Aparición al hacer scroll ─────────────────────────────────────── */
-const revela = new IntersectionObserver(
-  (entradas) => entradas.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('visto'); revela.unobserve(e.target); } }),
-  { rootMargin: '0px 0px -10% 0px', threshold: 0.06 },
-);
+// En cuanto asoma 1 px. El escalonado (--r) es solo entre lo que entra a la vez; lo que ya está bien
+// dentro de la pantalla al detectarse (salto a una categoría, scroll rápido, volver hacia arriba)
+// se muestra al instante (.ya). La primera pantalla al cargar sí entra con su animación.
+const arranque = performance.now();
+const revela = new IntersectionObserver((entradas) => {
+  const alto = innerHeight;
+  const portada = scrollY < 40 && performance.now() - arranque < 2500;
+  let k = 0;
+  for (const e of entradas) {
+    if (!e.isIntersecting) continue;
+    const el = e.target as HTMLElement;
+    revela.unobserve(el);
+    if (!portada && (alto - e.boundingClientRect.top > alto * 0.25 || reducir())) el.classList.add('ya');
+    else el.style.setProperty('--r', String(k++));
+    el.classList.add('visto');
+  }
+}, { threshold: 0 });
 $$('.revela, .cortina').forEach((el) => revela.observe(el));
+
+// Imágenes del menú. Relleno provisional (LQIP en línea) hasta que la imagen está decodificada.
+const sinRelleno = (img: HTMLImageElement) => { img.decode().catch(() => {}).then(() => img.setAttribute('data-cargada', '')); };
+$$<HTMLImageElement>('img.lqip').forEach((img) => {
+  if (img.complete && img.naturalWidth) sinRelleno(img);
+  else img.addEventListener('load', () => sinRelleno(img), { once: true });
+});
+// Se piden antes de hacer falta: la sección que está a poco más de una pantalla, la categoría que se toca
+// (pointerdown llega antes que el clic y el desplazamiento) y la del enlace #categoría.
+let ultimoPedido = 0;
+const pedir = (raiz: Element | null | undefined) => {
+  if (!raiz) return;
+  ultimoPedido = performance.now();
+  $$<HTMLImageElement>('img.lqip[loading="lazy"]', raiz as HTMLElement).forEach((img) => { img.loading = 'eager'; });
+};
+// Más hacia abajo (hacia donde se avanza) que hacia arriba, para no competir con lo que se ve.
+const cerca = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { pedir(e.target); cerca.unobserve(e.target); } }), { rootMargin: '25% 0px 120% 0px' });
+$$('section').filter((s) => s.querySelector('img.lqip')).forEach((s) => cerca.observe(s));
+const pedirCategoria = (id: string | undefined) => { const s = id ? document.getElementById(id) : null; if (s?.matches('section')) { pedir(s); pedir(s.nextElementSibling); } };
+const alTocar = (ev: Event) => {
+  const t = ev.target as HTMLElement;
+  pedirCategoria(t.closest<HTMLElement>('[data-ir]')?.dataset.ir);
+  // En pantallas de densidad 1–2 la tarjeta usa una variante; el detalle usa el original: se adelanta.
+  const img = t.closest('article.producto')?.querySelector<HTMLImageElement>('img.lqip[srcset]');
+  if (img?.currentSrc && img.currentSrc !== img.src) new Image().src = img.src;
+};
+document.addEventListener('pointerdown', alTocar, { capture: true, passive: true });
+document.addEventListener('keydown', (ev) => { if (ev.key === 'Enter' || ev.key === ' ') alTocar(ev); }, { capture: true, passive: true });
+addEventListener('hashchange', () => pedirCategoria(decodeURIComponent(location.hash.slice(1))));
+pedirCategoria(decodeURIComponent(location.hash.slice(1)));
+// Con la página ya quieta, el resto de los platillos se descarga de uno en uno, del más cercano al
+// más lejano, para que un salto a cualquier categoría se vea al instante (no con ahorro de datos ni 2G).
+const red = (navigator as Navigator & { connection?: { saveData?: boolean; effectiveType?: string } }).connection;
+if (!red?.saveData && !/2g/.test(red?.effectiveType ?? '')) {
+  const ocioso = () => new Promise<void>((r) => ('requestIdleCallback' in window ? requestIdleCallback(() => r(), { timeout: 2000 }) : setTimeout(r, 200)));
+  const calentar = async () => {
+    const y = innerHeight / 2;
+    const cola = $$<HTMLImageElement>('article.producto img.lqip[loading="lazy"]')
+      .map((img) => ({ img, d: Math.abs(img.getBoundingClientRect().top - y) }))
+      .sort((a, b) => a.d - b.d);
+    for (const { img } of cola) {
+      if (img.complete || img.loading === 'eager') continue;
+      // Cede la red a lo que pide la persona (salto, sección cercana) mientras ocurre.
+      while (performance.now() - ultimoPedido < 1500) await new Promise((r) => setTimeout(r, 300));
+      await ocioso();
+      img.loading = 'eager';
+      await new Promise<void>((r) => { img.addEventListener('load', () => r(), { once: true }); img.addEventListener('error', () => r(), { once: true }); setTimeout(r, 5000); });
+    }
+  };
+  const empezar = () => setTimeout(calentar, 2000);
+  if (document.readyState === 'complete') empezar(); else addEventListener('load', empezar, { once: true });
+}
 
 /* ── Categorías: isla, índice lateral y categoría activa ───────────── */
 const secciones = $$('[data-seccion]');
