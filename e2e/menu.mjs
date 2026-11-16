@@ -65,7 +65,7 @@ for (const [nombre, w, h] of TAMANOS) {
   // Mi pedido: paso 1 → 2 (entrega). Mesa 7 del QR preseleccionada en el plano.
   ctx.on('page', (p) => p.close().catch(() => {}));
   const texto = async () => new URL((await page.locator('#lista-enviar').getAttribute('href')) ?? '#', BASE).searchParams.get('text') ?? '';
-  await page.locator('[data-abrir-lista]').first().click();
+  await page.locator('.isla-lista').click();
   await page.waitForSelector('#lista[open]');
   await page.waitForTimeout(400);
   ok(await page.locator('.linea-lista').count() === 2, 'Mi pedido muestra 2 líneas como tarjetas');
@@ -170,7 +170,7 @@ for (const [nombre, w, h] of TAMANOS) {
   ok(new URL(page.url()).pathname === '/en/', 'la URL cambia a /en/');
   ok((await page.title()).startsWith('MAKIZEN Sushi & Seafood'), 'título en inglés');
   ok(await page.locator('.producto .text-humo:visible', { hasText: 'US$' }).first().isVisible(), 'USD visible');
-  await page.locator('[data-abrir-lista]').first().click();
+  await page.locator('.isla-lista').click();
   await page.waitForSelector('#lista[open]');
   const pregunta = new URL(await page.locator('#pd-preguntar').getAttribute('href')).searchParams.get('text') ?? '';
   ok(pregunta.includes(`my order ${enviado.folio}`), 'preguntar por el pedido en inglés');
@@ -234,7 +234,7 @@ for (const [nombre, w, h] of TAMANOS) {
   // Mesa 40 desde el QR: no está en el plano, se acepta con aviso.
   let ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' });
   let { page, errores } = await preparar(ctx, `${BASE}/?src=qr-mesa-40`);
-  await page.locator('[data-abrir-lista]').first().click();
+  await page.locator('.isla-lista').click();
   await page.waitForSelector('#lista[open]');
   await page.locator('#pd-seguir').click();
   await page.locator('label.modo:has(input[value="mesa"])').click();
@@ -250,7 +250,7 @@ for (const [nombre, w, h] of TAMANOS) {
   ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, serviceWorkers: 'block', permissions: ['geolocation'], geolocation: { latitude: 31.3201234, longitude: -113.5409876 } });
   ({ page, errores } = await preparar(ctx, BASE));
   ctx.on('page', (p) => p.close().catch(() => {}));
-  await page.locator('[data-abrir-lista]').first().click();
+  await page.locator('.isla-lista').click();
   await page.waitForSelector('#lista[open]');
   await page.locator('#pd-seguir').click();
   await page.waitForSelector('#pd-mapa.leaflet-container', { timeout: 8000 }).catch(() => {});
@@ -266,7 +266,7 @@ for (const [nombre, w, h] of TAMANOS) {
   await page.waitForSelector('[data-vista="seguimiento"]:not([hidden])', { timeout: 5000 });
   await page.keyboard.press('Escape');
   await page.waitForTimeout(400);
-  await page.locator('#nav [data-abrir-lista]').first().click();
+  await page.locator('.isla-lista').click();
   await page.waitForSelector('#lista[open]');
   ok(await page.locator('[data-vista="seguimiento"]').isVisible(), 'al volver a abrir se ve el seguimiento');
   await page.locator('#pd-nuevo').click();
@@ -278,7 +278,7 @@ for (const [nombre, w, h] of TAMANOS) {
   // Ubicación negada: mensaje claro, el pedido sigue.
   ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block', reducedMotion: 'reduce' });
   ({ page, errores } = await preparar(ctx, BASE));
-  await page.locator('[data-abrir-lista]').first().click();
+  await page.locator('.isla-lista').click();
   await page.waitForSelector('#lista[open]');
   await page.locator('#pd-seguir').click();
   await page.waitForSelector('#pd-mapa.leaflet-container', { timeout: 8000 }).catch(() => {});
