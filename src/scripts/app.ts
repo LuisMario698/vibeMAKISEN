@@ -11,6 +11,12 @@ import { crearHoja } from './hoja';
 import { crearIsla } from './isla';
 import { crearLista } from './lista';
 import { cajaDe, proporcion, rectImagen } from './morfo';
+import { esDemo } from '../lib/demo-almacen';
+import { aislarAlmacen } from './aislar';
+
+/* ── Modo presentación (?demo=1): el estado del pedido vive en memoria mientras dura ── */
+const demo = esDemo(location.search);
+if (demo) aislarAlmacen();
 
 /* ── Idioma ───────────────────────────────────────────────────────── */
 let objetivo = html.lang;
@@ -311,3 +317,5 @@ addEventListener('vite:preloadError', (ev) => {
 /* ── Inicio ─────────────────────────────────────────────────────────── */
 aplicarIdioma();
 setInterval(pintarEstado, 60_000);
+// El recorrido solo se descarga con ?demo=1: en el uso normal no pesa nada.
+if (demo) import('./presentacion').then((m) => m.iniciar()).catch(() => { /* sin recorrido: el menú sigue normal */ });
