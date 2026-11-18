@@ -69,6 +69,8 @@ const og = new URL('/og/makizen.jpg', sitio).href;
       (function () {
         var d = document.documentElement, l = null;
         try { l = localStorage.getItem('makizen-idioma'); } catch (e) {}
+        // Modo presentación (?demo=1): manda la ruta (/ español, /en/ inglés), no lo elegido antes.
+        if (/[?&]demo=1(&|$)/.test(location.search)) l = d.dataset.ruta === 'en' ? 'en' : 'es';
         if (!l) {
           if (d.dataset.ruta === 'en') l = 'en';
           else if (/[?&]src=qr-/.test(location.search) && (navigator.language || '').toLowerCase().indexOf('en') === 0) l = 'en';

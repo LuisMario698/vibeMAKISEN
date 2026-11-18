@@ -1,0 +1,163 @@
+/* Modo presentación (?demo=1). Se descarga solo con el recorrido (src/scripts/presentacion.ts).
+   Lenguaje de la marca: oro sobre mármol negro, versalitas con tracking, el filete dorado con
+   el punto del logo (aquí marca el avance) y el ensō como dedo. Teléfono y tablet: banda arriba
+   (la página se recorre su alto para no taparse). Computadora: tarjeta abajo a la izquierda,
+   fuera del camino de la isla, del detalle y del cajón de «Mi pedido». */
+
+/* ── Capas (popover): sin los estilos del navegador ── */
+.pz-banda, .pz-cursor, .pz-velo {
+  margin: 0; padding: 0; border: 0; background: none; color: var(--color-hueso); overflow: visible;
+  max-width: none; max-height: none;
+}
+
+/* ═════════════════════════════  SUBTÍTULO  ═════════════════════════════ */
+.pz-banda {
+  position: fixed; inset: 0 0 auto 0; width: 100%; height: auto;
+  padding: calc(env(safe-area-inset-top) + 8px) max(10px, env(safe-area-inset-right)) 12px max(16px, env(safe-area-inset-left));
+  background: linear-gradient(rgb(5 5 5 / 0.82), rgb(5 5 5 / 0.92)), var(--marmol) center / cover no-repeat, var(--color-noche);
+  box-shadow: 0 12px 32px rgb(0 0 0 / 0.5);
+  font-family: var(--font-sans); font-size: 16px; font-weight: 400; line-height: 1.38; letter-spacing: 0; text-align: left;
+  -webkit-font-smoothing: antialiased;
+}
+.pz-banda[hidden] { display: none; }
+.pz-banda.entra { animation: pz-banda-baja 560ms var(--ease-salida) both; }
+@keyframes pz-banda-baja { from { opacity: 0; transform: translateY(-100%); } }
+
+.pz-fila { display: flex; align-items: flex-start; gap: 8px; }
+.pz-texto { flex: 1; min-width: 0; padding-top: 5px; }
+.pz-titulo {
+  margin: 0; color: var(--color-oro-claro);
+  font-family: var(--font-alt); font-weight: 500; font-size: 18px; line-height: 1.15;
+  font-variant-caps: all-small-caps; letter-spacing: 0.15em; text-wrap: balance;
+}
+.pz-num { color: var(--color-oro-claro); font-variant-numeric: tabular-nums; letter-spacing: 0.04em; }
+.pz-linea { margin: 5px 0 0; color: var(--color-hueso); font-size: 16px; line-height: 1.38; text-wrap: pretty; }
+
+.pz-controles { display: flex; flex: none; gap: 2px; margin-right: -2px; }
+.pz-ctl {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  min-width: 44px; height: 44px; padding: 0 10px; border-radius: 999px;
+  border: 1px solid transparent; background: transparent; color: var(--color-oro-claro);
+  font: 600 15px/1 var(--font-sans); cursor: pointer;
+}
+.pz-ctl svg { flex: none; }
+@media (hover: hover) and (pointer: fine) { .pz-ctl:hover { border-color: rgb(210 178 106 / 0.4); } }
+/* En pausa el botón crece a «Continuar», en oro: lo único brillante de la banda. */
+.pz-banda[data-estado="pausa"] .pz-ctl[data-pz="pausa"] { background: var(--color-oro); color: #0a0a0a; padding: 0 16px 0 13px; }
+.pz-ctl-rotulo { white-space: nowrap; }
+
+/* Avance: el hilo de oro con el punto del logo recorre el borde de la banda. */
+.pz-filete { position: absolute; left: 0; right: 0; bottom: 0; height: 9px; transform: translateY(50%); pointer-events: none; }
+.pz-filete > b { position: absolute; inset: 4px 0 auto; height: 1px; background: linear-gradient(90deg, rgb(174 139 61 / 0.55), rgb(174 139 61 / 0.22) 60%, rgb(244 241 234 / 0.08)); }
+.pz-avance { position: absolute; inset: 3.5px 0 auto; height: 2px; background: linear-gradient(90deg, var(--color-oro), var(--color-oro-claro)); transform: scaleX(0); transform-origin: left center; }
+.pz-punto { position: absolute; left: -4.5px; top: 0; width: 9px; height: 9px; border-radius: 50%; background: var(--color-oro-claro); box-shadow: 0 0 12px rgb(210 178 106 / 0.7); }
+.pz-banda.entra .pz-punto { animation: punto-oro 560ms 260ms var(--ease-resorte) both; }
+
+/* Teléfono y tablet: la página y la barra superior bajan lo que mide la banda. */
+@media (max-width: 63.98rem), (max-height: 35.98rem) {
+  html.presentando body { padding-top: var(--pz-alto, 0px); }
+  html.presentando #nav { translate: 0 var(--pz-alto, 0px); }
+  html.presentando { scroll-padding-top: calc(5rem + var(--pz-alto, 0px)); }
+  html.presentando dialog.lista { --pd-alto-max: calc(100dvh - var(--pz-alto, 0px) - 6px); }
+}
+
+/* Computadora y proyector: tarjeta abajo a la izquierda, del ancho que deja libre la isla. */
+@media (min-width: 64rem) and (min-height: 36rem) {
+  .pz-banda {
+    inset: auto auto 18px 18px; width: clamp(250px, calc((100vw - 528px) / 2 - 36px), 380px);
+    padding: 14px 10px 20px 20px; border-radius: 20px;
+    border: 1px solid rgb(210 178 106 / 0.26);
+    box-shadow: 0 24px 64px rgb(0 0 0 / 0.6), inset 0 1px 0 rgb(236 213 152 / 0.08);
+  }
+  .pz-banda.entra { animation-name: pz-banda-sube; }
+  .pz-filete { left: 20px; right: 20px; bottom: 9px; transform: none; }
+  /* Se enseña en laptop o proyector, a un par de metros: letra más grande. */
+  .pz-titulo { font-size: 20px; }
+  .pz-linea { font-size: 17px; line-height: 1.4; }
+}
+@keyframes pz-banda-sube { from { opacity: 0; transform: translateY(18px); } }
+
+/* ═══════════════════════════  DEDO / CURSOR  ═══════════════════════════ */
+.pz-cursor {
+  --pz-c: 54px;
+  position: fixed; inset: 0 auto auto 0; width: 0; height: 0;
+  pointer-events: none; opacity: 0; transition: opacity 220ms ease;
+}
+.pz-cursor.ve { opacity: 1; }
+.pz-cursor-cuerpo {
+  position: absolute; left: calc(var(--pz-c) / -2); top: calc(var(--pz-c) / -2); display: block;
+  width: var(--pz-c); height: var(--pz-c);
+  filter: drop-shadow(0 0 1.5px rgb(0 0 0 / 0.95)) drop-shadow(0 6px 14px rgb(0 0 0 / 0.55));
+  transition: transform 180ms var(--ease-salida);
+}
+.pz-cursor.pulsa .pz-cursor-cuerpo { transform: scale(0.82); transition-duration: 90ms; }
+.pz-cursor svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.pz-cursor-enso { fill: url(#pz-oro); }
+.pz-cursor-punto { fill: #ecd598; }
+.pz-cursor-disco { fill: rgb(210 178 106 / 0.16); stroke: rgb(5 5 5 / 0.35); stroke-width: 3; }
+/* Contorno de tinta bajo el trazo: el ensō se lee también sobre los botones de oro. */
+.pz-cursor-contorno { fill: rgb(5 5 5 / 0.82); stroke: rgb(5 5 5 / 0.82); stroke-width: 11; stroke-linejoin: round; }
+.pz-onda {
+  position: absolute; left: calc(var(--pz-c) / -2); top: calc(var(--pz-c) / -2);
+  width: var(--pz-c); height: var(--pz-c); border-radius: 50%;
+  border: 2px solid var(--color-oro-claro); opacity: 0;
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.35), 0 0 18px rgb(210 178 106 / 0.45);
+}
+@media (pointer: fine) and (min-width: 64rem) { .pz-cursor { --pz-c: 48px; } }
+
+/* El control tocado se hunde como con el dedo (escala aparte: no pisa sus transformaciones). */
+html.presentando .presionable.pz-pulsa { scale: 0.97; }
+
+/* Al salir: fundido a negro antes de recargar sin ?demo. */
+.pz-velo { position: fixed; inset: 0; width: 100%; height: 100%; background: var(--color-noche); opacity: 0; pointer-events: none; }
+
+/* ═══════════════════════════  TARJETA FINAL  ═══════════════════════════ */
+dialog.pz-final {
+  margin: auto; padding: 0; border: 0; background: transparent; color: var(--color-hueso);
+  width: min(calc(100% - 32px), 440px); max-width: none; max-height: calc(100dvh - 24px); overflow: visible;
+}
+dialog.pz-final::backdrop { background: rgb(0 0 0 / 0.74); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); animation: pz-velo-entra 420ms ease-out; }
+@keyframes pz-velo-entra { from { opacity: 0; } }
+.pz-final-panel {
+  display: flex; flex-direction: column; align-items: center; max-height: calc(100dvh - 24px); overflow-y: auto;
+  padding: 30px 24px 22px; border-radius: 28px; text-align: center;
+  background: linear-gradient(rgb(12 12 11 / 0.88), rgb(5 5 5 / 0.95)), var(--marmol) center / cover no-repeat, var(--color-carbon);
+  border: 1px solid rgb(210 178 106 / 0.3);
+  box-shadow: 0 30px 80px rgb(0 0 0 / 0.7), inset 0 1px 0 rgb(236 213 152 / 0.12);
+}
+dialog.pz-final[open] .pz-final-panel { animation: pz-final-entra 620ms var(--ease-salida) both; }
+@keyframes pz-final-entra { from { opacity: 0; transform: translateY(16px) scale(0.97); filter: blur(4px); } }
+.pz-final-logo { width: 84px; height: auto; filter: drop-shadow(0 0 22px rgb(210 178 106 / 0.35)); }
+dialog.pz-final[open] .pz-final-logo { animation: pz-logo-entra 900ms 120ms var(--ease-salida) both; }
+@keyframes pz-logo-entra { from { opacity: 0; transform: scale(0.9) rotate(-8deg); } }
+.pz-final-titulo { margin: 16px 0 0; font-size: 26px; line-height: 1.12; font-weight: 600; letter-spacing: -0.02em; text-wrap: balance; outline-offset: 6px; }
+/* Recibe el foco solo por script (tabindex=-1, no se alcanza con Tab): sin recuadro. */
+.pz-final-titulo:focus { outline: none; }
+.pz-final-filete { width: 100%; max-width: 220px; margin: 14px auto 2px; }
+.pz-final-filete > b:first-child { background: linear-gradient(270deg, var(--color-oro), rgb(174 139 61 / 0.45) 35%, rgb(244 241 234 / 0.06) 75%, transparent); }
+.pz-final-lista { list-style: none; margin: 14px 0 0; padding: 0; display: grid; gap: 10px; width: 100%; text-align: left; }
+.pz-final-lista li { display: flex; align-items: baseline; gap: 12px; font-size: 16px; line-height: 1.4; }
+.pz-final-lista li::before { content: ""; flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--color-oro-claro); box-shadow: 0 0 10px rgb(210 178 106 / 0.5); transform: translateY(-2px); }
+dialog.pz-final[open] .pz-final-lista li { animation: aparece 520ms var(--ease-salida) both; }
+dialog.pz-final[open] .pz-final-lista li:nth-child(1) { animation-delay: 260ms; }
+dialog.pz-final[open] .pz-final-lista li:nth-child(2) { animation-delay: 330ms; }
+dialog.pz-final[open] .pz-final-lista li:nth-child(3) { animation-delay: 400ms; }
+.pz-final-nota { margin: 16px 0 0; font-size: 14px; color: var(--color-niebla); }
+.pz-final-botones { display: grid; gap: 10px; width: 100%; margin-top: 18px; }
+@media (min-width: 30rem) { .pz-final-botones { grid-template-columns: 1fr 1fr; } }
+.pz-final-boton { width: 100%; font-size: 16px; padding-inline: 1rem; }
+
+/* Computadora y proyector: la tarjeta final también crece. */
+@media (min-width: 64rem) and (min-height: 36rem) {
+  dialog.pz-final { width: min(calc(100% - 48px), 520px); }
+  .pz-final-panel { padding: 38px 32px 28px; }
+  .pz-final-logo { width: 96px; }
+  .pz-final-titulo { font-size: 32px; }
+  .pz-final-lista { gap: 12px; }
+  .pz-final-lista li { font-size: 18px; }
+  .pz-final-nota { font-size: 15px; }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  dialog.pz-final::backdrop { backdrop-filter: none; background: rgb(0 0 0 / 0.9); }
+}

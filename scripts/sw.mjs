@@ -10,9 +10,10 @@ import { readFileSync, writeFileSync } from 'node:fs';
 const VERSION = 'v4';
 const { count, size, warnings } = await generateSW({
   globDirectory: 'dist',
-  // Leaflet solo se carga al elegir "A domicilio": no va en el precache (lo guarda la regla de /_astro/).
-  // La guía del comensal llega tras la intro (import dinámico) y es opcional: tampoco va en el precache.
-  globIgnores: ['_astro/leaflet*', '_astro/guia*'],
+  // Leaflet solo se carga al elegir "A domicilio", la guía del comensal llega tras la intro (import
+  // dinámico, opcional) y el modo presentación solo con ?demo=1: ninguno va en el precache
+  // (si se usan, los guarda la regla de /_astro/).
+  globIgnores: ['_astro/leaflet*', '_astro/guia*', '_astro/presentacion*'],
   globPatterns: ['_astro/**/*.{js,css,woff2}', 'brand/{logo-horizontal,logo-vertical,isotipo}.svg', 'brand/icon-*.png', 'offline/index.html', 'manifest.webmanifest'],
   swDest: 'dist/sw.js',
   cacheId: 'makizen',

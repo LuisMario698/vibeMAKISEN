@@ -11,6 +11,12 @@ import { crearHoja } from './hoja';
 import { crearIsla } from './isla';
 import { crearLista } from './lista';
 import { cajaDe, proporcion, rectImagen } from './morfo';
+import { esDemo } from '../lib/demo-almacen';
+import { aislarAlmacen } from './aislar';
+
+/* ── Modo presentación (?demo=1): el estado del pedido vive en memoria mientras dura ── */
+const demo = esDemo(location.search);
+if (demo) aislarAlmacen();
 
 /* ── Idioma ───────────────────────────────────────────────────────── */
 let objetivo = html.lang;
@@ -323,4 +329,7 @@ function cargarGuia() {
 /* ── Inicio ─────────────────────────────────────────────────────────── */
 aplicarIdioma();
 setInterval(pintarEstado, 60_000);
-if (document.readyState === 'complete') cargarGuia(); else addEventListener('load', cargarGuia, { once: true });
+// Con ?demo=1 corre el recorrido (se descarga solo entonces) y la guía del comensal no se carga:
+// ni pistas, ni bienvenida, ni «Prueba el Camarón Roca» encima de la demostración.
+if (demo) import('./presentacion').then((m) => m.iniciar()).catch(() => { /* sin recorrido: el menú sigue normal */ });
+else if (document.readyState === 'complete') cargarGuia(); else addEventListener('load', cargarGuia, { once: true });
