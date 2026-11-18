@@ -20,18 +20,18 @@
     var(--marmol) 22% 35% / 520% auto no-repeat,
     #0c0c0b;
   box-shadow: inset 0 0 0 1px rgb(210 178 106 / 0.52), inset 0 1px 0 rgb(236 213 152 / 0.3), 0 22px 44px -16px rgb(0 0 0 / 0.95), 0 4px 14px rgb(0 0 0 / 0.5);
-  cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+  /* No capta toques: lo que hay debajo sigue tocable y el toque la retira (src/scripts/guia.ts). */
+  pointer-events: none;
   --dy: 8px;
 }
 .gp[data-lado="abajo"] { --dy: -8px; }
-.gp > * { pointer-events: none; }
 .gp-enso { width: 34px; height: 34px; margin-top: 1px; overflow: visible; }
 .gp-texto { display: grid; gap: 3px; min-width: 0; }
 .gp-titulo { font-size: 16px; font-weight: 600; line-height: 1.3; letter-spacing: -0.005em; text-wrap: balance; }
 .gp-detalle { font-size: 16px; line-height: 1.35; color: #bdb8ad; text-wrap: pretty; }
 
 /* Ensō: el contorno de pincel se revela con una máscara que sigue al pincel; luego cae el punto. */
-.gp-enso-guia { fill: none; stroke: #fff; stroke-width: 30; stroke-linecap: round; stroke-dasharray: 100 120; }
+.gp-enso-guia { fill: none; stroke: #fff; stroke-width: 46; stroke-linecap: round; stroke-dasharray: 100 120; }
 .gp-enso-punto { fill: var(--color-oro-claro); transform-box: fill-box; transform-origin: center; }
 .gp.entra .gp-enso-guia, .gc.visto .gp-enso-guia { animation: gp-pinta 760ms 90ms cubic-bezier(0.5, 0, 0.2, 1) both; }
 .gp.entra .gp-enso-punto, .gc.visto .gp-enso-punto { animation: gp-punto 520ms 700ms var(--ease-resorte) both; }

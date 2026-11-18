@@ -1,0 +1,14 @@
+---
+// Ensō mínimo del enlace «¿Cómo pido?»: un trazo de pincel con grosor variable y puntas afiladas
+// (trazoEnso, el mismo del detalle del platillo, mucho más cargado de tinta) y el punto de oro del
+// logo en el hueco. A 20 px un aro de grosor parejo se leía como un icono de «recargar».
+import { trazoEnso } from '../lib/detalle';
+const trazo = trazoEnso({ inicio: -10, barrido: 296, grosor: 40, muestras: 48 });
+// El hueco y el punto arriba a la derecha, como en el isotipo de MAKIZEN.
+const g = (-42 * Math.PI) / 180;
+const punto = { x: (100 + 84 * Math.cos(g)).toFixed(1), y: (100 + 84 * Math.sin(g)).toFixed(1) };
+---
+<svg class="como-pido-enso" viewBox="-14 -14 228 228" width="20" height="20" aria-hidden="true" focusable="false">
+  <path d={trazo} fill="currentColor" />
+  <circle cx={punto.x} cy={punto.y} r="17" fill="currentColor" />
+</svg>

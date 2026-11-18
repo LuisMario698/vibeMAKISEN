@@ -97,12 +97,21 @@ export function prepararBienvenida(e: Estado, mesaQR: number | null): Estado {
 /**
  * Buscar y filtros: no en cuanto aparece la isla (ahí ya sale su pista), sino cuando la persona
  * muestra que está explorando: tras pasar por dos secciones, o tras 20 s de recorrer la carta.
- * Así no se encima a la de la isla y llega cuando buscar ya sirve. Siempre después de la de la isla.
+ * Así no se encima a la de la isla y llega cuando buscar ya sirve. Siempre después de la de la isla,
+ * y nunca mientras espera la del pedido (ver `esperaPedido`).
  */
 export const BUSQUEDA = { cambios: 2, ms: 20_000 } as const;
-export function tocaBusqueda(o: { islaVista: boolean; cambios: number; msConIsla: number }): boolean {
-  return o.islaVista && (o.cambios >= BUSQUEDA.cambios || o.msConIsla >= BUSQUEDA.ms);
+export function tocaBusqueda(o: { islaVista: boolean; cambios: number; msConIsla: number; esperaPedido?: boolean }): boolean {
+  return o.islaVista && !o.esperaPedido && (o.cambios >= BUSQUEDA.cambios || o.msConIsla >= BUSQUEDA.ms);
 }
+
+/**
+ * Tras el primer platillo en el carrito, lo que toca es enseñar dónde quedó el pedido: la pista de
+ * buscar espera a que salga la del pedido (o a que pasen 20 s, por si no llega a salir nunca).
+ */
+export const ESPERA_PEDIDO_MS = 20_000;
+export const esperaPedido = (o: { primerAgregado: number | null; pedidoVisto: boolean; ahora: number }) =>
+  o.primerAgregado !== null && !o.pedidoVisto && o.ahora - o.primerAgregado < ESPERA_PEDIDO_MS;
 
 /* ── Cola: nunca dos a la vez ───────────────────────────────────────── */
 export type EnCola = { id: Pista; desde: number };
@@ -130,31 +139,41 @@ export function siguiente(cola: Cola, ahora: number, ctx: { e: Estado; actual: P
 
 /* ── Textos (cortos y cálidos). El nombre de la función, igual que en la interfaz. ── */
 export type Idioma = 'es' | 'en';
-export type TextoPista = { titulo: string; detalle: string };
+/** `anuncio`: lo que lee el lector de pantalla (sin flechas dibujadas ni gestos que no le sirven). */
+export type TextoPista = { titulo: string; detalle: string; anuncio: string };
+const conAnuncio = (t: { titulo: string; detalle: string }, anuncio?: string): TextoPista => ({ ...t, anuncio: anuncio ?? `${t.titulo}. ${t.detalle}.` });
+/** `tactil: false` (ratón): «Haz clic…» en vez de «Toca…». Sin dato, se asume pantalla táctil. */
 export function textoPista(id: Pista, idioma: Idioma, o: { mesa?: number | null; tactil?: boolean } = {}): TextoPista {
   const es = idioma === 'es';
   const mesa = o.mesa ?? null;
+  const raton = o.tactil === false;
   switch (id) {
     case 'bienvenida':
       return es
-        ? { titulo: `Mesa ${mesa ?? ''}`.trim(), detalle: 'Pide desde aquí y te lo llevamos' }
-        : { titulo: `Table ${mesa ?? ''}`.trim(), detalle: "Order from here and we'll bring it to you" };
+        ? conAnuncio({ titulo: `Mesa ${mesa ?? ''}`.trim(), detalle: 'Pide desde aquí y te lo llevamos' })
+        : conAnuncio({ titulo: `Table ${mesa ?? ''}`.trim(), detalle: "Order from here and we'll bring it to you" });
     case 'isla':
       return es
-        ? { titulo: 'Toca para ver todas las secciones', detalle: o.tactil === false ? 'Arrastra ⇆ o usa las flechas para pasar a la siguiente' : 'Desliza ⇆ para pasar a la siguiente' }
-        : { titulo: 'Tap to see every section', detalle: o.tactil === false ? 'Drag ⇆ or use the arrow keys to move to the next one' : 'Swipe ⇆ to move to the next one' };
+        ? conAnuncio(
+          { titulo: raton ? 'Haz clic para ver todas las secciones' : 'Toca para ver todas las secciones', detalle: raton ? 'Arrastra ⇆ o usa las flechas para pasar a la siguiente' : 'Desliza ⇆ para pasar a la siguiente' },
+          'Abajo está el botón de la sección actual: ábrelo para ver todas las secciones.',
+        )
+        : conAnuncio(
+          { titulo: raton ? 'Click to see every section' : 'Tap to see every section', detalle: raton ? 'Drag ⇆ or use the arrow keys to move to the next one' : 'Swipe ⇆ to move to the next one' },
+          'The current-section button is at the bottom: open it to see every section.',
+        );
     case 'busqueda':
       return es
-        ? { titulo: 'Busca un platillo o ingrediente', detalle: 'Y filtra: Favoritos, Sin picante o Cocido' }
-        : { titulo: 'Search for a dish or ingredient', detalle: 'Then filter: Favorites, Not spicy or Cooked' };
+        ? conAnuncio({ titulo: 'Busca un platillo o ingrediente', detalle: 'Y filtra: Favoritos, Sin picante o Cocido' }, 'El botón Buscar, abajo, encuentra un platillo o ingrediente y filtra por Favoritos, Sin picante o Cocido.')
+        : conAnuncio({ titulo: 'Search for a dish or ingredient', detalle: 'Then filter: Favorites, Not spicy or Cooked' }, 'The Search button, at the bottom, finds a dish or ingredient and filters by Favorites, Not spicy or Cooked.');
     case 'agregar':
       return es
-        ? { titulo: 'Toca un platillo para ver opciones y agregarlo', detalle: 'En bebidas, el + las agrega directo' }
-        : { titulo: 'Tap a dish to see options and add it', detalle: 'For drinks, + adds them right away' };
+        ? conAnuncio({ titulo: raton ? 'Haz clic en un platillo para ver opciones y agregarlo' : 'Toca un platillo para ver opciones y agregarlo', detalle: 'En bebidas, el + las agrega directo' }, 'Abre un platillo para ver sus opciones y agregarlo. En bebidas, el botón Agregar las suma directo.')
+        : conAnuncio({ titulo: raton ? 'Click a dish to see options and add it' : 'Tap a dish to see options and add it', detalle: 'For drinks, + adds them right away' }, 'Open a dish to see its options and add it. For drinks, the Add button adds them right away.');
     case 'pedido':
       return es
-        ? { titulo: 'Tu pedido está aquí', detalle: mesa ? `Envíalo por WhatsApp y te lo llevamos a la mesa ${mesa}` : 'Revísalo y envíalo por WhatsApp' }
-        : { titulo: 'Your order is right here', detalle: mesa ? `Send it on WhatsApp and we'll bring it to table ${mesa}` : 'Review it and send it on WhatsApp' };
+        ? conAnuncio({ titulo: 'Tu pedido está aquí', detalle: mesa ? `Envíalo por WhatsApp y te lo llevamos a la mesa ${mesa}` : 'Revísalo y envíalo por WhatsApp' }, `Tu pedido está en el botón Mi pedido, arriba. ${mesa ? `Envíalo por WhatsApp y te lo llevamos a la mesa ${mesa}.` : 'Revísalo y envíalo por WhatsApp.'}`)
+        : conAnuncio({ titulo: 'Your order is right here', detalle: mesa ? `Send it on WhatsApp and we'll bring it to table ${mesa}` : 'Review it and send it on WhatsApp' }, `Your order is in the My order button, at the top. ${mesa ? `Send it on WhatsApp and we'll bring it to table ${mesa}.` : 'Review it and send it on WhatsApp.'}`);
   }
 }
 
@@ -181,4 +200,22 @@ export function colocar(o: { ancla: Caja; tam: { w: number; h: number }; vista: 
   const y = Math.round(lado === 'arriba' ? arriba : abajo);
   const hilo = Math.round(Math.max(20, Math.min(t.w - 20, cx - x)));
   return { x, y, lado, hilo };
+}
+
+/**
+ * Bienvenida de mesa en la portada: nunca encima del logo. En pantallas anchas va junto al estado
+ * («Abierto ahora»); en el teléfono, centrada sobre esa fila, entre el logo y el titular. Si la
+ * portada ya no está a la vista, bajo la barra superior.
+ */
+export function colocarBienvenida(o: { tam: { w: number; h: number }; vista: { w: number; h: number }; logo: Caja | null; chip: Caja | null; nav: number; margen?: number }): { x: number; y: number; junto: boolean } {
+  const m = o.margen ?? 12;
+  const { tam: t, vista: v, logo, chip } = o;
+  const centrada = { x: Math.round(Math.max(m, (v.w - t.w) / 2)), y: Math.round(o.nav + 10), junto: false };
+  if (!logo || !chip || chip.w <= 0) return centrada;
+  const piso = logo.y + logo.h + 6;
+  const y = Math.round(Math.max(piso, o.nav + 10, chip.y + chip.h / 2 - t.h / 2));
+  if (y + t.h > v.h - m || chip.y + chip.h < 0) return centrada;
+  const aLado = chip.x + chip.w + 16;
+  if (aLado + t.w <= v.w - m) return { x: Math.round(aLado), y, junto: true };
+  return { x: Math.round(Math.max(m, Math.min(v.w - m - t.w, chip.x))), y, junto: false };
 }

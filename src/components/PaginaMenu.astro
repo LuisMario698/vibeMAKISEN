@@ -3,6 +3,7 @@
 import Intro from './Intro.astro';
 import Nav from './Nav.astro';
 import Hero from './Hero.astro';
+import EnsoMini from './EnsoMini.astro';
 import Favoritos from './Favoritos.astro';
 import Seccion from './Seccion.astro';
 import Visita from './Visita.astro';
@@ -57,7 +58,7 @@ const total = menu.categorias.reduce((n, c) => n + c.platillos.length, 0);
       <span lang="en">{total} dishes and drinks. Open one and tap “Add” to build your order, then send it on WhatsApp.</span>
     </p>
     <button type="button" data-como-pido class="como-pido-enlace presionable mt-2" aria-haspopup="dialog">
-      <span class="como-pido-enso" aria-hidden="true"></span>
+      <EnsoMini />
       <span lang="es">¿Cómo pido?</span><span lang="en">How to order?</span>
     </button>
   </div>

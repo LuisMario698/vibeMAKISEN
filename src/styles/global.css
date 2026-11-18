@@ -292,10 +292,8 @@ dialog.hoja[data-forma="ventana"].cerrando .hoja-panel { animation: ventana-sale
   text-decoration: underline; text-decoration-color: var(--color-oro); text-decoration-thickness: 1.5px; text-underline-offset: 5px;
 }
 @media (hover: hover) and (pointer: fine) { .como-pido-enlace:hover { color: var(--color-oro-claro); } }
-/* Ensō de pincel mínimo con su punto de oro (el del logo). */
-.como-pido-enso { position: relative; flex: none; width: 18px; height: 18px; color: var(--color-oro-claro); }
-.como-pido-enso::before { content: ""; position: absolute; inset: 0; border-radius: 50%; border: 2px solid currentColor; -webkit-mask: conic-gradient(#000 0 300deg, transparent 300deg); mask: conic-gradient(#000 0 300deg, transparent 300deg); transform: rotate(18deg); }
-.como-pido-enso::after { content: ""; position: absolute; top: -1px; right: 1px; width: 4px; height: 4px; border-radius: 50%; background: currentColor; }
+/* Ensō de pincel mínimo con su punto de oro (el del logo): src/components/EnsoMini.astro. */
+.como-pido-enso { flex: none; width: 20px; height: 20px; color: var(--color-oro-claro); overflow: visible; }
 .isla-como { display: flex; margin: 16px auto 0; color: #0a0a0a; text-decoration-color: rgb(10 10 10 / 0.7); }
 .isla-como .como-pido-enso { color: #0a0a0a; }
 .isla-como:focus-visible { outline: 2px solid #0a0a0a; outline-offset: 2px; }

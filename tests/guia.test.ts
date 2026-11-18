@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  apagarEnSesion, BUSQUEDA, CADUCIDAD_MS, colocar, depurar, DURACION_MS, encolar, ESPERA_MAX_MS, estadoVacio, guiaActiva, leerEstado,
+  apagarEnSesion, BUSQUEDA, CADUCIDAD_MS, colocar, colocarBienvenida, depurar, ESPERA_PEDIDO_MS, esperaPedido, DURACION_MS, encolar, ESPERA_MAX_MS, estadoVacio, guiaActiva, leerEstado,
   marcar, marcarBienvenida, PISTAS, prepararBienvenida, reiniciar, RESPIRO_MS, serializar, siguiente, textoPista, tocaBienvenida, tocaBusqueda, visto,
   type Cola, type Estado,
 } from '../src/lib/guia';
@@ -94,6 +94,14 @@ describe('cuándo corre la guía', () => {
     expect(tocaBusqueda({ islaVista: true, cambios: BUSQUEDA.cambios, msConIsla: 0 })).toBe(true);
     expect(tocaBusqueda({ islaVista: true, cambios: 0, msConIsla: BUSQUEDA.ms })).toBe(true);
   });
+  it('buscar espera a la pista del pedido tras el primer platillo (sale encima del aviso «Agregado» si no)', () => {
+    expect(tocaBusqueda({ islaVista: true, cambios: 5, msConIsla: 0, esperaPedido: true })).toBe(false);
+    expect(esperaPedido({ primerAgregado: null, pedidoVisto: false, ahora: T0 })).toBe(false);
+    expect(esperaPedido({ primerAgregado: T0, pedidoVisto: false, ahora: T0 + 1000 })).toBe(true);
+    expect(esperaPedido({ primerAgregado: T0, pedidoVisto: true, ahora: T0 + 1000 })).toBe(false);
+    // Si la del pedido nunca llega a salir, buscar no se queda bloqueada para siempre.
+    expect(esperaPedido({ primerAgregado: T0, pedidoVisto: false, ahora: T0 + ESPERA_PEDIDO_MS })).toBe(false);
+  });
 });
 
 describe('cola: nunca dos a la vez', () => {
@@ -155,7 +163,7 @@ describe('textos', () => {
     }
   });
   it('la mesa aparece en la bienvenida y en la pista del pedido', () => {
-    expect(textoPista('bienvenida', 'es', { mesa: 7 })).toEqual({ titulo: 'Mesa 7', detalle: 'Pide desde aquí y te lo llevamos' });
+    expect(textoPista('bienvenida', 'es', { mesa: 7 })).toMatchObject({ titulo: 'Mesa 7', detalle: 'Pide desde aquí y te lo llevamos' });
     expect(textoPista('bienvenida', 'en', { mesa: 7 }).titulo).toBe('Table 7');
     expect(textoPista('pedido', 'es', { mesa: 7 }).detalle).toContain('mesa 7');
     expect(textoPista('pedido', 'en', { mesa: 7 }).detalle).toContain('table 7');
@@ -164,6 +172,21 @@ describe('textos', () => {
   it('isla: gesto de deslizar en táctil; flechas con ratón', () => {
     expect(textoPista('isla', 'es', { tactil: true }).detalle).toContain('Desliza');
     expect(textoPista('isla', 'es', { tactil: false }).detalle).toContain('flechas');
+  });
+  it('con ratón dice «Haz clic», no «Toca»', () => {
+    for (const id of ['isla', 'agregar'] as const) {
+      expect(textoPista(id, 'es', { tactil: false }).titulo).toMatch(/^Haz clic/);
+      expect(textoPista(id, 'en', { tactil: false }).titulo).toMatch(/^Click/);
+      expect(textoPista(id, 'es', { tactil: true }).titulo).toMatch(/^Toca/);
+    }
+  });
+  it('el anuncio para lector de pantalla no lleva flechas dibujadas ni gestos', () => {
+    for (const id of PISTAS) for (const idioma of ['es', 'en'] as const) for (const tactil of [true, false]) {
+      const a = textoPista(id, idioma, { mesa: 7, tactil }).anuncio;
+      expect(a).not.toMatch(/[⇆←→]/);
+      expect(a).not.toMatch(/\b(Desliza|Swipe|Arrastra|Drag|Toca|Tap)\b/);
+      expect(a.length).toBeGreaterThan(10);
+    }
   });
 });
 
@@ -199,5 +222,30 @@ describe('colocar la pista junto a lo que explica', () => {
     const r = colocar({ ancla: { x: 8, y: 500, w: 200, h: 52 }, tam: { w: 296, h: 100 }, vista: { w: 320, h: 568 }, lado: 'arriba', alinear: 'inicio' });
     expect(r.x).toBe(12);
     expect(r.x + 296).toBeLessThanOrEqual(320 - 12);
+  });
+});
+
+describe('bienvenida de mesa en la portada', () => {
+  const tam = { w: 344, h: 86 };
+  it('en el teléfono, sobre la fila del estado y nunca encima del logo', () => {
+    const logo = { x: 16, y: 90, w: 310, h: 120 };
+    const chip = { x: 16, y: 275, w: 236, h: 40 };
+    const r = colocarBienvenida({ tam, vista: { w: 390, h: 664 }, logo, chip, nav: 56 });
+    expect(r.junto).toBe(false);
+    expect(r.y).toBeGreaterThanOrEqual(logo.y + logo.h);
+    expect(r.y).toBeLessThanOrEqual(chip.y);
+    expect(r.y + tam.h).toBeGreaterThanOrEqual(chip.y + chip.h);
+    expect(r.x).toBe(16);
+  });
+  it('en pantallas anchas, junto al estado («Abierto ahora»)', () => {
+    const r = colocarBienvenida({ tam: { w: 344, h: 92 }, vista: { w: 1440, h: 900 }, logo: { x: 152, y: 120, w: 520, h: 200 }, chip: { x: 152, y: 383, w: 218, h: 42 }, nav: 64 });
+    expect(r.junto).toBe(true);
+    expect(r.x).toBeGreaterThanOrEqual(152 + 218);
+    expect(r.y).toBeGreaterThanOrEqual(320);
+  });
+  it('si la portada ya no está a la vista, bajo la barra superior', () => {
+    const r = colocarBienvenida({ tam, vista: { w: 390, h: 664 }, logo: { x: 16, y: -600, w: 310, h: 120 }, chip: { x: 16, y: -400, w: 236, h: 40 }, nav: 56 });
+    expect(r.y).toBe(66);
+    expect(colocarBienvenida({ tam, vista: { w: 390, h: 664 }, logo: null, chip: null, nav: 56 }).y).toBe(66);
   });
 });

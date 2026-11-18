@@ -10,15 +10,24 @@
 //  · «¿Prueba el Camarón Roca?»: empujón de primera visita, en la página, al final de la portada.
 //  · «¿Cómo pido?»: hoja con los 4 pasos y «Ver las pistas otra vez».
 // Todo el texto entra como nodos (textContent), nunca innerHTML con datos.
-import '../styles/guia.css';
+// Sus estilos viajan dentro de este paquete (?inline) y se ponen al cargarlo: importados normal,
+// Astro los enlazaría en el HTML inicial como hoja que bloquea el render.
+import estilos from '../styles/guia.css?inline';
 import { arcoEnso, trazoEnso } from '../lib/detalle';
 import {
-  apagarEnSesion, CLAVE, CLAVE_APAGADA, colocar, DURACION_MS, encolar, estadoVacio, guiaActiva, leerEstado, marcar, marcarBienvenida,
+  apagarEnSesion, CLAVE, CLAVE_APAGADA, colocar, colocarBienvenida, DURACION_MS, encolar, esperaPedido, estadoVacio, guiaActiva, leerEstado, marcar, marcarBienvenida,
   prepararBienvenida, reiniciar, serializar, siguiente, textoPista, tocaBienvenida, tocaBusqueda, visto,
   type Caja, type Cola, type Estado, type GuiaId, type Lado, type Pista,
 } from '../lib/guia';
 import { precio, usd } from '../lib/precios';
 import { $, $$, datos, esIngles, html, ponerBi, reducir } from './comun';
+
+if (typeof document !== 'undefined' && !document.getElementById('guia-estilos')) {
+  const hoja = document.createElement('style');
+  hoja.id = 'guia-estilos';
+  hoja.textContent = estilos;
+  document.head.append(hoja);
+}
 
 /* ── Estado: localStorage; si falla, sessionStorage; si también falla, solo memoria ── */
 let estado: Estado = estadoVacio();
@@ -48,12 +57,17 @@ function svg(tag: string, attrs: Record<string, string>) { const n = document.cr
 const cajaDe = (el: Element): Caja => { const r = el.getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height }; };
 const visible = (c: Caja) => c.w > 0 && c.h > 0 && c.y + c.h > 0 && c.y < innerHeight && c.x + c.w > 0 && c.x < innerWidth;
 
-/** Ensō de pincel (el mismo trazo del detalle del platillo), revelado por una máscara que recorre el arco. */
+/**
+ * Ensō de pincel (el trazo del detalle del platillo), revelado por una máscara que recorre el arco.
+ * A 34 px el trazo fino del detalle se leía como un icono de «recargar»: aquí va más cargado de
+ * tinta (grosor variable con puntas afiladas) y con el punto del logo más grande.
+ */
+const TRAZO_CHICO = trazoEnso({ grosor: 30, muestras: 72 });
 const TRAZO = trazoEnso();
 const ARCO = arcoEnso();
 const PUNTO = (() => { const g = (101 * Math.PI) / 180; return { x: (100 + 84 * Math.cos(g)).toFixed(1), y: (100 + 84 * Math.sin(g)).toFixed(1) }; })();
 let nEnso = 0;
-function enso(clase: string) {
+function enso(clase: string, chico = true) {
   const id = `gp-${++nEnso}`;
   const s = svg('svg', { viewBox: '0 0 200 200', class: clase, 'aria-hidden': 'true', focusable: 'false' });
   const defs = svg('defs', {});
@@ -62,7 +76,7 @@ function enso(clase: string) {
   const mask = svg('mask', { id: `${id}-m`, maskUnits: 'userSpaceOnUse', x: '-10', y: '-10', width: '220', height: '220' });
   mask.append(svg('path', { class: 'gp-enso-guia', d: ARCO, pathLength: '100' }));
   defs.append(grad, mask);
-  s.append(defs, svg('path', { class: 'gp-enso-trazo', d: TRAZO, mask: `url(#${id}-m)`, fill: `url(#${id}-oro)` }), svg('circle', { class: 'gp-enso-punto', cx: PUNTO.x, cy: PUNTO.y, r: '9' }));
+  s.append(defs, svg('path', { class: 'gp-enso-trazo', d: chico ? TRAZO_CHICO : TRAZO, mask: `url(#${id}-m)`, fill: `url(#${id}-oro)` }), svg('circle', { class: 'gp-enso-punto', cx: PUNTO.x, cy: PUNTO.y, r: chico ? '15' : '9' }));
   return s;
 }
 
@@ -75,6 +89,8 @@ function regionViva() {
   return vivo;
 }
 function anunciar(t: string) {
+  // Solo texto: el lector de pantalla no necesita flechas dibujadas.
+  t = t.replace(/\s*[⇆←→]\s*/g, ' ');
   const r = regionViva();
   r.textContent = '';
   requestAnimationFrame(() => (r.textContent = t));
@@ -88,7 +104,9 @@ const mesaQR = () => {
 };
 const tactil = () => matchMedia('(pointer: coarse)').matches;
 const piezas = () => Number($('#nav .nav-contador')?.textContent ?? '0') || 0;
-const ocupada = () => html.classList.contains('intro') || html.classList.contains('isla-abierta') || html.classList.contains('bloqueo') || !!document.querySelector('dialog[open]') || document.hidden;
+/** El aviso «Agregado · Ver pedido» está a la vista (o un platillo va volando a la bolsa). */
+const avisoAVista = () => { const a = $('#aviso-agregado'); return (!!a && !a.hidden) || !!document.querySelector('.vuelo-capa'); };
+const ocupada = () => html.classList.contains('intro') || html.classList.contains('isla-abierta') || html.classList.contains('bloqueo') || !!document.querySelector('dialog[open]') || document.hidden || avisoAVista();
 const islaVisible = () => $('#isla')?.dataset.estado === 'pildora';
 
 /* ═════════════════════════════  PISTAS FLOTANTES  ═════════════════════════════ */
@@ -194,9 +212,14 @@ function mostrar(id: Pista): boolean {
   document.body.append(el);
   const tam = { w: el.offsetWidth, h: el.offsetHeight };
   if (id === 'bienvenida') {
+    // En la portada: bajo el logo, sobre la fila del estado (o junto a ella si hay sitio).
     const nav = $('#nav')?.getBoundingClientRect();
-    el.style.left = `${Math.round((innerWidth - tam.w) / 2)}px`;
-    el.style.top = `${Math.round((nav?.bottom ?? 64) + 10)}px`;
+    const logo = $('#inicio .marca-hero');
+    const chip = $('#inicio [data-estado-local]');
+    const p = colocarBienvenida({ tam, vista: { w: innerWidth, h: innerHeight }, logo: logo ? cajaDe(logo) : null, chip: chip ? cajaDe(chip) : null, nav: nav?.bottom ?? 64 });
+    el.style.left = `${p.x}px`;
+    el.style.top = `${p.y}px`;
+    if (p.junto) el.dataset.junto = '';
   } else if (a) {
     const p = colocar({ ancla: a.caja, tam, vista: { w: innerWidth, h: innerHeight }, lado: a.lado, alinear: a.alinear, hueco: 18 });
     el.dataset.lado = p.lado;
@@ -220,18 +243,22 @@ function mostrar(id: Pista): boolean {
 
   // Marcada al mostrarse: no vuelve aunque se recargue a la mitad.
   if (id === 'bienvenida') { estado = marcarBienvenida(estado, mesa!, Date.now()); guardarEstado(); } else ver(id);
-  const t = textoPista(id, esIngles() ? 'en' : 'es', { mesa, tactil: tactil() });
-  anunciar(`${t.titulo}. ${t.detalle}.`);
+  anunciar(textoPista(id, esIngles() ? 'en' : 'es', { mesa, tactil: tactil() }).anuncio);
 
   // Se va sola (el tiempo se detiene mientras el cursor está encima), al tocarla o al usar la función.
+  // La tarjeta no capta toques (pointer-events: none): un toque sobre ella llega a lo que hay
+  // debajo y, a la vez, la retira. Así nunca se «gasta» un toque solo en quitar la pista.
   let restante = DURACION_MS[id];
   let desde = performance.now();
+  let pausada = false;
   let reloj = window.setTimeout(() => cerrar('tiempo'), restante);
-  const pausar = () => { clearTimeout(reloj); restante -= performance.now() - desde; el.classList.add('pausa'); };
-  const seguir = () => { desde = performance.now(); el.classList.remove('pausa'); reloj = window.setTimeout(() => cerrar('tiempo'), Math.max(800, restante)); };
-  el.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse') pausar(); });
-  el.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse') seguir(); });
-  el.addEventListener('pointerdown', () => cerrar('toque'));
+  const pausar = () => { if (pausada) return; pausada = true; clearTimeout(reloj); restante -= performance.now() - desde; el.classList.add('pausa'); };
+  const seguir = () => { if (!pausada) return; pausada = false; desde = performance.now(); el.classList.remove('pausa'); reloj = window.setTimeout(() => cerrar('tiempo'), Math.max(800, restante)); };
+  const encima = (e: PointerEvent) => { const r = el.getBoundingClientRect(); return e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom; };
+  const alMover = (e: PointerEvent) => { if (e.pointerType === 'mouse') { if (encima(e)) pausar(); else seguir(); } };
+  const alTocar = (e: PointerEvent) => { if (encima(e)) cerrar('toque'); };
+  addEventListener('pointermove', alMover, { passive: true });
+  addEventListener('pointerdown', alTocar, { capture: true, passive: true });
   const y0 = scrollY;
   const alDesplazar = () => { if (a && !a.fija && Math.abs(scrollY - y0) > innerHeight * 0.6) cerrar('lejos'); };
   addEventListener('scroll', alDesplazar, { passive: true });
@@ -242,6 +269,8 @@ function mostrar(id: Pista): boolean {
     hecho = true;
     clearTimeout(reloj);
     removeEventListener('scroll', alDesplazar);
+    removeEventListener('pointermove', alMover);
+    removeEventListener('pointerdown', alTocar, { capture: true });
     el.classList.remove('entra');
     el.classList.add('sale');
     for (const x of extras) x.classList.add('sale');
@@ -363,7 +392,7 @@ function insertarCamaron() {
   img.alt = ''; img.width = 64; img.height = 64; img.decoding = 'async';
   img.dataset.foto = p.id;
   img.className = 'gc-img';
-  const mini = nodo('span', 'gc-mini', [enso('gc-enso'), img]);
+  const mini = nodo('span', 'gc-mini', [enso('gc-enso', false), img]);
   mini.setAttribute('aria-hidden', 'true');
 
   const rotulo = bi('p', 'gc-rotulo', '¿Primera vez?', 'First time?');
@@ -394,10 +423,10 @@ function insertarCamaron() {
   art.setAttribute('aria-labelledby', 'gc-t');
   const envoltura = nodo('div', 'contenedor gc-envoltura', [art]);
   centinela.after(envoltura);
-  ver('camaron');
 
-  // Entra al asomar: el ensō se pinta alrededor del platillo y el texto sube.
-  const io = new IntersectionObserver(([e]) => { if (e?.isIntersecting) { art.classList.add('visto'); io.disconnect(); } }, { threshold: 0.35 });
+  // Entra al asomar: el ensō se pinta alrededor del platillo y el texto sube. Se da por vista
+  // entonces (no al insertarla): si la persona no baja hasta ella, volverá a salir otro día.
+  const io = new IntersectionObserver(([e]) => { if (e?.isIntersecting) { art.classList.add('visto'); ver('camaron'); io.disconnect(); } }, { threshold: 0.35 });
   io.observe(art);
 
   // Agregar en un toque: lo hace el clic de [data-agregar] en app.ts (vuelo a la bolsa incluido).
@@ -434,6 +463,7 @@ function insertarCamaron() {
 
 /* ═════════════════════════════  DISPARADORES  ═════════════════════════════ */
 let armada = false;
+let primerAgregado: number | null = null;
 let cambios = 0;
 let msConIsla = 0;
 let islaDesde = 0;
@@ -446,7 +476,8 @@ function armar() {
   // Bienvenida de mesa (llegaron por el QR): en cuanto termina la intro.
   const mesa = mesaQR();
   estado = prepararBienvenida(estado, mesa);
-  if (tocaBienvenida(estado, mesa)) pedir('bienvenida');
+  // Un respiro tras la intro: que la portada (logo y titular) se asiente antes de hablar.
+  if (tocaBienvenida(estado, mesa)) window.setTimeout(() => pedir('bienvenida'), reducir() ? 300 : 900);
 
   // Isla: su pista sale cuando aparece por primera vez; buscar, cuando ya se explora.
   const isla = $('#isla');
@@ -477,9 +508,19 @@ function armar() {
   let antes = Number(contador?.dataset.vista ?? '0') || 0;
   if (contador) new MutationObserver(() => {
     const ahora = Number(contador.dataset.vista ?? '0') || 0;
-    if (antes === 0 && ahora > 0 && !visto(estado, 'pedido')) trasAviso(() => pedir('pedido'));
+    if (antes === 0 && ahora > 0 && !visto(estado, 'pedido')) {
+      // Lo que toca ahora es enseñar dónde quedó el pedido: buscar espera su turno.
+      primerAgregado = Date.now();
+      cola = cola.filter((x) => x.id !== 'busqueda');
+      if (actual?.id === 'busqueda') actual.cerrar('pedido');
+      trasAviso(() => pedir('pedido'));
+    }
     antes = ahora;
   }).observe(contador, { attributes: true, attributeFilter: ['data-vista'] });
+
+  // El aviso «Agregado · Ver pedido» manda: mientras está a la vista no hay pistas encima.
+  const aviso = $('#aviso-agregado');
+  if (aviso) new MutationObserver(() => { if (actual && ocupada()) actual.cerrar('aviso'); bombear(); }).observe(aviso, { attributes: true, attributeFilter: ['hidden'] });
 
   // Uso de cada función (captura: llega antes que el clic que la abre).
   document.addEventListener('pointerdown', (ev) => {
@@ -489,6 +530,9 @@ function armar() {
     else if (t.closest('.isla-lupa')) usar('busqueda');
     else if (t.closest('[data-abrir-lista], .aa-ver')) usar('pedido');
     else if (t.closest('#menu article.producto, [data-agregar]')) usar('agregar');
+    // Va a agregar (con el «+» o desde la hoja): viene el vuelo a la bolsa y el aviso «Agregado»;
+    // ninguna pista se queda encima de ese momento.
+    if (actual && t.closest('[data-agregar], #hoja-agregar')) actual.cerrar('agrega');
   }, { capture: true, passive: true });
   document.addEventListener('keydown', (ev) => {
     if (ev.key === 'Escape' && actual) actual.cerrar('escape');
@@ -517,7 +561,8 @@ function armar() {
 function revisarBusqueda() {
   if (!activo || visto(estado, 'busqueda')) return;
   const ms = msConIsla + (islaDesde ? performance.now() - islaDesde : 0);
-  if (tocaBusqueda({ islaVista: visto(estado, 'isla'), cambios, msConIsla: ms }) && islaVisible()) pedir('busqueda');
+  const espera = esperaPedido({ primerAgregado, pedidoVisto: visto(estado, 'pedido'), ahora: Date.now() });
+  if (tocaBusqueda({ islaVista: visto(estado, 'isla'), cambios, msConIsla: ms, esperaPedido: espera }) && islaVisible()) pedir('busqueda');
 }
 
 /** Espera a que se vaya el aviso «Agregado · Ver pedido» (como mucho 4 s) para no encimar dos avisos. */

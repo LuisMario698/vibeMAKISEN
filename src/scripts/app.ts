@@ -249,11 +249,11 @@ function miniatura(id: string) {
   return p.foto ? miniRecorte(p.foto) : datos.reales[p.id]?.src ?? datos.iconos[p.catId];
 }
 /** La bolsa recibió el platillo (el contador ya rodó): rebota el líquido de la isla y aparece el aviso. */
-function llego(id: string, n: number, destino: Destino | null) {
+function llego(id: string, n: number, destino: Destino | null, avisar = true) {
   visibilidad();
   isla.rebotar(destino?.el === isla.bolsaEl());
   const p = datos.platillos.find((x) => x.id === id);
-  if (p) avisarAgregado({ id, nombre: p.nombre, foto: miniatura(id), n, bolsa: destino?.el, abrirPedido: () => { isla.cerrar(false); lista.abrir(); } });
+  if (p && avisar) avisarAgregado({ id, nombre: p.nombre, foto: miniatura(id), n, bolsa: destino?.el, abrirPedido: () => { isla.cerrar(false); lista.abrir(); } });
 }
 prepararAviso();
 
@@ -292,7 +292,10 @@ document.addEventListener('click', (ev) => {
       const caja = cubre ? cajaDe(img) : rectImagen(cajaDe(img), a, 'contain');
       if (caja.w > 4 && caja.h > 4) origen = { src: img.currentSrc || img.src, a, caja, forma: cubre ? 'moneda' as const : 'recorte' as const };
     }
-    void llevarALaBolsa({ reserva, destino, origen, seguir: destinoBolsa, alLlegar: () => llego(id, n, destino) });
+    // Desde «Prueba el Camarón Roca» la propia tarjeta confirma en su sitio («Ya está en tu pedido · Ver pedido»):
+    // sin el aviso flotante, que sería un segundo «Ver pedido» en pantalla.
+    const avisar = !rapido.closest('.gc');
+    void llevarALaBolsa({ reserva, destino, origen, seguir: destinoBolsa, alLlegar: () => llego(id, n, destino, avisar) });
     return;
   }
   if (t.closest('[data-abrir-lista]')) { ocultarAviso(true); lista.abrir(); return; }

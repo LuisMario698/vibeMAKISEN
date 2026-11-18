@@ -9,6 +9,7 @@ const miniUrl = (id: string) => (conMini.has(id) ? `/menu/v/${id}-240.webp` : `/
 // Todo el movimiento es transform/opacity (src/styles/isla.css); la lógica, src/scripts/isla.ts.
 import Idioma from './Idioma.astro';
 import IconoBolsa from './IconoBolsa.astro';
+import EnsoMini from './EnsoMini.astro';
 import { menu } from '../data/schema';
 import '../styles/detalle.css';
 import '../styles/isla.css';
@@ -83,7 +84,7 @@ const primera = menu.categorias[0]!;
         ))}
       </div>
       <button type="button" data-como-pido class="isla-como presionable" aria-haspopup="dialog">
-        <span class="como-pido-enso" aria-hidden="true"></span>
+        <EnsoMini />
         <span lang="es">¿Cómo pido?</span><span lang="en">How to order?</span>
       </button>
       <p class="isla-nota"><span lang="es">Picante y crudo: etiquetas por confirmar con cocina.</span><span lang="en">Spicy and raw labels: pending kitchen confirmation.</span></p>

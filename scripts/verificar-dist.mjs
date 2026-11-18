@@ -24,6 +24,18 @@ debe(demo.every((f) => !html.includes(f) && !en.includes(f)), 'el modo presentac
 const guia = existsSync('dist/_astro') ? readdirSync('dist/_astro').filter((f) => f.startsWith('guia') && f.endsWith('.js')) : [];
 debe(guia.length > 0, 'falta el paquete aparte de la guía del comensal (import dinámico)');
 debe(guia.every((f) => !sw.includes(f) && !html.includes(f) && !en.includes(f)), 'la guía del comensal no debe ir en el precache ni cargarse desde el HTML');
+// Sus estilos viajan dentro de ese paquete (?inline): ni una hoja enlazada que bloquee el render en el
+// HTML inicial ni reglas suyas metidas en otra hoja del sitio (tampoco las del modo presentación).
+const PROPIO = /\.gp-enso|\.cp-panel|\.gc-mini|\.pz-escena|\.pz-final-panel/;
+for (const [ruta, h] of [['/', html], ['/en/', en]]) {
+  debe(!PROPIO.test(h), `${ruta}: el HTML trae estilos de la guía o de la presentación en línea`);
+  const hojas = [...h.matchAll(/<link\b[^>]*>/g)].map((m) => m[0]).filter((l) => /rel=["']?stylesheet/.test(l)).map((l) => l.match(/href=["']?\/?([^"' >]+)/)?.[1] ?? '');
+  for (const f of hojas) {
+    debe(!/(^|\/)_astro\/(guia|presentacion)/.test(f), `${ruta}: enlaza ${f}, la hoja de la guía o de la presentación (debe ir aparte)`);
+    const css = existsSync(`dist/${f}`) ? readFileSync(`dist/${f}`, 'utf8') : '';
+    debe(!PROPIO.test(css), `${ruta}: la hoja ${f} trae estilos de la guía o de la presentación (deben llegar con su paquete)`);
+  }
+}
 const total = (re) => [...sw.matchAll(re)].map((m) => m[1]).filter((f) => existsSync(`dist/${f}`)).reduce((s, f) => s + statSync(`dist/${f}`).size, 0);
 const shell = total(/url:"([^"]+)"/g);
 debe(shell < 600 * 1024, `precache de ${Math.round(shell / 1024)} KB (máximo 600 KB)`);

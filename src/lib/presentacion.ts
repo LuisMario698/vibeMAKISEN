@@ -41,8 +41,8 @@ export const MS_DESLIZAR = 1300;
 export const GUION: Paso[] = [
   {
     id: 'portada',
-    titulo: { es: 'Abre con el QR', en: 'Scan and it opens' },
-    linea: { es: 'Tu marca, el horario de hoy y si está abierto.', en: 'Your brand, today’s hours and whether you’re open.' },
+    titulo: { es: 'Tu portada', en: 'Your front page' },
+    linea: { es: 'Tu cliente escanea el QR y ve tu marca y tu horario.', en: 'Your guest scans the QR and sees your brand and hours.' },
     limpia: 'nada',
     acciones: [
       { hacer: 'esperar', ms: 2200 },
@@ -52,8 +52,8 @@ export const GUION: Paso[] = [
   },
   {
     id: 'secciones',
-    titulo: { es: 'Explora las secciones', en: 'Browse the sections' },
-    linea: { es: 'Toca la isla para elegir; deslízala para pasar a la siguiente.', en: 'Tap the bar to pick one; swipe it to move to the next.' },
+    titulo: { es: 'Las secciones', en: 'Sections' },
+    linea: { es: 'Tu cliente salta de sección con la barra de abajo.', en: 'Your guest jumps between sections with the bottom bar.' },
     limpia: 'capas',
     acciones: [
       { hacer: 'tocar', sel: '.isla-pildora', pausa: 1200 },
@@ -63,8 +63,8 @@ export const GUION: Paso[] = [
   },
   {
     id: 'busqueda',
-    titulo: { es: 'Busca y filtra', en: 'Search and filter' },
-    linea: { es: 'Por platillo o ingrediente, con filtros de un toque.', en: 'By dish or ingredient, with one-tap filters.' },
+    titulo: { es: 'Búsqueda', en: 'Search' },
+    linea: { es: 'Tu cliente busca un platillo o ingrediente y filtra.', en: 'Your guest searches a dish or ingredient, then filters.' },
     limpia: 'capas',
     acciones: [
       { hacer: 'tocar', sel: '.isla-lupa', pausa: 500 },
@@ -76,8 +76,8 @@ export const GUION: Paso[] = [
   },
   {
     id: 'agregar',
-    titulo: { es: 'Agrega al pedido', en: 'Add to the order' },
-    linea: { es: 'Elige cuántos y el platillo vuela a «Mi pedido».', en: 'Pick how many and the dish flies to “My order”.' },
+    titulo: { es: 'Al pedido', en: 'Into the order' },
+    linea: { es: 'Tu cliente elige cuántos y lo manda a «Mi pedido».', en: 'Your guest picks how many and adds it to “My order”.' },
     limpia: 'isla',
     acciones: [
       // Si el paso anterior no llegó a abrir el detalle, se abre desde su tarjeta.
@@ -90,8 +90,8 @@ export const GUION: Paso[] = [
   },
   {
     id: 'bebida',
-    titulo: { es: 'Bebidas en un toque', en: 'Drinks in one tap' },
-    linea: { es: 'El «+» agrega la bebida sin abrirla.', en: 'The “+” adds a drink without opening it.' },
+    titulo: { es: 'Bebidas', en: 'Drinks' },
+    linea: { es: 'Tu cliente agrega una bebida con un solo toque.', en: 'Your guest adds a drink with a single tap.' },
     limpia: 'capas',
     acciones: [
       { hacer: 'tocar', sel: '.isla-pildora', pausa: 900 },
@@ -101,8 +101,8 @@ export const GUION: Paso[] = [
   },
   {
     id: 'comanda',
-    titulo: { es: 'Revisa la comanda', en: 'Review the order' },
-    linea: { es: 'Platillos, cantidades, notas y total en pesos.', en: 'Dishes, quantities, notes and the total in pesos.' },
+    titulo: { es: 'La comanda', en: 'The order' },
+    linea: { es: 'Tu cliente revisa cantidades, notas y total en pesos.', en: 'Your guest checks quantities, notes and the peso total.' },
     limpia: 'capas',
     acciones: [
       // Pedido vacío (se saltaron pasos): una bebida para que el resto del recorrido tenga qué mostrar.
@@ -113,8 +113,8 @@ export const GUION: Paso[] = [
   },
   {
     id: 'entrega',
-    titulo: { es: 'Elige la mesa', en: 'Pick the table' },
-    linea: { es: 'En mesa, para llevar o a domicilio; la mesa, en el plano.', en: 'Dine-in, pickup or delivery; the table, on the floor plan.' },
+    titulo: { es: 'La entrega', en: 'Order type' },
+    linea: { es: 'Tu cliente pide en mesa, para llevar o a domicilio.', en: 'Your guest orders dine-in, pickup or delivery.' },
     limpia: 'pedido',
     acciones: [
       { hacer: 'tocar', sel: '#nav [data-abrir-lista]', si: '#lista:not([open])', pausa: 900 },
@@ -127,8 +127,8 @@ export const GUION: Paso[] = [
   },
   {
     id: 'pago',
-    titulo: { es: 'Paga al recibir', en: 'Pay on arrival' },
-    linea: { es: 'Efectivo o tarjeta; con efectivo avisan con cuánto pagan.', en: 'Cash or card; with cash they say which bill they’ll use.' },
+    titulo: { es: 'El pago', en: 'Payment' },
+    linea: { es: 'Tu cliente paga al recibir, en efectivo o con tarjeta.', en: 'Your guest pays on arrival, by cash or card.' },
     limpia: 'pedido',
     acciones: [
       { hacer: 'tocar', sel: '#pd-seguir', si: '#lista[data-paso="2"]', pausa: 1000 },
@@ -138,8 +138,8 @@ export const GUION: Paso[] = [
   },
   {
     id: 'enviar',
-    titulo: { es: 'Envía por WhatsApp', en: 'Send on WhatsApp' },
-    linea: { es: 'Te llega con folio y el cliente ve su seguimiento.', en: 'It reaches you with an order number, and the guest can track it.' },
+    titulo: { es: 'Tu WhatsApp', en: 'Your WhatsApp' },
+    linea: { es: 'Te llega con folio y mesa; tu cliente ve su seguimiento.', en: 'It reaches you with an order ID; your guest can track it.' },
     limpia: 'pedido',
     acciones: [
       { hacer: 'tocar', sel: '#lista-enviar', pausa: 4200 },
@@ -147,14 +147,21 @@ export const GUION: Paso[] = [
   },
 ];
 
-/** Tarjeta final: tres beneficios, en el idioma activo. */
+/**
+ * Tarjeta final, para el dueño: tres razones frente a las apps de reparto y el paso siguiente.
+ * Lo del hosting sale de docs/propuesta-menu-digital.html ($0 al mes en Cloudflare; solo el dominio).
+ */
 export const CIERRE = {
   titulo: { es: 'Así se vería MAKIZEN digital', en: 'This is MAKIZEN, digital' },
   beneficios: [
-    { es: 'Pedidos claros y ordenados por WhatsApp', en: 'Clear, organized orders on WhatsApp' },
-    { es: 'Menú siempre al día: precios y agotados', en: 'A menu that’s always current: prices and sold-out items' },
-    { es: 'En español e inglés, para turistas', en: 'In Spanish and English, for visitors' },
+    { es: 'Pedidos directo a tu WhatsApp, sin comisión de apps', en: 'Orders straight to your WhatsApp, no app commissions' },
+    { es: 'QR por mesa: el pedido llega con su número de mesa', en: 'A QR per table: each order arrives with its table number' },
+    { es: 'Menú bilingüe y al día para turistas de Arizona', en: 'A bilingual, always-current menu for Arizona visitors' },
   ],
+  siguiente: {
+    rotulo: { es: '¿Lo platicamos?', en: 'Shall we talk?' },
+    texto: { es: 'Listo con tu carta y tus mesas; $0 de hosting, solo el dominio.', en: 'Ready with your menu and tables; $0 hosting, just the domain.' },
+  },
   nota: { es: 'Demostración: no se envió ningún pedido.', en: 'Demo: no order was sent.' },
   otraVez: { es: 'Ver otra vez', en: 'Watch again' },
   explorar: { es: 'Explorar yo mismo', en: 'Explore it myself' },
@@ -258,7 +265,29 @@ export function urlSinDemo(href: string): string {
   const u = new URL(href);
   u.searchParams.delete('demo');
   u.searchParams.delete('rapido');
+  u.searchParams.delete('marco');
   return u.pathname + u.search;
+}
+
+/**
+ * Escritorio: la demostración corre dentro de un marco de teléfono (un iframe del mismo sitio a
+ * 390×844) para enseñar lo que verán los comensales. Esta es la dirección de ese iframe.
+ */
+export function urlMarco(href: string): string {
+  const u = new URL(href);
+  u.hash = '';
+  u.searchParams.set('demo', '1');
+  u.searchParams.set('marco', '1');
+  return u.pathname + u.search;
+}
+/** ¿Esta página es la del marco de teléfono? (solo cuenta dentro de un iframe). */
+export const enMarco = (search: string, enIframe: boolean) => enIframe && new URLSearchParams(search).get('marco') === '1';
+/** Tamaño del teléfono del escenario y la escala para que quepa en la pantalla (nunca crece). */
+export const TELEFONO = { w: 390, h: 844, bisel: 12 } as const;
+export function escalaTelefono(vista: { w: number; h: number }, margen = 56): number {
+  const alto = TELEFONO.h + TELEFONO.bisel * 2;
+  const ancho = TELEFONO.w + TELEFONO.bisel * 2;
+  return Math.max(0.5, Math.min(1, (vista.h - margen) / alto, (vista.w * 0.46) / ancho));
 }
 
 /** La dirección para ver la demostración otra vez desde la portada (conserva ?rapido). */

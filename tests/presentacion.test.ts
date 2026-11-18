@@ -3,7 +3,7 @@ import { crearMemoria, CLAVES_AISLADAS, esClaveAislada, esDemo } from '../src/li
 import { CLAVE as CLAVE_GUIA, CLAVE_APAGADA as CLAVE_GUIA_APAGADA, guiaActiva } from '../src/lib/guia';
 import {
   CIERRE, crearReloj, duracionAccion, duracionMovimiento, duracionPaso, duracionTotal, escalaDe, esEnlaceExterno, GUION, LECTURA, MS_TOQUE,
-  numeroPaso, progreso, suave, trayectoria, urlDemo, urlSinDemo, type Paso,
+  enMarco, escalaTelefono, numeroPaso, progreso, suave, TELEFONO, trayectoria, urlDemo, urlMarco, urlSinDemo, type Paso,
 } from '../src/lib/presentacion';
 
 describe('guion', () => {
@@ -19,11 +19,28 @@ describe('guion', () => {
       }
       expect(p.acciones.length).toBeGreaterThan(0);
     }
-    for (const t of [CIERRE.titulo, CIERRE.nota, CIERRE.otraVez, CIERRE.explorar, ...CIERRE.beneficios]) expect(t.en && t.es).toBeTruthy();
+    for (const t of [CIERRE.titulo, CIERRE.nota, CIERRE.otraVez, CIERRE.explorar, CIERRE.siguiente.rotulo, CIERRE.siguiente.texto, ...CIERRE.beneficios]) expect(t.en && t.es).toBeTruthy();
     expect(CIERRE.beneficios).toHaveLength(3);
   });
-  it('los títulos caben en una línea de la banda (versalitas en teléfono)', () => {
-    for (const p of GUION) for (const t of [p.titulo.es, p.titulo.en]) expect(t.length).toBeLessThanOrEqual(24);
+  it('narra en una sola voz, hacia el dueño: «tu cliente…», «te llega…» (sin imperativos para el comensal)', () => {
+    for (const p of GUION) {
+      expect(p.linea.es).toMatch(/^(Tu cliente|Te llega)/);
+      expect(p.linea.en).toMatch(/^(Your guest|It reaches you)/);
+      expect(p.linea.es).not.toMatch(/\b(avisan|pagan|eligen)\b/);
+    }
+  });
+  it('las líneas caben en dos renglones de la banda en 320 px (≤ 60 caracteres)', () => {
+    for (const p of GUION) for (const t of [p.linea.es, p.linea.en]) expect(t.length).toBeLessThanOrEqual(60);
+  });
+  it('la tarjeta final vende frente a las apps de reparto y propone el paso siguiente', () => {
+    const todo = CIERRE.beneficios.map((b) => b.es).join(' ');
+    expect(todo).toMatch(/sin comisión/);
+    expect(todo).toMatch(/QR por mesa/);
+    expect(todo).toMatch(/Arizona/);
+    expect(CIERRE.siguiente.rotulo.es).toMatch(/\?$/);
+  });
+  it('los títulos son cortos: caben junto a los controles de la banda (versalitas en teléfono)', () => {
+    for (const p of GUION) for (const t of [p.titulo.es, p.titulo.en]) expect(t.length).toBeLessThanOrEqual(16);
   });
   it('todos los selectores son CSS válido y apuntan a la interfaz real (sin innerHTML ni texto del cliente)', () => {
     for (const p of GUION) {
@@ -168,6 +185,23 @@ describe('enlaces externos y URL', () => {
     expect(urlSinDemo('https://x.mx/?demo=1#cervezas')).toBe('/');
     expect(urlSinDemo('https://x.mx/en/?demo=1&rapido=1')).toBe('/en/');
     expect(urlSinDemo('https://x.mx/?utm_source=qr&demo=1')).toBe('/?utm_source=qr');
+    expect(urlSinDemo('https://x.mx/en/?demo=1&marco=1')).toBe('/en/');
+  });
+  it('escritorio: el marco de teléfono carga el mismo sitio con ?demo=1&marco=1 (y conserva ?rapido)', () => {
+    expect(urlMarco('https://x.mx/?demo=1')).toBe('/?demo=1&marco=1');
+    expect(urlMarco('https://x.mx/en/?demo=1&rapido=1#x')).toBe('/en/?demo=1&rapido=1&marco=1');
+    expect(enMarco('?demo=1&marco=1', true)).toBe(true);
+    // Fuera de un iframe, ?marco=1 no cuenta (alguien que copió la dirección ve la demo normal).
+    expect(enMarco('?demo=1&marco=1', false)).toBe(false);
+    expect(enMarco('?demo=1', true)).toBe(false);
+  });
+  it('el teléfono del escenario cabe en la pantalla y nunca crece de más', () => {
+    for (const [w, h] of [[1280, 720], [1440, 900], [1024, 600], [1920, 1080]] as const) {
+      const s = escalaTelefono({ w, h });
+      expect((TELEFONO.h + TELEFONO.bisel * 2) * s).toBeLessThanOrEqual(h - 40);
+      expect(s).toBeLessThanOrEqual(1);
+    }
+    expect(escalaTelefono({ w: 1920, h: 1200 })).toBe(1);
   });
   it('ver otra vez vuelve a la portada con ?demo (y conserva ?rapido)', () => {
     expect(urlDemo('https://x.mx/en/?demo=1#guisos')).toBe('/en/?demo=1');
