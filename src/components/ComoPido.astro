@@ -1,0 +1,63 @@
+---
+// «¿Cómo pido?»: hoja pequeña con los 4 pasos, dibujados con trazo de oro sobre mármol.
+// Se abre desde [data-como-pido] (encabezado de la carta, selector de secciones y pie);
+// la lógica (abrir, cerrar, «Ver las pistas otra vez») vive en src/scripts/guia.ts.
+// Cada ilustración se traza al abrir (stroke-dashoffset con pathLength="1"); con movimiento
+// reducido solo aparece. El número va en un sello con aro de oro.
+const pasos = [
+  {
+    es: ['Explora', 'Recorre la carta o usa la barra de abajo para saltar de sección.'],
+    en: ['Explore', 'Scroll the menu, or use the bar below to jump between sections.'],
+    // La isla: píldora con su número y el gesto de deslizar.
+    dibujo: '<rect x="6" y="18" width="36" height="13" rx="6.5"/><circle cx="13" cy="24.5" r="3.6"/><path d="M20 24.5h14"/><path d="M14 38l-4 0m0 0 2.4-2.4M10 38l2.4 2.4M34 38h4m0 0-2.4-2.4M38 38l-2.4 2.4"/>',
+  },
+  {
+    es: ['Agrega', 'Toca un platillo, elige opciones y toca «Agregar».'],
+    en: ['Add', 'Tap a dish, pick your options and tap “Add”.'],
+    // Un plato y el + de agregar.
+    dibujo: '<ellipse cx="22" cy="28" rx="16" ry="10"/><ellipse cx="22" cy="26" rx="9" ry="5"/><circle cx="37" cy="12" r="6"/><path d="M37 9v6M34 12h6"/>',
+  },
+  {
+    es: ['Revisa tu pedido', 'En «Mi pedido», arriba: cantidades, notas, entrega y pago.'],
+    en: ['Review your order', 'In “My order”, up top: quantities, notes, delivery and payment.'],
+    // La comanda con su borde dentado y los puntos guía.
+    dibujo: '<path d="M11 8l2.6 2.6L16.2 8l2.6 2.6L21.4 8 24 10.6 26.6 8l2.6 2.6L31.8 8l2.6 2.6L37 8v32H11z"/><path d="M16 19h9M16 25h7M16 31h10"/><path d="M28 19h4M28 25h4M28 31h4"/>',
+  },
+  {
+    es: ['Envíalo por WhatsApp', 'Llega a la cocina como comanda. Pagas en el local o al recibir.'],
+    en: ['Send it on WhatsApp', 'It reaches the kitchen as an order ticket. Pay there or on arrival.'],
+    // El globo de WhatsApp.
+    dibujo: '<path d="M24 9a14 14 0 0 0-12.1 21L10 38l8.2-2A14 14 0 1 0 24 9z"/><path d="M18.5 19.5c.4 3.8 4.4 8.6 9.2 9.4l1.8-2.1-2.6-1.6-1.4 1.1c-1.6-.7-3.4-2.5-4-4l1.1-1.4-1.6-2.6z"/>',
+  },
+];
+---
+<dialog id="como-pido" class="cp" aria-labelledby="cp-titulo">
+  <div class="cp-panel">
+    <span class="cp-asa" aria-hidden="true"></span>
+    <header class="cp-cabeza">
+      <h2 id="cp-titulo" class="cp-titulo" tabindex="-1"><span lang="es">¿Cómo pido?</span><span lang="en">How to order?</span></h2>
+      <button type="button" data-cp-cerrar class="cp-x presionable" aria-label="Cerrar / Close">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M7 7l10 10M17 7 7 17" /></svg>
+      </button>
+    </header>
+    <div class="filete cp-filete" aria-hidden="true"><i></i><b></b></div>
+    <ol class="cp-pasos">
+      {pasos.map((p, i) => (
+        <li class="cp-paso" style={`--k:${i}`}>
+          <span class="cp-dibujo" aria-hidden="true">
+            <svg viewBox="0 0 48 48" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" set:html={p.dibujo.replaceAll('/>', ' pathLength="1"/>')} />
+          </span>
+          <span class="cp-num" aria-hidden="true">{i + 1}</span>
+          <span class="cp-texto">
+            <span class="cp-paso-t"><span lang="es">{p.es[0]}</span><span lang="en">{p.en[0]}</span></span>
+            <span class="cp-paso-d"><span lang="es">{p.es[1]}</span><span lang="en">{p.en[1]}</span></span>
+          </span>
+        </li>
+      ))}
+    </ol>
+    <footer class="cp-pie">
+      <button type="button" data-cp-reiniciar class="cp-enlace presionable"><span lang="es">Ver las pistas otra vez</span><span lang="en">Show the tips again</span></button>
+      <button type="button" data-cp-cerrar class="cp-boton presionable"><span lang="es">Entendido</span><span lang="en">Got it</span></button>
+    </footer>
+  </div>
+</dialog>

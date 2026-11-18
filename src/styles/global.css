@@ -284,6 +284,22 @@ dialog.hoja[data-forma="ventana"].cerrando .hoja-panel { animation: ventana-sale
 .aviso-flotante.sale { opacity: 0; transform: translateY(8px); transition: opacity 180ms ease-out, transform 180ms ease-out; }
 @keyframes aviso-entra { from { opacity: 0; transform: translateY(10px) scale(0.98); } }
 
+/* ── «¿Cómo pido?»: enlace discreto (carta, selector de secciones y pie). La hoja y las pistas
+      viven en src/styles/guia.css, que llega con src/scripts/guia.ts (carga diferida). ── */
+.como-pido-enlace, .isla-como {
+  display: inline-flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 2px;
+  font-size: 16px; font-weight: 600; color: var(--color-hueso);
+  text-decoration: underline; text-decoration-color: var(--color-oro); text-decoration-thickness: 1.5px; text-underline-offset: 5px;
+}
+@media (hover: hover) and (pointer: fine) { .como-pido-enlace:hover { color: var(--color-oro-claro); } }
+/* Ensō de pincel mínimo con su punto de oro (el del logo). */
+.como-pido-enso { position: relative; flex: none; width: 18px; height: 18px; color: var(--color-oro-claro); }
+.como-pido-enso::before { content: ""; position: absolute; inset: 0; border-radius: 50%; border: 2px solid currentColor; -webkit-mask: conic-gradient(#000 0 300deg, transparent 300deg); mask: conic-gradient(#000 0 300deg, transparent 300deg); transform: rotate(18deg); }
+.como-pido-enso::after { content: ""; position: absolute; top: -1px; right: 1px; width: 4px; height: 4px; border-radius: 50%; background: currentColor; }
+.isla-como { display: flex; margin: 16px auto 0; color: #0a0a0a; text-decoration-color: rgb(10 10 10 / 0.7); }
+.isla-como .como-pido-enso { color: #0a0a0a; }
+.isla-como:focus-visible { outline: 2px solid #0a0a0a; outline-offset: 2px; }
+
 /* ── Teléfonos y tabletas (puntero táctil): sin desenfoque de fondo ──────── */
 /* backdrop-filter vuelve a desenfocar lo de atrás en cada cuadro del scroll (y el mármol fijo
    ocupa toda la pantalla): en móvil es de lo que más cuesta. Un fondo algo más opaco se ve igual. */

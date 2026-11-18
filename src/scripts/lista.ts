@@ -787,6 +787,8 @@ export function crearLista(o: { alCambiar: (piezas: number, total: number) => vo
     dlg.showModal();
     html.classList.add('bloqueo');
     scroll.scrollTop = 0;
+    // La guía (si está cargada) puede poner su línea de la primera vez antes de medir qué cabe.
+    document.dispatchEvent(new CustomEvent('makizen:lista-abre', { detail: { paso: dlg.dataset.paso } }));
     ajustarLineas();
   }
   async function cerrar() {

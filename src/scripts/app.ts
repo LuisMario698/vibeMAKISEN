@@ -290,6 +290,8 @@ document.addEventListener('click', (ev) => {
     return;
   }
   if (t.closest('[data-abrir-lista]')) { ocultarAviso(true); lista.abrir(); return; }
+  const comoPido = t.closest<HTMLElement>('[data-como-pido]');
+  if (comoPido) { isla.cerrar(false); void import('./guia').then((m) => m.abrirComoPido(comoPido)).catch(() => { /* sin red: el enlace no hace nada */ }); return; }
   const riel = t.closest<HTMLElement>('.riel [data-ir]');
   if (riel) { ir(riel.dataset.ir!); return; }
   if (t.closest('a[href]')) return;
@@ -308,6 +310,17 @@ addEventListener('vite:preloadError', (ev) => {
   location.reload();
 });
 
+/* ── Guía del comensal (pistas en el momento): se carga aparte, cuando termina la intro y el
+      navegador está libre, para no tocar la carga inicial. Lógica en src/lib/guia.ts. ── */
+function cargarGuia() {
+  const ir = () => { void import('./guia').then((m) => m.iniciarGuia()).catch(() => { /* sin guía: el menú sigue igual */ }); };
+  const libre = () => ('requestIdleCallback' in window ? requestIdleCallback(ir, { timeout: 1500 }) : setTimeout(ir, 300));
+  if (!html.classList.contains('intro')) { libre(); return; }
+  const mo = new MutationObserver(() => { if (!html.classList.contains('intro')) { mo.disconnect(); libre(); } });
+  mo.observe(html, { attributes: true, attributeFilter: ['class'] });
+}
+
 /* ── Inicio ─────────────────────────────────────────────────────────── */
 aplicarIdioma();
 setInterval(pintarEstado, 60_000);
+if (document.readyState === 'complete') cargarGuia(); else addEventListener('load', cargarGuia, { once: true });

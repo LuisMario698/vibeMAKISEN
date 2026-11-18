@@ -15,6 +15,14 @@ const sinScroll = (page) => page.evaluate(() => [...document.querySelectorAll('#
   .every((e) => e.scrollHeight <= e.clientHeight + 1));
 
 const browser = await chromium.launch();
+// La guía del comensal tiene su propia prueba (e2e/guia.mjs). Aquí va apagada en la sesión,
+// como con ?guia=0, para que sus pistas y su sugerencia no cambien lo que se mide.
+const nuevoContexto = browser.newContext.bind(browser);
+browser.newContext = async (o) => {
+  const c = await nuevoContexto(o);
+  await c.addInitScript(() => { try { sessionStorage.setItem('makizen-guia-off', '1'); } catch { /* sin almacenamiento */ } });
+  return c;
+};
 for (const [nombre, w, h] of TAMANOS) {
   console.log(`\n${nombre} (${w}×${h})`);
   const ctx = await browser.newContext({ viewport: { width: w, height: h }, locale: 'es-MX', serviceWorkers: 'block' });

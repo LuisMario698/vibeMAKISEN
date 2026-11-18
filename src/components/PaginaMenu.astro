@@ -11,6 +11,7 @@ import Hoja from './Hoja.astro';
 import Isla from './Isla.astro';
 import Lista from './Lista.astro';
 import Riel from './Riel.astro';
+import ComoPido from './ComoPido.astro';
 import { menu } from '../data/schema';
 import fotos from '../data/fotos.json';
 import mini from '../data/miniaturas.json';
@@ -55,6 +56,10 @@ const total = menu.categorias.reduce((n, c) => n + c.platillos.length, 0);
       <span lang="es">{total} platillos y bebidas. Abre uno y toca «Agregar» para armar tu pedido; luego mándalo por WhatsApp.</span>
       <span lang="en">{total} dishes and drinks. Open one and tap “Add” to build your order, then send it on WhatsApp.</span>
     </p>
+    <button type="button" data-como-pido class="como-pido-enlace presionable mt-2" aria-haspopup="dialog">
+      <span class="como-pido-enso" aria-hidden="true"></span>
+      <span lang="es">¿Cómo pido?</span><span lang="en">How to order?</span>
+    </button>
   </div>
   <figure class="contenedor cortina mt-8" aria-hidden="true">
     <div class="relative aspect-[16/10] overflow-hidden rounded-3xl bg-pizarra sm:aspect-[21/9]">
@@ -75,5 +80,6 @@ const total = menu.categorias.reduce((n, c) => n + c.platillos.length, 0);
 <Isla />
 <Hoja />
 <Lista />
+<ComoPido />
 <script type="application/json" id="datos-menu" set:html={jsonSeguro(datos)} />
 <script src="../scripts/app.ts"></script>

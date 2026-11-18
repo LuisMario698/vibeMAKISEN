@@ -21,6 +21,14 @@ const titularListo = (page) => page.evaluate(() => {
 });
 
 const browser = await chromium.launch();
+// La guía del comensal tiene su propia prueba (e2e/guia.mjs). Aquí va apagada en la sesión,
+// como con ?guia=0, para que sus pistas y su sugerencia no cambien lo que se mide.
+const nuevoContexto = browser.newContext.bind(browser);
+browser.newContext = async (o) => {
+  const c = await nuevoContexto(o);
+  await c.addInitScript(() => { try { sessionStorage.setItem('makizen-guia-off', '1'); } catch { /* sin almacenamiento */ } });
+  return c;
+};
 async function contexto(opciones = {}) {
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, locale: 'es-MX', serviceWorkers: 'block', ...opciones });
   const page = await ctx.newPage();
