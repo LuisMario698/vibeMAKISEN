@@ -104,7 +104,9 @@ for (const [idioma, ruta, w, h] of [['es', '/', 390, 844], ['es', '/', 1440, 900
     ok(esc.iframe && esc.ancho === 390 && esc.alto === 844, `el menú va en un teléfono de 390×844 (${esc.ancho}×${esc.alto}, ${esc.src})`);
     ok(esc.dentro && esc.relatoDentro, 'teléfono y narración caben en la pantalla');
     ok(esc.titulo >= 28 && esc.linea >= 20, `narración grande: título ${esc.titulo}px, línea ${esc.linea}px`);
-    const marco = page.frames().find((f) => f.url().includes('marco=1'));
+    // El iframe del teléfono puede tardar en navegar (sobre todo en la red real): espéralo.
+    let marco;
+    for (let i = 0; i < 50 && !marco; i++) { marco = page.frames().find((f) => f.url().includes('marco=1')); if (!marco) await page.waitForTimeout(200); }
     await marco?.waitForSelector('html.presentando', { timeout: 10_000 }).catch(() => undefined);
     ok(!!marco && await marco.evaluate(() => innerWidth === 390 && getComputedStyle(document.querySelector('.pz-banda')).display === 'none'), 'dentro del teléfono: vista de teléfono y sin banda propia');
   }
@@ -240,7 +242,13 @@ for (const [idioma, ruta, extra] of [['es', '/', '&src=qr-mesa-3'], ['en', '/en/
       if (document.getElementById('pd-guia-pasos')?.hidden === false && !window.__vioGuia.includes('pasos')) window.__vioGuia.push('pasos');
     }).observe(document, { subtree: true, childList: true, attributes: true });
   });
-  await page.evaluate(() => { localStorage.removeItem('makizen-guia'); sessionStorage.removeItem('makizen-guia-off'); });
+  // Se limpia al arrancar el documento de la demo (antes que cualquier script): la visita normal de
+  // preparar() carga la guía en diferido y podría escribir 'makizen-guia' después de un borrado previo.
+  await page.addInitScript(() => {
+    if (window === top && /demo=1/.test(location.search) && !sessionStorage.getItem('__e2e-limpio')) {
+      localStorage.removeItem('makizen-guia'); sessionStorage.removeItem('makizen-guia-off'); sessionStorage.setItem('__e2e-limpio', '1');
+    }
+  });
   const pedidos = [];
   page.on('request', (q) => pedidos.push(q.url()));
   await page.goto(`${BASE}${ruta}?demo=1&rapido=1${extra}`, { waitUntil: 'domcontentloaded' });
@@ -265,7 +273,11 @@ for (const [idioma, ruta, extra] of [['es', '/', '&src=qr-mesa-3'], ['en', '/en/
     window.__real = (k) => g.call(localStorage, k);
     window.__realSesion = (k) => g.call(sessionStorage, k);
   });
-  await page.evaluate(() => { localStorage.removeItem('makizen-guia'); sessionStorage.setItem('makizen-guia-off', '1'); });
+  await page.addInitScript(() => {
+    if (window === top && /demo=1/.test(location.search) && !sessionStorage.getItem('__e2e-limpio')) {
+      localStorage.removeItem('makizen-guia'); sessionStorage.setItem('makizen-guia-off', '1'); sessionStorage.setItem('__e2e-limpio', '1');
+    }
+  });
   await page.goto(`${BASE}/?demo=1`, { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('.pz-banda.entra', { timeout: 12_000 });
   await page.locator('[data-pz="pausa"]').click();
